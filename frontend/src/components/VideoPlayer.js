@@ -7,11 +7,9 @@ const VideoPlayer = ({ src, currentTime, duration, onEnd }) => {
         let timeout;
 
         const handleTimeUpdate = () => {
-            if (videoRef.current && videoRef.current.currentTime >= currentTime + duration) {
+            if (onEnd && videoRef.current && videoRef.current.currentTime >= currentTime + duration) {
                 videoRef.current.pause();
-                if (onEnd) {
-                    onEnd();
-                }
+                onEnd();
             }
         };
 
@@ -21,12 +19,12 @@ const VideoPlayer = ({ src, currentTime, duration, onEnd }) => {
                     videoRef.current.pause(); // Pausa el video antes de cambiar el tiempo
                     videoRef.current.currentTime = currentTime;
                     await videoRef.current.play();
-                    timeout = setTimeout(() => {
-                        videoRef.current.pause();
-                        if (onEnd) {
+                    if (onEnd) {
+                        timeout = setTimeout(() => {
+                            videoRef.current.pause();
                             onEnd();
-                        }
-                    }, duration * 1000);
+                        }, duration * 1000);
+                    }
                 } catch (error) {
                     console.error('Error playing video:', error);
                 }

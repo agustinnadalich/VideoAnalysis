@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 import Charts from './components/Charts';
-import HeatMap from './components/HeatMap';
+// import HeatMap from './components/HeatMap';
 
 const App = () => {
     const [videoSrc] = useState('/ATTACCO.mp4');
@@ -9,6 +9,7 @@ const App = () => {
     const [tempTime, setTempTime] = useState(null);
     const [filteredEvents, setFilteredEvents] = useState([]);
     const [currentEventIndex, setCurrentEventIndex] = useState(0);
+    const [isPlayingFilteredEvents, setIsPlayingFilteredEvents] = useState(false);
 
     const handleEventClick = (event) => {
         console.log('Event data:', event.time, event.duration);
@@ -24,6 +25,7 @@ const App = () => {
         console.log('Playing filtered events:', events);
         setFilteredEvents(events);
         setCurrentEventIndex(0);
+        setIsPlayingFilteredEvents(true);
         playNextEvent(events, 0);
     };
 
@@ -43,32 +45,21 @@ const App = () => {
 
     const handleVideoEnd = useCallback(() => {
         console.log('Video ended. Current event index:', currentEventIndex);
-        if (currentEventIndex < filteredEvents.length) {
+        console.log('Filtered events:', filteredEvents);
+        if (isPlayingFilteredEvents && filteredEvents.length > 0 && currentEventIndex < filteredEvents.length) {
             playNextEvent(filteredEvents, currentEventIndex);
         } else {
             console.log('All events finished.');
             setTempTime(-1); // Establece un valor que no desencadene el `useEffect` en `VideoPlayer`
             setDuration(-1); // Establece un valor que no desencadene el `useEffect` en `VideoPlayer`
+            setIsPlayingFilteredEvents(false);
         }
-    }, [currentEventIndex, filteredEvents]);
-
-    // const generateRandomHeatMapData = (numPoints) => {
-    //     const data = [];
-    //     for (let i = 0; i < numPoints; i++) {
-    //         const x = Math.random() * 70;
-    //         const y = Math.random() * 100;
-    //         const value = Math.random();
-    //         data.push([x, y, value]);
-    //     }
-    //     return data;
-    // };
-
-    // const heatMapData = generateRandomHeatMapData(100);
+    }, [currentEventIndex, filteredEvents, isPlayingFilteredEvents]);
 
     return (
         <div className="App">
             <h1>Rugby Analysis Platform</h1>
-            <VideoPlayer src={videoSrc} currentTime={tempTime} duration={duration} onEnd={handleVideoEnd} />
+            <VideoPlayer src={videoSrc} currentTime={tempTime} duration={duration} onEnd={isPlayingFilteredEvents ? handleVideoEnd : null} />
             <Charts onEventClick={handleEventClick} onPlayFilteredEvents={handlePlayFilteredEvents} />
             {/* <HeatMap data={heatMapData} /> */}
         </div>
