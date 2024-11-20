@@ -314,20 +314,6 @@ const handleScatterClick = (event, elements) => {
     }
 };
 
-//   const handleScatterClick = (event, elements) => {
-//     if (elements.length > 0) {
-//         const chart = elements[0].element.$context.chart;
-//         const datasetIndex = elements[0].datasetIndex;
-//         const index = elements[0].index;
-//         const clickedEvent = chart.data.datasets[datasetIndex].data[index];
-
-//         setFilterDescriptors(prev => 
-//             prev.includes(clickedEvent.id) ? prev.filter(item => item !== clickedEvent.id) : [...new Set([...prev, clickedEvent.id])]
-//         );
-
-//         handleFilterChange();
-//     }
-// };
 
 const handleEventIdFilter = (eventId) => {
     setFilteredEvents(prev => {
