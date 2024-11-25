@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getEvents } from "../services/api";
-import { Bar, Pie, Scatter } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import Select from "react-select";
 import {
   Chart as ChartJS,
@@ -44,10 +44,6 @@ const backgroundImagePlugin = {
 ChartJS.register(backgroundImagePlugin);
 
 const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
-  const [chartData, setChartData] = useState(null);
-  const [pieData, setPieData] = useState(null);
-  const [timelineData, setTimelineData] = useState(null);
-  const [scatterData, setScatterData] = useState(null);
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [error, setError] = useState(null);
@@ -55,503 +51,166 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [filterDescriptors, setFilterDescriptors] = useState([]);
   const [filterResult, setFilterResult] = useState([]);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
-
-  const updateCharts = useCallback(
-    (events, types, descriptors, result) => {
-      const filteredEvents = events.filter(
-        (event) =>
-          (types.length ? types.includes(event.type) : true) &&
-          (descriptors.length
-            ? descriptors.includes(event.descriptor)
-            : true) &&
-          (result.length ? result.includes(event.result) : true)
-      );
-
-      const tackleEvents = filteredEvents.filter(
-        (event) => event.type === "Tackle"
-      );
-      const playerLabels = [
-        ...new Set(tackleEvents.map((event) => event.descriptor)),
-      ];
-      const resultLabels = ["Success", "Failure"];
-
-      const successData = playerLabels.map(
-        (player) =>
-          tackleEvents.filter(
-            (event) => event.descriptor === player && event.result === "Success"
-          ).length
-      );
-
-      const failureData = playerLabels.map(
-        (player) =>
-          tackleEvents.filter(
-            (event) => event.descriptor === player && event.result === "Failure"
-          ).length
-      );
-
-      const resultData = resultLabels.map(
-        (result) =>
-          tackleEvents.filter((event) => event.result === result).length
-      );
-
-      const pieData = {
-        labels: resultLabels,
-        datasets: [
-          {
-            label: "Resultados de Tackles",
-            data: resultData,
-            backgroundColor: resultLabels.map((label) => {
-              if (label === "Success") {
-                return "rgba(75, 192, 192, 0.6)";
-              } else if (label === "Failure") {
-                return "rgba(255, 99, 132, 0.6)";
-              } else {
-                return "rgba(201, 203, 207, 0.6)";
-              }
-            }),
-          },
-        ],
-      };
-    const barData = {
-      labels: playerLabels,
-      datasets: [
-        {
-        label: "Tackles Exitosos",
-        data: tackleEvents
-          .filter((event) => event.result === "Success")
-          .map((event) => ({
-            x: playerLabels.indexOf(event.descriptor),
-            y: successData[playerLabels.indexOf(event.descriptor)],
-            id: event.id,
-          })),
-        backgroundColor: "rgba(75, 192, 192, 0.6)",
-        },
-        {
-        label: "Tackles Fallidos",
-        data: tackleEvents
-          .filter((event) => event.result === "Failure")
-          .map((event) => ({
-            x: playerLabels.indexOf(event.descriptor),
-            y: failureData[playerLabels.indexOf(event.descriptor)],
-            id: event.id,
-          })),
-        backgroundColor: "rgba(255, 99, 132, 0.6)",
-        },
-      ],
-    };
-
-      const colors = {
-        Tackle: "rgba(75, 192, 192, 0.6)",
-        Ruck: "rgba(255, 159, 64, 0.6)",
-        // Add more event types and their corresponding colors here
-      };
-
-      const timelineData = {
-        labels: ["Tackle", "Ruck"],
-        datasets: Object.keys(colors).map((type) => ({
-          label: type,
-          data: filteredEvents
-            .filter((event) => event.type === type)
-            .map((event) => ({
-              x: [event.time, event.time + event.duration], // Inicio y fin de la barra
-              y: event.type,
-              id: event.id,
-              descriptor: event.descriptor,
-              result: event.result,
-            })),
-          backgroundColor: colors[type],
-          barThickness: 25, // Ajusta el grosor de las barras
-        })),
-      };
-
-      const scatterData = {
-        datasets: filteredEvents.map((event) => ({
-          label: `${event.type} - ${event.descriptor}`,
-          data: [{ x: event.x, y: event.y, descriptor: event.descriptor , id: event.id}],
-          backgroundColor:
-            event.result === "Success"
-              ? "rgba(75, 192, 192, 0.6)"
-              : "rgba(255, 99, 132, 0.6)",
-        })),
-      };
-
-      setChartData(barData);
-      setPieData(pieData);
-      setTimelineData(timelineData);
-      setScatterData(scatterData);
-      setFilteredEvents(filteredEvents);
-    },
-    [filterType, filterDescriptors, filterResult]
-  );
-
-  const fetchData = useCallback(async () => {
-    try {
-      const response = await getEvents();
-      if (response.data && Array.isArray(response.data)) {
-        setEvents(response.data);
-        setFilteredEvents(response.data);
-        updateCharts(
-          response.data,
-          filterType,
-          filterDescriptors,
-          filterResult
-        );
-      } else {
-        console.error("Unexpected response format:", response);
-        setError("Unexpected response format");
-      }
-    } catch (error) {
-      console.error("Error fetching events:", error);
-      setError("Failed to fetch events");
-    }
-  }, [updateCharts]);
+  const [barData, setBarData] = useState(null);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const fetchEvents = async () => {
+      try {
+        const response = await getEvents();
+        if (Array.isArray(response.data)) {
+          console.log("Fetched events:", response.data);
+          setEvents(response.data);
+          setFilteredEvents(response.data);
 
-  const handleFilterChange = () => {
-    updateCharts(events, filterType, filterDescriptors, filterResult);
-  };
+          // Filtra los eventos de tipo "PLACCAGGIO"
+          const placcaggios = response.data.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.JUGADOR);
+          console.log("Filtered placcaggios:", placcaggios);
 
-  const handleTypeChange = useCallback(
-    (selectedOptions) => {
-      setFilterType(
-        selectedOptions ? selectedOptions.map((option) => option.value) : []
-      );
-      handleFilterChange();
-    },
-    [filterDescriptors, filterResult, filterType]
-  ); // Asegúrate de incluir todas las dependencias necesarias
+          // Agrupa los placcaggios por jugador
+          const placcaggiosPorJugador = placcaggios.reduce((acc, event) => {
+            const jugador = event.JUGADOR;
+            if (!acc[jugador]) {
+              acc[jugador] = 0;
+            }
+            acc[jugador]++;
+            return acc;
+          }, {});
+          console.log("Placcaggios por jugador:", placcaggiosPorJugador);
 
-  const handleDescriptorChange = useCallback(
-    (selectedOptions) => {
-      setFilterDescriptors(
-        selectedOptions ? selectedOptions.map((option) => option.value) : []
-      );
-      handleFilterChange();
-    },
-    [filterDescriptors, filterResult, filterType]
-  ); // Asegúrate de incluir todas las dependencias necesarias
+          // Prepara los datos para el gráfico de barras
+          const labels = Object.keys(placcaggiosPorJugador);
+          const data = Object.values(placcaggiosPorJugador);
 
-  const handleResultChange = (selectedOptions) => {
-    setFilterResult(
-      selectedOptions ? selectedOptions.map((option) => option.value) : []
-    );
-    handleFilterChange();
-  };
-
-  const typeOptions = [...new Set(events.map((event) => event.type))].map(
-    (type) => ({
-      value: type,
-      label: type,
-    })
-  );
-
-  const descriptorOptions = [
-    ...new Set(events.map((event) => event.descriptor)),
-  ].map((descriptor) => ({
-    value: descriptor,
-    label: descriptor,
-  }));
-
-  const resultOptions = [...new Set(events.map((event) => event.result))].map(
-    (result) => ({
-      value: result,
-      label: result,
-    })
-  );
-
-  const handleChartClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const datasetIndex = elements[0].datasetIndex;
-      const index = elements[0].index;
-      const label = chart.data.labels[index];
-
-      if (
-        chart.data.datasets[datasetIndex].label === "Tackles Exitosos" ||
-        chart.data.datasets[datasetIndex].label === "Tackles Fallidos"
-      ) {
-        setFilterDescriptors((prev) =>
-          prev.includes(label)
-            ? prev.filter((item) => item !== label)
-            : [...new Set([...prev, label])]
-        );
-      } else if (
-        chart.data.datasets[datasetIndex].label === "Resultados de Tackles"
-      ) {
-        setFilterResult((prev) =>
-          prev.includes(label)
-            ? prev.filter((item) => item !== label)
-            : [...new Set([...prev, label])]
-        );
-      }
-
-      handleFilterChange();
-    }
-  };
-
-  const handleTimelineClick = (event, elements) => {
-    if (elements.length > 0) {
-        const chart = elements[0].element.$context.chart;
-        const datasetIndex = elements[0].datasetIndex;
-        const index = elements[0].index;
-        const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-        handleEventIdFilter(clickedEventId);
-    }
-};
-
-const handleScatterClick = (event, elements) => {
-    if (elements.length > 0) {
-        const chart = elements[0].element.$context.chart;
-        const datasetIndex = elements[0].datasetIndex;
-        const index = elements[0].index;
-        const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-        handleEventIdFilter(clickedEventId);
-    }
-};
-
-
-const handleEventIdFilter = (eventId) => {
-    setFilteredEvents(prev => {
-        if (prev.length === 1 && prev[0].id === eventId) {
-            // Si el filtro actual es el mismo evento, quitar el filtro
-            updateCharts(events, filterType, filterDescriptors, filterResult);
-            return events;
+          setBarData({
+            labels,
+            datasets: [
+              {
+                label: 'Placcaggios por Jugador',
+                data,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+              },
+            ],
+          });
         } else {
-            // Si no, filtrar por el nuevo evento
-            const filtered = events.filter(event => event.id === eventId);
-            updateCharts(filtered, filterType, filterDescriptors, filterResult);
-            return filtered;
+          setError(new Error("Invalid response format"));
         }
-    });
-};
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setError(error);
+      }
+    };
 
-return (
-    <div
-        style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-        {error ? (
-            <p>{error}</p>
-        ) : chartData && pieData && timelineData && scatterData ? (
-            <>
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        width: "100%",
-                    }}
-                >
-                    <div style={{ width: "40%", marginBottom: "20px" }}>
-                        <Bar
-                            data={chartData}
-                            options={{
-                                onClick: handleChartClick,
-                                scales: {
-                                    x: {
-                                        stacked: true,
-                                    },
-                                    y: {
-                                        stacked: true,
-                                    },
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: (context) => {
-                                                const event = context.raw;
-                                                return `${event.id}: ${event.result}`;
-                                            },
-                                        },
-                                    },
-                                    datalabels: {
-                                        display: false,
-                                        // formatter: (value, context) => context.dataset.data[context.dataIndex].id // Mostrar solo el id del evento
-                                    },
-                                },
-                            }}
-                        />
-                    </div>
-                    <div style={{ width: "40%" }}>
-                        <Pie data={pieData} options={{ onClick: handleChartClick }} />
-                    </div>
-                </div>
-                <div style={{ width: "90%", marginBottom: "20px" }}>
-                    <Bar
-                        data={timelineData}
-                        options={{
-                            onClick: handleTimelineClick,
-                            indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
-                            scales: {
-                                x: {
-                                    type: "linear",
-                                    position: "bottom",
-                                    min: 0,
-                                    max: 60,
-                                    title: {
-                                        display: true,
-                                        text: "Tiempo (segundos)",
-                                    },
-                                },
-                                y: {
-                                    type: "category",
-                                    labels: (event) => event.typ,
-                                    title: {
-                                        display: false,
-                                        text: "Jugador",
-                                    },
-                                },
-                            },
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => {
-                                            const event = context.raw;
-                                            return `${event.id}: ${event.result}`;
-                                        },
-                                    },
-                                },
-                                datalabels: {
-                                    display: false,
-                                    // formatter: (value, context) => context.dataset.data[context.dataIndex].id // Mostrar solo el id del evento
-                                },
-                            },
-                            maintainAspectRatio: false, // Permitir que el gráfico ocupe solo el espacio necesario
-                        }}
-                        height={130} // Ajustar el alto del gráfico según el número de eventos
-                    />
-                </div>
-                <div style={{ width: "90%", marginBottom: "20px" }}>
-                    <Scatter
-                        data={scatterData}
-                        options={{
-                            onClick: handleScatterClick, // Agregar el manejador de clics
-                            plugins: {
-                                title: {
-                                    display: false, // Ocultar el título
-                                },
-                                legend: {
-                                    display: false, // Ocultar la leyenda
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => {
-                                            const event = context.raw;
-                                            return `${event.descriptor}`;
-                                        },
-                                    },
-                                },
-                                datalabels: {
-                                    display: false,
-                                },
-                            },
-                            scales: {
-                                x: {
-                                    type: "linear",
-                                    position: "bottom",
-                                    min: 0,
-                                    max: 100,
-                                    title: {
-                                        display: false, // Ocultar el título del eje X
-                                    },
-                                    ticks: {
-                                        display: false, // Ocultar las etiquetas del eje X
-                                    },
-                                    grid: {
-                                        display: false, // Ocultar las líneas de la cuadrícula del eje X
-                                    },
-                                },
-                                y: {
-                                    type: "linear",
-                                    min: 0,
-                                    max: 100,
-                                    title: {
-                                        display: false, // Ocultar el título del eje Y
-                                    },
-                                    ticks: {
-                                        display: false, // Ocultar las etiquetas del eje Y
-                                    },
-                                    grid: {
-                                        display: false, // Ocultar las líneas de la cuadrícula del eje Y
-                                    },
-                                },
-                            },
-                            maintainAspectRatio: false,
-                            backgroundImage: "/CANCHA-CORTADA.jpg", // Ruta a la imagen de la cancha
-                            elements: {
-                                point: {
-                                    radius: 7, // Asignar radio 7 a los puntos
-                                },
-                            },
-                        }}
-                        width={800}
-                        height={600}
-                    />
-                </div>
-                <div style={{ width: "90%", marginBottom: "20px" }}>
-                    <HeatMap data={filteredEvents.map(event => [event.y, event.x, 1])} />
-                </div>
-                <button onClick={() => setIsFiltersVisible(!isFiltersVisible)}>
-                    {isFiltersVisible ? "Ocultar Filtros" : "Mostrar Filtros"}
-                </button>
-                {isFiltersVisible && (
-                    <div style={{ marginTop: "20px" }}>
-                        <label>
-                            Tipo:
-                            <Select
-                                isMulti
-                                options={typeOptions}
-                                value={typeOptions.filter((option) =>
-                                    filterType.includes(option.value)
-                                )}
-                                onChange={handleTypeChange}
-                            />
-                        </label>
-                        <label>
-                            Descriptores:
-                            <Select
-                                isMulti
-                                options={descriptorOptions}
-                                value={descriptorOptions.filter((option) =>
-                                    filterDescriptors.includes(option.value)
-                                )}
-                                onChange={handleDescriptorChange}
-                            />
-                        </label>
-                        <label>
-                            Resultado:
-                            <Select
-                                isMulti
-                                options={resultOptions}
-                                value={resultOptions.filter((option) =>
-                                    filterResult.includes(option.value)
-                                )}
-                                onChange={handleResultChange}
-                            />
-                        </label>
-                    </div>
-                )}
-                <button onClick={() => onPlayFilteredEvents(filteredEvents)}>
-                    Reproducir eventos filtrados
-                </button>
-                <ul style={{ maxHeight: "200px", overflowY: "auto" }}>
-                    {filteredEvents.map((event, index) => (
-                        <li key={index} onClick={() => onEventClick(event)}>
-                            {event.type} - {event.descriptor} - Result: {event.result} :
-                            Second:{event.time}
-                        </li>
-                    ))}
-                </ul>
-            </>
-        ) : (
-            <p>Loading...</p>
-        )}
+    fetchEvents();
+  }, []);
+
+  const handleFilterChange = useCallback((selectedOptions, actionMeta) => {
+    const { name } = actionMeta;
+    const values = selectedOptions ? selectedOptions.map(option => option.value) : [];
+    if (name === 'type') {
+      setFilterType(values);
+    } else if (name === 'descriptor') {
+      setFilterDescriptors(values);
+    } else if (name === 'result') {
+      setFilterResult(values);
+    }
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    const filtered = events.filter(
+      (event) =>
+        (filterType.length ? filterType.includes(event.CATEGORÍA) : true) &&
+        (filterDescriptors.length ? filterDescriptors.includes(event.JUGADOR) : true) &&
+        (filterResult.length ? filterResult.includes(event.SEGUNDO) : true)
+    );
+    console.log("Filtered events after applying filters:", filtered);
+    setFilteredEvents(filtered);
+  }, [events, filterType, filterDescriptors, filterResult]);
+
+  const handleBarClick = useCallback((elements) => {
+    if (elements.length > 0) {
+      const index = elements[0].index;
+      const jugador = barData.labels[index];
+      console.log("Clicked jugador:", jugador);
+      const filtered = events.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.JUGADOR == jugador);
+      console.log("Filtered events for jugador:", filtered);
+      setFilteredEvents(filtered);
+    }
+  }, [barData, events]);
+
+  const handleEventClick = useCallback((event) => {
+    console.log("Event data:", event.SEGUNDO);
+    const startTime = event.SEGUNDO;
+    const duration = 5; // 5 segundos de duración
+    console.log("Setting tempTime and duration:", startTime, duration);
+    onEventClick({ ...event, startTime, duration });
+  }, [onEventClick]);
+
+  if (error) {
+    return <div>Error fetching events: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      <button onClick={() => setIsFiltersVisible(!isFiltersVisible)}>
+        {isFiltersVisible ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+      </button>
+      {isFiltersVisible && (
+        <div>
+          <Select
+            isMulti
+            name="type"
+            options={[...new Set(events.map(event => ({ value: event.CATEGORÍA, label: event.CATEGORÍA })))]}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={handleFilterChange}
+          />
+          <Select
+            isMulti
+            name="descriptor"
+            options={[...new Set(events.map(event => ({ value: event.JUGADOR, label: event.JUGADOR })))]}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={handleFilterChange}
+          />
+          <Select
+            isMulti
+            name="result"
+            options={[...new Set(events.map(event => ({ value: event.SEGUNDO, label: event.SEGUNDO })))]}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={handleFilterChange}
+          />
+          <button onClick={applyFilters}>Aplicar Filtros</button>
+        </div>
+      )}
+      <button onClick={() => onPlayFilteredEvents(filteredEvents)}>Reproducir Eventos Filtrados</button>
+      {barData && (
+        <div>
+          <h2>Placcaggios por Jugador</h2>
+          <Bar
+            data={barData}
+            options={{
+              onClick: (event, elements) => handleBarClick(elements),
+            }}
+          />
+        </div>
+      )}
+      <h1>Eventos</h1>
+      <ul>
+        {Array.isArray(filteredEvents) && filteredEvents.map((event, index) => (
+          <li key={index} onClick={() => handleEventClick(event)}>
+            {event.CATEGORÍA} - {event.SEGUNDO} - {event.JUGADOR}
+          </li>
+        ))}
+      </ul>
+      {/* Comentamos los otros gráficos por ahora */}
+      {/* <Pie data={pieData} /> */}
+      {/* <Scatter data={scatterData} /> */}
+      {/* <HeatMap data={heatMapData} /> */}
     </div>
-);
+  );
 };
 
 export default Charts;
