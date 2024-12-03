@@ -70,9 +70,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const tackleEvents = filteredEvents.filter(
         (event) => event.type === "Tackle"
       );
-      const playerLabels = [
-        ...new Set(tackleEvents.map((event) => event.descriptor)),
-      ];
+      const playerLabels = [...new Set(tackleEvents.map((event) => event.descriptor))];
+
       const resultLabels = ["Success", "Failure"];
 
       const successData = playerLabels.map(
@@ -81,7 +80,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             (event) => event.descriptor === player && event.result === "Success"
           ).length
       );
-
+      
       const failureData = playerLabels.map(
         (player) =>
           tackleEvents.filter(
@@ -112,33 +111,33 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           },
         ],
       };
-    const barData = {
-      labels: playerLabels,
-      datasets: [
-        {
-        label: "Tackles Exitosos",
-        data: tackleEvents
-          .filter((event) => event.result === "Success")
-          .map((event) => ({
-            x: playerLabels.indexOf(event.descriptor),
-            y: successData[playerLabels.indexOf(event.descriptor)],
-            id: event.id,
-          })),
-        backgroundColor: "rgba(75, 192, 192, 0.6)",
-        },
-        {
-        label: "Tackles Fallidos",
-        data: tackleEvents
-          .filter((event) => event.result === "Failure")
-          .map((event) => ({
-            x: playerLabels.indexOf(event.descriptor),
-            y: failureData[playerLabels.indexOf(event.descriptor)],
-            id: event.id,
-          })),
-        backgroundColor: "rgba(255, 99, 132, 0.6)",
-        },
-      ],
-    };
+      const barData = {
+        labels: playerLabels,
+        datasets: [
+          {
+            label: "Tackles Exitosos",
+            data: playerLabels.map((player, index) => ({
+              x: index,
+              y: successData[index],
+              id: tackleEvents.find(
+                (event) => event.descriptor === player && event.result === "Success"
+              )?.id,
+            })),
+            backgroundColor: "rgba(75, 192, 192, 0.6)",
+          },
+          {
+            label: "Tackles Fallidos",
+            data: playerLabels.map((player, index) => ({
+              x: index,
+              y: failureData[index],
+              id: tackleEvents.find(
+                (event) => event.descriptor === player && event.result === "Failure"
+              )?.id,
+            })),
+            backgroundColor: "rgba(255, 99, 132, 0.6)",
+          },
+        ],
+      };
 
       const colors = {
         Tackle: "rgba(75, 192, 192, 0.6)",
