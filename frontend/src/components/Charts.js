@@ -41,6 +41,9 @@ const backgroundImagePlugin = {
   },
 };
 
+const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'Equipo', 'CATEGORÍA', 'JUGADOR', 'SECTOR', 'x', 'y'];
+
+
 ChartJS.register(backgroundImagePlugin);
 
 const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
@@ -63,7 +66,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           setFilteredEvents(response.data);
 
           // Filtra los eventos de tipo "PLACCAGGIO"
-          const placcaggios = response.data.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.JUGADOR);
+          const placcaggios = response.data.filter(
+            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.JUGADOR
+          );
           console.log("Filtered placcaggios:", placcaggios);
 
           // Agrupa los placcaggios por jugador
@@ -85,10 +90,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             labels,
             datasets: [
               {
-                label: 'Placcaggios por Jugador',
+                label: "Placcaggios por Jugador",
                 data,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                borderColor: "rgba(75, 192, 192, 1)",
                 borderWidth: 1,
               },
             ],
@@ -107,12 +112,14 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
   const handleFilterChange = useCallback((selectedOptions, actionMeta) => {
     const { name } = actionMeta;
-    const values = selectedOptions ? selectedOptions.map(option => option.value) : [];
-    if (name === 'type') {
+    const values = selectedOptions
+      ? selectedOptions.map((option) => option.value)
+      : [];
+    if (name === "type") {
       setFilterType(values);
-    } else if (name === 'descriptor') {
+    } else if (name === "descriptor") {
       setFilterDescriptors(values);
-    } else if (name === 'result') {
+    } else if (name === "result") {
       setFilterResult(values);
     }
   }, []);
@@ -121,31 +128,42 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     const filtered = events.filter(
       (event) =>
         (filterType.length ? filterType.includes(event.CATEGORÍA) : true) &&
-        (filterDescriptors.length ? filterDescriptors.includes(event.JUGADOR) : true) &&
+        (filterDescriptors.length
+          ? filterDescriptors.includes(event.JUGADOR)
+          : true) &&
         (filterResult.length ? filterResult.includes(event.SEGUNDO) : true)
     );
     console.log("Filtered events after applying filters:", filtered);
     setFilteredEvents(filtered);
   }, [events, filterType, filterDescriptors, filterResult]);
 
-  const handleBarClick = useCallback((elements) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const jugador = barData.labels[index];
-      console.log("Clicked jugador:", jugador);
-      const filtered = events.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.JUGADOR == jugador);
-      console.log("Filtered events for jugador:", filtered);
-      setFilteredEvents(filtered);
-    }
-  }, [barData, events]);
+  const handleBarClick = useCallback(
+    (elements) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const jugador = barData.labels[index];
+        console.log("Clicked jugador:", jugador);
+        const filtered = events.filter(
+          (event) =>
+            event.CATEGORÍA === "PLACCAGGIO" && event.JUGADOR == jugador
+        );
+        console.log("Filtered events for jugador:", filtered);
+        setFilteredEvents(filtered);
+      }
+    },
+    [barData, events]
+  );
 
-  const handleEventClick = useCallback((event) => {
-    console.log("Event data:", event.SEGUNDO);
-    const startTime = event.SEGUNDO;
-    const duration = 5; // 5 segundos de duración
-    console.log("Setting tempTime and duration:", startTime, duration);
-    onEventClick({ ...event, startTime, duration });
-  }, [onEventClick]);
+  const handleEventClick = useCallback(
+    (event) => {
+      console.log("Event dataC:", event.SEGUNDO);
+      const startTime = event.SEGUNDO;
+      const duration = 5; // 5 segundos de duración
+      console.log("Setting tempTime and durationC:", startTime, duration);
+      onEventClick({ ...event, startTime, duration });
+    },
+    [onEventClick]
+  );
 
   if (error) {
     return <div>Error fetching events: {error.message}</div>;
@@ -154,14 +172,21 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   return (
     <div>
       <button onClick={() => setIsFiltersVisible(!isFiltersVisible)}>
-        {isFiltersVisible ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+        {isFiltersVisible ? "Ocultar Filtros" : "Mostrar Filtros"}
       </button>
       {isFiltersVisible && (
         <div>
           <Select
             isMulti
             name="type"
-            options={[...new Set(events.map(event => ({ value: event.CATEGORÍA, label: event.CATEGORÍA })))]}
+            options={[
+              ...new Set(
+                events.map((event) => ({
+                  value: event.CATEGORÍA,
+                  label: event.CATEGORÍA,
+                }))
+              ),
+            ]}
             className="basic-multi-select"
             classNamePrefix="select"
             onChange={handleFilterChange}
@@ -169,7 +194,14 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           <Select
             isMulti
             name="descriptor"
-            options={[...new Set(events.map(event => ({ value: event.JUGADOR, label: event.JUGADOR })))]}
+            options={[
+              ...new Set(
+                events.map((event) => ({
+                  value: event.JUGADOR,
+                  label: event.JUGADOR,
+                }))
+              ),
+            ]}
             className="basic-multi-select"
             classNamePrefix="select"
             onChange={handleFilterChange}
@@ -177,7 +209,14 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           <Select
             isMulti
             name="result"
-            options={[...new Set(events.map(event => ({ value: event.SEGUNDO, label: event.SEGUNDO })))]}
+            options={[
+              ...new Set(
+                events.map((event) => ({
+                  value: event.SEGUNDO,
+                  label: event.SEGUNDO,
+                }))
+              ),
+            ]}
             className="basic-multi-select"
             classNamePrefix="select"
             onChange={handleFilterChange}
@@ -185,7 +224,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           <button onClick={applyFilters}>Aplicar Filtros</button>
         </div>
       )}
-      <button onClick={() => onPlayFilteredEvents(filteredEvents)}>Reproducir Eventos Filtrados</button>
+      <button onClick={() => onPlayFilteredEvents(filteredEvents)}>
+        Reproducir Eventos Filtrados
+      </button>
       {barData && (
         <div>
           <h2>Placcaggios por Jugador</h2>
@@ -198,13 +239,63 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         </div>
       )}
       <h1>Eventos</h1>
-      <ul>
+      <table className="styled-table">
+        <thead>
+          <tr>
+            {columnsToInclude.map((col) => (
+              <th key={col}>{col}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {filteredEvents.map((event, index) => (
+            <tr key={index} onClick={() => handleEventClick(event)}>
+              {columnsToInclude.map((col) => (
+                <td key={col}>{event[col]}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <style jsx>{`
+        .styled-table {
+          border-collapse: collapse;
+          margin: 25px 0;
+          font-size: 0.9em;
+          font-family: 'Arial', sans-serif;
+          min-width: 400px;
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        }
+        .styled-table thead tr {
+          background-color: #009879;
+          color: #ffffff;
+          text-align: left;
+        }
+        .styled-table th,
+        .styled-table td {
+          padding: 12px 15px;
+        }
+        .styled-table tbody tr {
+          border-bottom: 1px solid #dddddd;
+        }
+        .styled-table tbody tr:nth-of-type(even) {
+          background-color: #f3f3f3;
+        }
+        .styled-table tbody tr:last-of-type {
+          border-bottom: 2px solid #009879;
+        }
+        .styled-table tbody tr.active-row {
+          font-weight: bold;
+          color: #009879;
+        }
+      `}</style>
+      {/* <ul>
         {Array.isArray(filteredEvents) && filteredEvents.map((event, index) => (
           <li key={index} onClick={() => handleEventClick(event)}>
             {event.CATEGORÍA} - {event.SEGUNDO} - {event.JUGADOR}
           </li>
         ))}
-      </ul>
+      </ul> */}
       {/* Comentamos los otros gráficos por ahora */}
       {/* <Pie data={pieData} /> */}
       {/* <Scatter data={scatterData} /> */}
