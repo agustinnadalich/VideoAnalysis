@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import VideoPlayer from './components/VideoPlayer';
-import Charts from './components/Charts';
+import Charts from './components/New-charts.js';
 // import HeatMap from './components/HeatMap';
 
 const App = () => {
@@ -12,12 +12,12 @@ const App = () => {
     const [isPlayingFilteredEvents, setIsPlayingFilteredEvents] = useState(false);
 
     const handleEventClick = (event) => {
-        console.log('Event data1:', event.SEGUDO, event.duration);
+        console.log('Event data1:', event.SEGUNDO, event.DURACION);
         setTempTime(null); // Resetea el tiempo temporal
         setTimeout(() => {
-            console.log('Setting tempTime and duration1:', event.SEGUDO, event.duration);
-            setTempTime(event.SEGUDO || 0);
-            setDuration(event.duration || 5); // Ajusta la duración a 5 segundos
+            console.log('Setting tempTime and duration1:', event.SEGUNDO, event.DURACION);
+            setTempTime(event.SEGUNDO || 0);
+            setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
         }, 10); // Espera un breve momento antes de establecer el tiempo correcto
     };
 
@@ -37,7 +37,7 @@ const App = () => {
             setTimeout(() => {
                 console.log('Setting tempTime and duration for next event:', event.SEGUNDO, 5);
                 setTempTime(event.SEGUNDO || 0);
-                setDuration(event.duration || 5); // Ajusta la duración a 5 segundos
+                setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
             }, 10); // Espera un breve momento antes de establecer el tiempo correcto
         } else {
             setIsPlayingFilteredEvents(false);
@@ -64,9 +64,26 @@ const App = () => {
 
     return (
         <div>
-            <VideoPlayer src={videoSrc} tempTime={tempTime} duration={duration} />
+            <VideoPlayer
+                src={videoSrc}
+                tempTime={tempTime}
+                duration={duration}
+                isPlayingFilteredEvents={isPlayingFilteredEvents}
+                onEnd={() => {
+                    if (isPlayingFilteredEvents) {
+                        setCurrentEventIndex((prevIndex) => {
+                            const nextIndex = prevIndex + 1;
+                            if (nextIndex < filteredEvents.length) {
+                                playNextEvent(filteredEvents, nextIndex);
+                            } else {
+                                setIsPlayingFilteredEvents(false);
+                            }
+                            return nextIndex;
+                        });
+                    }
+                }}
+            />
             <Charts onEventClick={handleEventClick} onPlayFilteredEvents={handlePlayFilteredEvents} />
-            {/* <HeatMap /> */}
         </div>
     );
 };

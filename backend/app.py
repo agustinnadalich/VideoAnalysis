@@ -37,7 +37,8 @@ def get_events():
         return jsonify({"error": "No data available"}), 404
     
     # Selecciona algunas columnas básicas para empezar
-    columns_to_include = ['ID', 'FECHA', 'RIVAL','SEGUNDO', 'CATEGORÍA', 'JUGADOR', 'Equipo', 'SECTOR','COORDENADAS', 'RESULTADO LINE']
+    # columns_to_include = ['ID', 'FECHA', 'RIVAL','SEGUNDO', 'CATEGORÍA', 'JUGADOR', 'Equipo', 'SECTOR','COORDENADA X','COORDENADA Y', 'RESULTADO LINE']
+    columns_to_include = ['ID', 'FECHA', 'RIVAL','SEGUNDO','DURACION', 'CATEGORÍA', 'JUGADOR', 'Equipo', 'SECTOR', 'RESULTADO LINE','COORDENADA X','COORDENADA Y', 'AVANCE']
     filtered_df = df[columns_to_include]
     
     # Convierte el DataFrame a una lista de diccionarios
@@ -54,18 +55,18 @@ def get_events():
                 event[key] = str(value)
             elif isinstance(value, (pd._libs.tslibs.nattype.NaTType, type(pd.NaT))):
                 event[key] = None
-            elif key == 'COORDENADAS' and isinstance(value, str):
-                try:
-                    coords = [int(coord) for coord in value.split('-')]
-                    event['x'] = coords[0]
-                    event['y'] = coords[1]
-                except (ValueError, IndexError) as e:
-                    print(f"Error al procesar coordenadas: {value} - {e}")
-                    event['x'] = None
-                    event['y'] = None
-            elif key == 'COORDENADAS' and not value:
-                event['x'] = None
-                event['y'] = None
+            # elif key == 'COORDENADAS' and isinstance(value, str):
+            #     try:
+            #         coords = [int(coord) for coord in value.split('-')]
+            #         event['x'] = coords[0]
+            #         event['y'] = coords[1]
+            #     except (ValueError, IndexError) as e:
+            #         print(f"Error al procesar coordenadas: {value} - {e}")
+            #         event['x'] = None
+            #         event['y'] = None
+            # elif key == 'COORDENADAS' and not value:
+            #     event['x'] = None
+            #     event['y'] = None
     
     print(events)  # Verifica los datos en la consola del servidor
     return jsonify(events)

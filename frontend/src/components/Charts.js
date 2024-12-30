@@ -41,7 +41,7 @@ const backgroundImagePlugin = {
   },
 };
 
-const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'Equipo', 'CATEGORÍA', 'JUGADOR', 'SECTOR', 'x', 'y'];
+const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'Equipo', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
 
 
 ChartJS.register(backgroundImagePlugin);
@@ -55,6 +55,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [filterResult, setFilterResult] = useState([]);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [barData, setBarData] = useState(null);
+  const [filteredJugador, setFilteredJugador] = useState(null); // Estado para almacenar el jugador filtrado
+
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -141,17 +143,32 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     (elements) => {
       if (elements.length > 0) {
         const index = elements[0].index;
-        const jugador = barData.labels[index];
-        console.log("Clicked jugador:", jugador);
-        const filtered = events.filter(
-          (event) =>
-            event.CATEGORÍA === "PLACCAGGIO" && event.JUGADOR == jugador
-        );
-        console.log("Filtered events for jugador:", filtered);
-        setFilteredEvents(filtered);
+        const player = barData.labels[index];
+        console.log("Clicked player:", player);
+        console.log("Current filteredJugador:", filteredJugador);
+  
+        if (filteredJugador !== player) {
+          setFilteredJugador(player); // Guardar el player filtrado
+          const filtered = events.filter(
+            // (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo !== "RIVAL" && event.JUGADOR === player
+            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo !== "RIVAL" && event.JUGADOR.toString() === player
+          );
+          setFilteredEvents(filtered);
+          console.log("Filtered events for player:", filtered);
+        } else {
+          console.log("Removing filter for player:", player);
+          // Mostrar todos los eventos de tipo "PLACCAGGIO"
+          const filtered = events.filter(
+            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo === "SAN BENEDETTO"
+          );
+          console.log("Filtered events after removing filterXXX:", filtered);
+          setFilteredJugador(null); // Resetear el player filtrado
+          setFilteredEvents(filtered);
+          
+        }
       }
     },
-    [barData, events]
+    [barData, events, filteredJugador]
   );
 
   const handleEventClick = useCallback(

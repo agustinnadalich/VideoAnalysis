@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-const VideoPlayer = ({ src, tempTime, duration, onEnd }) => {
+const VideoPlayer = ({ src, tempTime, duration, onEnd, isPlayingFilteredEvents }) => {
     const videoRef = useRef(null);
 
     useEffect(() => {
@@ -8,7 +8,7 @@ const VideoPlayer = ({ src, tempTime, duration, onEnd }) => {
         let timeout;
 
         const handleTimeUpdate = () => {
-            if (video && video.currentTime >= tempTime + duration) {
+            if (video && video.currentTime >= tempTime + duration && isPlayingFilteredEvents) {                
                 video.pause();
                 if (onEnd) {
                     onEnd();
@@ -16,12 +16,18 @@ const VideoPlayer = ({ src, tempTime, duration, onEnd }) => {
             }
         };
 
+        const handlePlay = () => {
+            if (!isPlayingFilteredEvents) {
+                isPlayingFilteredEvents = false;
+            }            
+        };
+
         const playVideo = async () => {
             if (video && tempTime !== null) {
                 try {
                     video.currentTime = tempTime;
                     await video.play();
-                    timeout = setTimeout(() => {
+                    timeout = setTimeout(() => {                        
                         video.pause();
                         if (onEnd) {
                             onEnd();
@@ -35,6 +41,8 @@ const VideoPlayer = ({ src, tempTime, duration, onEnd }) => {
 
         if (video) {
             video.addEventListener('timeupdate', handleTimeUpdate);
+            video.addEventListener('play', handlePlay);
+
         }
 
         playVideo();
@@ -47,10 +55,12 @@ const VideoPlayer = ({ src, tempTime, duration, onEnd }) => {
                 clearTimeout(timeout);
             }
         };
-    }, [tempTime, duration, onEnd]);
+    }, [tempTime, duration, isPlayingFilteredEvents, onEnd]);
 
     return (
-        <video ref={videoRef} src={src} controls width="600" />
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+            <video ref={videoRef} src={src} controls width="600" />
+        </div>
     );
 };
 
