@@ -41,7 +41,7 @@ const backgroundImagePlugin = {
   },
 };
 
-const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'Equipo', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
+const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
 
 
 ChartJS.register(backgroundImagePlugin);
@@ -150,8 +150,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         if (filteredJugador !== player) {
           setFilteredJugador(player); // Guardar el player filtrado
           const filtered = events.filter(
-            // (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo !== "RIVAL" && event.JUGADOR === player
-            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo !== "RIVAL" && event.JUGADOR.toString() === player
+            // (event) => event.CATEGORÍA === "PLACCAGGIO" && event.EQUIPO !== "RIVAL" && event.JUGADOR === player
+            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.EQUIPO !== "RIVAL" && event.JUGADOR.toString() === player
           );
           setFilteredEvents(filtered);
           console.log("Filtered events for player:", filtered);
@@ -159,7 +159,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           console.log("Removing filter for player:", player);
           // Mostrar todos los eventos de tipo "PLACCAGGIO"
           const filtered = events.filter(
-            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.Equipo === "SAN BENEDETTO"
+            (event) => event.CATEGORÍA === "PLACCAGGIO" && event.EQUIPO === "SAN BENEDETTO"
           );
           console.log("Filtered events after removing filterXXX:", filtered);
           setFilteredJugador(null); // Resetear el player filtrado

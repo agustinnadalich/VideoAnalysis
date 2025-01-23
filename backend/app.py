@@ -33,16 +33,23 @@ except Exception as e:
 
 @app.route('/events', methods=['GET'])
 def get_events():
+    if not os.path.exists(file_path):
+        return jsonify({"error": "Archivo Excel no encontrado"}), 404
+
+    df = pd.read_excel(file_path)
     if df.empty:
         return jsonify({"error": "No data available"}), 404
     
-    # Selecciona algunas columnas básicas para empezar
-    # columns_to_include = ['ID', 'FECHA', 'RIVAL','SEGUNDO', 'CATEGORÍA', 'JUGADOR', 'Equipo', 'SECTOR','COORDENADA X','COORDENADA Y', 'RESULTADO LINE']
-    columns_to_include = ['ID', 'FECHA', 'RIVAL','SEGUNDO','DURACION', 'CATEGORÍA', 'JUGADOR', 'Equipo', 'SECTOR', 'RESULTADO LINE','COORDENADA X','COORDENADA Y', 'AVANCE']
+    # Selecciona todas las columnas necesarias
+    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORÍA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
     filtered_df = df[columns_to_include]
     
     # Convierte el DataFrame a una lista de diccionarios
     events = filtered_df.to_dict(orient='records')
+    for event in events:
+        if 'SEGUNDO' in event and event['SEGUNDO'] is not None:
+            minutes, seconds = divmod(event['SEGUNDO'], 60)
+            event['TIEMPO(VIDEO)'] = f"{minutes:02}:{seconds:02}"
     
     # Reemplaza NaN con None en la lista de diccionarios y convierte objetos no serializables
     for event in events:
@@ -55,18 +62,6 @@ def get_events():
                 event[key] = str(value)
             elif isinstance(value, (pd._libs.tslibs.nattype.NaTType, type(pd.NaT))):
                 event[key] = None
-            # elif key == 'COORDENADAS' and isinstance(value, str):
-            #     try:
-            #         coords = [int(coord) for coord in value.split('-')]
-            #         event['x'] = coords[0]
-            #         event['y'] = coords[1]
-            #     except (ValueError, IndexError) as e:
-            #         print(f"Error al procesar coordenadas: {value} - {e}")
-            #         event['x'] = None
-            #         event['y'] = None
-            # elif key == 'COORDENADAS' and not value:
-            #     event['x'] = None
-            #     event['y'] = None
     
     print(events)  # Verifica los datos en la consola del servidor
     return jsonify(events)

@@ -56,28 +56,30 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [filterDescriptors, setFilterDescriptors] = useState([]);
   const [filterResult, setFilterResult] = useState([]);
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
+  const [selectedEvents, setSelectedEvents] = useState([]);
 
-  const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'Equipo', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
+  const columnsToInclude = ['ID','ENCUADRE', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
+  const columnsToTooltip = ['EQUIPO', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PALOS' ]
+
 
 
   const updateCharts = useCallback(
     (events, types, descriptors, result) => {
       const filteredEvents = events.filter(
         (event) =>
-          (types.length ? types.includes(event.CATEGORÍA) : true) &&
-          (descriptors.length ? descriptors.includes(event.JUGADOR) : true) &&
-          (result.length ? result.includes(event.AVANCE) : true)
+          (types.length ? types.includes(event.CATEGORÍA) : true)
       );
+
+      console.log("Filtered Events:", filteredEvents);
 
       const tackleEvents = filteredEvents.filter(
         (event) => event.CATEGORÍA === "PLACCAGGIO"
       );
-      // console.log('tackleEvents, '. filteredEvents);
-      
+
       const playerLabels = [
         ...new Set(tackleEvents.map((event) => event.JUGADOR)),
-      ].sort((a, b) => a - b); // Ordena los jugadores numéricamente de menor a mayor
-  
+      ].sort((a, b) => a - b);
+
       const resultLabels = ["POSITIVO", "NEUTRO", "NEGATIVO"];
 
       const positiveTackles = playerLabels.map(
@@ -86,21 +88,20 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             (event) => event.JUGADOR === player && event.AVANCE === "POSITIVO"
           ).length
       );
-      
+
       const neutralTackles = playerLabels.map(
         (player) =>
           tackleEvents.filter(
             (event) => event.JUGADOR === player && event.AVANCE === "NEUTRO"
           ).length
       );
-      
+
       const negativeTackles = playerLabels.map(
         (player) =>
           tackleEvents.filter(
             (event) => event.JUGADOR === player && event.AVANCE === "NEGATIVO"
           ).length
       );
-      
 
       const resultData = resultLabels.map(
         (result) =>
@@ -173,7 +174,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           },
         ],
       };
-      
+
       setChartTacklesData(barTacklesData);
 
       const barMissedData = {
@@ -183,7 +184,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Tackles Errados",
             data: playerLabels.map((player) => {
               const count = events.filter(
-                (event) => event.JUGADOR === player && event.CATEGORÍA === 'PLAC-SBAGLIATTO' && event.Equipo !== 'RIVAL').length;
+                (event) => event.JUGADOR === player && event.CATEGORÍA === 'PLAC-SBAGLIATTO' && event.EQUIPO !== 'RIVAL').length;
               return {
                 x: player,
                 y: count,
@@ -194,55 +195,77 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           },
         ],
       };
-      
-      setChartMissedData(barMissedData);
-      
 
-      const colors = {
-        PLACCAGGIO: "rgba(75, 192, 192, 0.6)",
-        RUCK: "rgba(255, 159, 64, 0.6)",
-        ATTACCO: "rgba(255, 205, 86, 0.6)",
-        DIFESA: "rgba(201, 203, 207, 0.6)",
-        'PARTITA TAGLIATA': "rgba(54, 162, 235, 0.6)",
-        TOUCHE: "rgba(153, 102, 255, 0.6)",
-        // Add more event types and their corresponding colors here
-      };
+      setChartMissedData(barMissedData);
+
+      const uniqueCategories = [...new Set(events.map(event => event.CATEGORÍA))].filter(category => category !== 'FIN');
+      const colors = uniqueCategories.reduce((acc, category, index) => {
+        const color = `hsl(${index * 360 / uniqueCategories.length}, 70%, 50%)`;
+        acc[category] = color;
+        return acc;
+      }, {});
+
+      const filteredCategories = [...new Set(filteredEvents.map(event => event.CATEGORÍA))];
 
       const timelineData = {
-        labels: ["PLACCAGGIO", "RUCK", 'ATTACCO', 'DIFESA', 'PARTITA TAGLIATA', 'TOUCHE'],
+        labels: filteredCategories,
         datasets: Object.keys(colors).map((type) => ({
           label: type,
           data: filteredEvents
-            .filter((event) => event.CATEGORÍA === type && event.Equipo !== 'RIVAL')
-            .map((event) => ({
-              x: [event.SEGUNDO, event.SEGUNDO + event.DURACION], // Inicio y fin de la barra
-              y: event.CATEGORÍA,
-              id: event.ID,
-              descriptor: event.JUGADOR,
-              result: event.AVANCE,
-            })),
+            .filter((event) => event.CATEGORÍA === type && event.EQUIPO !== 'RIVAL')
+            .map((event) => {
+              let descriptor = event['TIEMPO(VIDEO)'];
+              columnsToTooltip.forEach(column => {
+                if (event[column] !== null) {
+                  descriptor += `, ${column}: ${event[column]}`;
+                }
+              });
+              return {
+                x: [event.SEGUNDO, event.SEGUNDO + event.DURACION],
+                y: event.CATEGORÍA,
+                id: event.ID,
+                descriptor: descriptor,
+                SEGUNDO: event['SEGUNDO'],
+                DURACION: event['DURACION'],
+              };
+            }),
           backgroundColor: colors[type],
-          // barThickness: 100, // Ajusta el grosor de las barras
         })),
+      };
+
+      const scatterOptions = {
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const data = context.raw;
+                return data.descriptor;
+              }
+            }
+          }
+        }
       };
 
       const scatterData = {
         datasets: filteredEvents
           .filter(event => {
-        const x = parseFloat(event['COORDENADA X']);
-        const y = parseFloat(event['COORDENADA Y']);
-        return !isNaN(x) && !isNaN(y) && 
-          event.CATEGORÍA !== "DIFESA" && event.CATEGORÍA !== "ATTACCO" && event.CATEGORÍA !== "PARTITA TAGLIATA";
+            const x = parseFloat(event['COORDENADA X']);
+            const y = parseFloat(event['COORDENADA Y']);
+            return !isNaN(x) && !isNaN(y) && 
+              event.CATEGORÍA !== "DIFESA" && event.CATEGORÍA !== "ATTACCO" && event.CATEGORÍA !== "PARTITA TAGLIATA";
           })
           .map((event) => {
-        return {
-          label: `${event.CATEGORÍA}`,
-          data: [{ x: Number(event['COORDENADA Y']), y: Number(event['COORDENADA X']), category: event.CATEGORÍA, id: event.ID }],
-          backgroundColor:
-            event.AVANCE === "POSITIVO"
-          ? "rgba(75, 192, 192, 0.6)"
-          : "rgba(255, 99, 132, 0.6)",
-        };
+            let descriptor = event['TIEMPO(VIDEO)'];
+            columnsToTooltip.forEach(column => {
+              if (event[column] !== null) {
+                descriptor += `, ${column}: ${event[column]}`;
+              }
+            });
+            return {
+              label: `${event.CATEGORÍA}`,
+              data: [{ x: Number(event['COORDENADA Y']), y: Number(event['COORDENADA X']), category: event.CATEGORÍA, id: event.ID, descriptor: descriptor }],
+              backgroundColor: colors[event.CATEGORÍA],
+            };
           }),
       };
 
@@ -252,8 +275,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       setTimelineData(timelineData);
       setScatterData(scatterData);
       setFilteredEvents(filteredEvents);
-      console.log("Filtered Events:", filteredEvents); // Verifica los eventos filtrados
-      
+      console.log("Filtered Events:", filteredEvents);
+      console.log("Timeline Data:", timelineData);
     },
     [filterType, filterDescriptors, filterResult]
   );
@@ -266,6 +289,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           ...event,
           'COORDENADA X': parseFloat(event['COORDENADA X']),
           'COORDENADA Y': parseFloat(event['COORDENADA Y']),
+          'SEGUNDO': event['SEGUNDO'], // Asegúrate de que estos campos estén presentes
+          'DURACION': event['DURACION'], // Asegúrate de que estos campos estén presentes
         }));
         setEvents(allEvents);
         setFilteredEvents(allEvents);
@@ -357,32 +382,33 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const chart = elements[0].element.$context.chart;
       const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
-      const label = chart.data.labels[index];
-
-      if (
-        chart.data.datasets[datasetIndex].label === "Tackles Positivos" ||
-        chart.data.datasets[datasetIndex].label === "Tackles Neutros" ||
-        chart.data.datasets[datasetIndex].label === "Tackles Negativos" ||
-        chart.data.datasets[datasetIndex].label === "Tackles Errados" 
-      ) {
-        setFilterDescriptors((prev) =>
-          prev.includes(label)
-            ? prev.filter((item) => item !== label)
-            : [...new Set([...prev, label])]
-        );
-      } else if (
-        chart.data.datasets[datasetIndex].label === "Cantidad de tackles por avance"
-      ) {
-        setFilterResult((prev) =>
-          prev.includes(label)
-            ? prev.filter((item) => item !== label)
-            : [...new Set([...prev, label])]
-        );
+      const clickedEventLabel = chart.data.labels[index];
+  
+      console.log("Clicked Event Label:", clickedEventLabel);
+  
+      // Buscar todos los eventos correspondientes al grupo seleccionado
+      const clickedEvents = events.filter(event => event.JUGADOR === clickedEventLabel);
+  
+      if (clickedEvents.length > 0) {
+        console.log("Clicked Events:", clickedEvents);
+  
+        // Alternar el filtrado de eventos
+        const isAlreadySelected = selectedEvents.some(event => event.JUGADOR === clickedEventLabel);
+        const updatedEvents = isAlreadySelected ? events : clickedEvents;
+  
+        console.log("Updated Events:", updatedEvents);
+  
+        // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
+        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
+  
+        // Actualizar el estado de los eventos seleccionados
+        setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
+      } else {
+        console.error("Events not found with label:", clickedEventLabel);
       }
-
-      handleFilterChange();
     }
   };
+  
 
   const handleTimelineClick = (event, elements) => {
     if (elements.length > 0) {
@@ -390,8 +416,34 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
       const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-      handleEventIdFilter(clickedEventId);
+  
+      console.log("Clicked Event ID:", clickedEventId);
+  
+      // Buscar el evento completo utilizando el ID
+      const clickedEvent = events.find(event => event.ID === clickedEventId);
+  
+      if (clickedEvent) {
+        console.log("Clicked Event:", clickedEvent);
+  
+        // Alternar el filtrado de eventos
+        const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
+        const updatedEvents = isAlreadySelected ? events : [clickedEvent];
+  
+        console.log("Updated Events:", updatedEvents);
+  
+        // Usar updateCharts para actualizar los gráficos con el evento seleccionado
+        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
+  
+        // Actualizar el estado de los eventos seleccionados
+        setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
+  
+        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
+        if (!isAlreadySelected) {
+          handleEventClick(clickedEvent);
+        }
+      } else {
+        console.error("Event not found with ID:", clickedEventId);
+      }
     }
   };
 
@@ -401,8 +453,34 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
       const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-      handleEventIdFilter(clickedEventId);
+  
+      console.log("Clicked Event ID:", clickedEventId);
+  
+      // Buscar el evento completo utilizando el ID
+      const clickedEvent = events.find(event => event.ID === clickedEventId);
+  
+      if (clickedEvent) {
+        console.log("Clicked Event:", clickedEvent);
+  
+        // Alternar el filtrado de eventos
+        const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
+        const updatedEvents = isAlreadySelected ? events : [clickedEvent];
+  
+        console.log("Updated Events:", updatedEvents);
+  
+        // Usar updateCharts para actualizar los gráficos con el evento seleccionado
+        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
+  
+        // Actualizar el estado de los eventos seleccionados
+        setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
+  
+        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
+        if (!isAlreadySelected) {
+          handleEventClick(clickedEvent);
+        }
+      } else {
+        console.error("Event not found with ID:", clickedEventId);
+      }
     }
   };
 
@@ -429,6 +507,63 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         <p>{error}</p>
       ) : chartTacklesData && chartMissedData && pieData && timelineData && scatterData ? (
         <>
+          
+          <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
+            <div style={{ width: "3000px" }}> {/* Ajusta el ancho según sea necesario */}
+              <Bar
+                data={timelineData}
+                options={{
+                  onClick: handleTimelineClick,
+                  indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
+                  scales: {
+                    x: {
+                      beginAtZero: true,
+                      type: "linear",
+                      position: "bottom",
+                      min: 0,
+                      max: 6000,
+                      title: {
+                        display: true,
+                        text: "Tiempo (segundos)",
+                      },
+                    },
+                    y: {
+                      beginAtZero: true,
+                      type: "category",
+                      labels: ["PLACCAGGIO", "RUCK", "ATTACCO", "DIFESA", "PARTITA TAGLIATA", "TOUCHE"], // Asegúrate de que todas las categorías estén incluidas
+                      title: {
+                        display: false,
+                        text: "Categoría",
+                      },
+                      ticks: {
+                        padding: 10, // Ajusta el espacio entre las etiquetas y las barras
+                      },
+                    },
+                  },
+                  plugins: {
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          // const label = context.dataset.label;
+                          const value = `${context.raw.descriptor}`;
+                          return `${value}`;
+                          // return `${label}: ${value}`;
+                        },
+                      },
+                    },
+                    datalabels: {
+                      display: false,
+                    },
+                  },
+                  maintainAspectRatio: false, // Permitir que el gráfico ocupe solo el espacio necesario
+                  // barThickness: 15, // Ajusta el grosor de las barras
+                  categoryPercentage: 0.1, // Ajusta el porcentaje de la categoría ocupada por las barras
+                  barPercentage: 30, // Ajusta el porcentaje de la barra dentro de la categoría
+                }}
+                height={600} // Ajustar el alto del gráfico según el número de eventos
+              />
+            </div>
+          </div>
           <div
             style={{
               display: "flex",
@@ -515,59 +650,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             </div>
           </div>
 
-          <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-            <div style={{ width: "1500px" }}> {/* Ajusta el ancho según sea necesario */}
-              <Bar
-                data={timelineData}
-                options={{
-                  onClick: handleTimelineClick,
-                  indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
-                  scales: {
-                    x: {
-                      type: "linear",
-                      position: "bottom",
-                      min: 0,
-                      max: 6000,
-                      title: {
-                        display: true,
-                        text: "Tiempo (segundos)",
-                      },
-                    },
-                    y: {
-                      type: "category",
-                      labels: ["PLACCAGGIO", "RUCK", "ATTACCO", "DIFESA", "PARTITA TAGLIATA", "TOUCHE"], // Asegúrate de que todas las categorías estén incluidas
-                      title: {
-                        display: false,
-                        text: "Categoría",
-                      },
-                      ticks: {
-                        padding: 10, // Ajusta el espacio entre las etiquetas y las barras
-                      },
-                    },
-                  },
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        label: (context) => {
-                          const label = context.dataset.label;
-                          const value = `${context.raw.descriptor}, ${context.raw.result}`;
-                          return `${label}: ${value}`;
-                        },
-                      },
-                    },
-                    datalabels: {
-                      display: false,
-                    },
-                  },
-                  maintainAspectRatio: false, // Permitir que el gráfico ocupe solo el espacio necesario
-                  // barThickness: 15, // Ajusta el grosor de las barras
-                  categoryPercentage: 0.1, // Ajusta el porcentaje de la categoría ocupada por las barras
-                  barPercentage: 30, // Ajusta el porcentaje de la barra dentro de la categoría
-                }}
-                height={600} // Ajustar el alto del gráfico según el número de eventos
-              />
-            </div>
-          </div>
+          
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <Scatter
               data={scatterData}
