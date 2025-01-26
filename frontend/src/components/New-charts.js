@@ -508,7 +508,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
     scales: {
       x: {
-        beginAtZero: true,
+        beginAtZero: false,
         type: "linear",
         position: "bottom",
         title: {
@@ -524,7 +524,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           text: "Categoría",
         },
         ticks: {
-          padding: 0, // Ajusta el espacio entre las etiquetas y las barras
+          padding: 5, // Ajusta el espacio entre las etiquetas y las barras
         },
         stacked: true, // Asegura que las barras se apilen correctamente
       },
@@ -547,9 +547,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     },
     maintainAspectRatio: false,
     responsive: true,
-    barThickness: 15, // Ajusta el grosor de las barras
-    categoryPercentage: 1.0, // Asegura que las barras ocupen todo el espacio de la categoría
-    barPercentage: 1.0, // Asegura que las barras ocupen todo el espacio disponible dentro de la categoría
+    barThickness: Math.max(20, 40 / filteredCategories.length), // Ajusta el grosor de las barras dinámicamente
+    // categoryPercentage: 1, // Asegura que las barras ocupen todo el espacio de la categoría
+    // barPercentage: 0.5, // Asegura que las barras ocupen todo el espacio disponible dentro de la categoría
   };
 
   return (
@@ -562,8 +562,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         <>
           
           <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-            <div style={{ width: "3000px", height: `${filteredCategories.length * 25}px` }}> {/* Ajusta el ancho y la altura según sea necesario */}
-              <Bar
+          <div style={{ width: "3000px", 
+            height: `${Math.max(150, filteredCategories.length * 30)}px` 
+            }}> {/* Ajusta el ancho y la altura según sea necesario */}
+          <Bar
                 data={timelineData}
                 options={timelineOptions}
               />
