@@ -58,7 +58,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState([]);
 
-  const columnsToInclude = ['ID','ENCUADRE', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
+  const columnsToInclude = ['ID','ENCUADRE', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', 'COORDENADA Y', 'AVANCE'];
   const columnsToTooltip = ['EQUIPO', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PALOS' ]
 
 
@@ -209,27 +209,29 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
       const timelineData = {
         labels: filteredCategories,
-        datasets: Object.keys(colors).map((type) => ({
-          label: type,
+        datasets: filteredCategories.map((category) => ({
+          label: category,
           data: filteredEvents
-            .filter((event) => event.CATEGORÍA === type && event.EQUIPO !== 'RIVAL')
+            .filter((event) => event.CATEGORÍA === category)
             .map((event) => {
-              let descriptor = event['TIEMPO(VIDEO)'];
-              columnsToTooltip.forEach(column => {
-                if (event[column] !== null) {
-                  descriptor += `, ${column}: ${event[column]}`;
+                let descriptor = "";
+                columnsToTooltip.forEach(column => {
+                if (event[column] !== null && event[column] !== '' && event[column] !== 'N/A' && column !== 'SEGUNDO' && column !== 'DURACION') {
+                  descriptor += `${descriptor ? ', ' : ''}${column}: ${event[column]}`;
                 }
               });
               return {
-                x: [event.SEGUNDO, event.SEGUNDO + event.DURACION],
-                y: event.CATEGORÍA,
+                x: [event.SEGUNDO, event.SEGUNDO + event.DURACION], // Usar un array para representar el rango
+                y: category,
                 id: event.ID,
                 descriptor: descriptor,
                 SEGUNDO: event['SEGUNDO'],
                 DURACION: event['DURACION'],
               };
             }),
-          backgroundColor: colors[type],
+          backgroundColor: colors[category],
+          barPercentage: 1.0, // Asegura que las barras ocupen todo el espacio disponible
+          categoryPercentage: 1.0, // Asegura que las barras se centren en sus categorías
         })),
       };
 
@@ -411,41 +413,41 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   
 
   const handleTimelineClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const datasetIndex = elements[0].datasetIndex;
-      const index = elements[0].index;
-      const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-  
-      console.log("Clicked Event ID:", clickedEventId);
-  
-      // Buscar el evento completo utilizando el ID
-      const clickedEvent = events.find(event => event.ID === clickedEventId);
-  
-      if (clickedEvent) {
-        console.log("Clicked Event:", clickedEvent);
-  
-        // Alternar el filtrado de eventos
-        const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
-        const updatedEvents = isAlreadySelected ? events : [clickedEvent];
-  
-        console.log("Updated Events:", updatedEvents);
-  
-        // Usar updateCharts para actualizar los gráficos con el evento seleccionado
-        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
-  
-        // Actualizar el estado de los eventos seleccionados
-        setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
-  
-        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
-        if (!isAlreadySelected) {
-          handleEventClick(clickedEvent);
-        }
-      } else {
-        console.error("Event not found with ID:", clickedEventId);
+  if (elements.length > 0) {
+    const chart = elements[0].element.$context.chart;
+    const datasetIndex = elements[0].datasetIndex;
+    const index = elements[0].index;
+    const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
+
+    console.log("Clicked Event ID:", clickedEventId);
+
+    // Buscar el evento completo utilizando el ID
+    const clickedEvent = events.find(event => event.ID === clickedEventId);
+
+    if (clickedEvent) {
+      console.log("Clicked Event:", clickedEvent);
+
+      // Alternar el filtrado de eventos
+      const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
+      const updatedEvents = isAlreadySelected ? events : [clickedEvent];
+
+      console.log("Updated Events:", updatedEvents);
+
+      // Usar updateCharts para actualizar los gráficos con el evento seleccionado
+      updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
+
+      // Actualizar el estado de los eventos seleccionados
+      setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
+
+      // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
+      if (!isAlreadySelected) {
+        handleEventClick(clickedEvent);
       }
+    } else {
+      console.error("Event not found with ID:", clickedEventId);
     }
-  };
+  }
+};
 
   const handleScatterClick = (event, elements) => {
     if (elements.length > 0) {
@@ -499,6 +501,57 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     });
   };
 
+  const filteredCategories = [...new Set(filteredEvents.map(event => event.CATEGORÍA))];
+
+  const timelineOptions = {
+    onClick: handleTimelineClick,
+    indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
+    scales: {
+      x: {
+        beginAtZero: true,
+        type: "linear",
+        position: "bottom",
+        title: {
+          display: true,
+          text: "Tiempo (segundos)",
+        },
+      },
+      y: {
+        type: "category",
+        labels: filteredCategories, // Usar las categorías filtradas
+        title: {
+          display: true,
+          text: "Categoría",
+        },
+        ticks: {
+          padding: 0, // Ajusta el espacio entre las etiquetas y las barras
+        },
+        stacked: true, // Asegura que las barras se apilen correctamente
+      },
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const data = context.raw;
+            return data.descriptor;
+          }
+        }
+      },
+      legend: {
+        display: false, // Quitar la leyenda
+      },
+      datalabels: {
+        display: false, // Quitar etiquetas de datos dentro de las barras
+      },
+    },
+    maintainAspectRatio: false,
+    responsive: true,
+    barThickness: 15, // Ajusta el grosor de las barras
+    categoryPercentage: 1.0, // Asegura que las barras ocupen todo el espacio de la categoría
+    barPercentage: 1.0, // Asegura que las barras ocupen todo el espacio disponible dentro de la categoría
+  };
+
   return (
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
@@ -509,58 +562,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         <>
           
           <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-            <div style={{ width: "3000px" }}> {/* Ajusta el ancho según sea necesario */}
+            <div style={{ width: "3000px", height: `${filteredCategories.length * 25}px` }}> {/* Ajusta el ancho y la altura según sea necesario */}
               <Bar
                 data={timelineData}
-                options={{
-                  onClick: handleTimelineClick,
-                  indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
-                  scales: {
-                    x: {
-                      beginAtZero: true,
-                      type: "linear",
-                      position: "bottom",
-                      min: 0,
-                      max: 6000,
-                      title: {
-                        display: true,
-                        text: "Tiempo (segundos)",
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      type: "category",
-                      labels: ["PLACCAGGIO", "RUCK", "ATTACCO", "DIFESA", "PARTITA TAGLIATA", "TOUCHE"], // Asegúrate de que todas las categorías estén incluidas
-                      title: {
-                        display: false,
-                        text: "Categoría",
-                      },
-                      ticks: {
-                        padding: 10, // Ajusta el espacio entre las etiquetas y las barras
-                      },
-                    },
-                  },
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        label: (context) => {
-                          // const label = context.dataset.label;
-                          const value = `${context.raw.descriptor}`;
-                          return `${value}`;
-                          // return `${label}: ${value}`;
-                        },
-                      },
-                    },
-                    datalabels: {
-                      display: false,
-                    },
-                  },
-                  maintainAspectRatio: false, // Permitir que el gráfico ocupe solo el espacio necesario
-                  // barThickness: 15, // Ajusta el grosor de las barras
-                  categoryPercentage: 0.1, // Ajusta el porcentaje de la categoría ocupada por las barras
-                  barPercentage: 30, // Ajusta el porcentaje de la barra dentro de la categoría
-                }}
-                height={600} // Ajustar el alto del gráfico según el número de eventos
+                options={timelineOptions}
               />
             </div>
           </div>
@@ -600,6 +605,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
                       // formatter: (value, context) => context.dataset.data[context.dataIndex].id // Mostrar solo el id del evento
                     },
                   },
+                  maintainAspectRatio: false,
+                  responsive: true,
                 }}
               />
             </div>
