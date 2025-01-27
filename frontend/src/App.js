@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import VideoPlayer from "./components/VideoPlayer";
 import Charts from './components/New-charts.js';
 import MatchReportLeft from "./components/MatchReportLeft";
@@ -12,6 +12,7 @@ const App = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isPlayingFilteredEvents, setIsPlayingFilteredEvents] = useState(false);
+  const videoRef = useRef(null);
 
   const handleEventClick = (event) => {
     console.log("Event data1:", event.SEGUNDO, event.DURACION);
@@ -24,6 +25,7 @@ const App = () => {
       );
       setTempTime(event.SEGUNDO || 0);
       setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
+      setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
     }, 10); // Espera un breve momento antes de establecer el tiempo correcto
   };
 
@@ -48,6 +50,7 @@ const App = () => {
         );
         setTempTime(event.SEGUNDO || 0);
         setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
+        setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
       }, 10); // Espera un breve momento antes de establecer el tiempo correcto
     } else {
       setIsPlayingFilteredEvents(false);
@@ -103,6 +106,7 @@ const App = () => {
           }}
         >
           <VideoPlayer
+            ref={videoRef}
             src={videoSrc}
             tempTime={tempTime}
             duration={duration}

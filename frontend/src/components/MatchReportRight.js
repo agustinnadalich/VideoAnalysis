@@ -43,9 +43,9 @@ const MatchReportRight = ({ data }) => {
             )
             .reduce((sum, event) => sum + (event["PUNTOS (VALOR)"] || 0), 0);
 
-    console.log(
-      `Category: ${category}, Our Team: ${ourTeamData}, Rival Team: ${rivalTeamData}`
-    ); // Verifica los datos procesados
+    // console.log(
+    //   `Category: ${category}, Our Team: ${ourTeamData}, Rival Team: ${rivalTeamData}`
+    // ); // Verifica los datos procesados
 
     return {
       labels: [category],
@@ -81,9 +81,9 @@ const MatchReportRight = ({ data }) => {
       (event) => event.CATEGORÍA === "FALLO" && event.EQUIPO === "RIVAL"
     ).length;
 
-    console.log(
-      `Penales - Our Team: ${ourTeamPenales}, Rival Team: ${rivalTeamPenales}`
-    ); // Verifica los datos procesados
+    // console.log(
+    //   `Penales - Our Team: ${ourTeamPenales}, Rival Team: ${rivalTeamPenales}`
+    // ); // Verifica los datos procesados
 
     return {
       labels: ["FALLO"],
@@ -108,7 +108,7 @@ const MatchReportRight = ({ data }) => {
     const persaCount = data.filter(event => event.CATEGORÍA === 'PERSA').length;
     const ricuperataCount = data.filter(event => event.CATEGORÍA === 'RICUPERATA').length;
 
-    console.log(`Turnovers - PERSA: ${persaCount}, RICUPERATA: ${ricuperataCount}`);  // Verifica los datos procesados
+    // console.log(`Turnovers - PERSA: ${persaCount}, RICUPERATA: ${ricuperataCount}`);  // Verifica los datos procesados
 
     return {
       labels: ['TURNOVERS'],
@@ -144,9 +144,9 @@ const MatchReportRight = ({ data }) => {
       (event) => event.CATEGORÍA === "BREAK" && event.EQUIPO === "RIVAL"
     ).length;
 
-    console.log(
-      `Quiebres - Our Team: ${ourTeamBreaks}, Rival Team: ${rivalTeamBreaks}`
-    ); // Verifica los datos procesados
+    // console.log(
+    //   `Quiebres - Our Team: ${ourTeamBreaks}, Rival Team: ${rivalTeamBreaks}`
+    // ); // Verifica los datos procesados
 
     return {
       labels: ["BREAK"],
@@ -203,9 +203,9 @@ const MatchReportRight = ({ data }) => {
           event["RESULTADO LINE"] === "SPORCA")
     ).length;
 
-    console.log(
-      `Formaciones Fijas - Our Team: ${ourTeamFormaciones}, Rival Team: ${rivalTeamFormaciones}, Our Team Vinta: ${ourTeamVinta}, Rival Team Vinta: ${rivalTeamVinta}`
-    ); // Verifica los datos procesados
+    // console.log(
+    //   `Formaciones Fijas - Our Team: ${ourTeamFormaciones}, Rival Team: ${rivalTeamFormaciones}, Our Team Vinta: ${ourTeamVinta}, Rival Team Vinta: ${rivalTeamVinta}`
+    // ); // Verifica los datos procesados
 
     return {
       labels: ["FORMACIONES FIJAS"],

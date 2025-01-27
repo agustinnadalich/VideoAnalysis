@@ -14,7 +14,7 @@ const MatchReportLeft = ({ data }) => {
       ? data.filter(event => event.CATEGORÍA === category && event.EQUIPO === 'RIVAL' && event['PUNTOS (VALOR)'] === value).length
       : data.filter(event => event.CATEGORÍA === category && event.EQUIPO === 'RIVAL').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
 
-    console.log(`Category: ${category}, Our Team: ${ourTeamData}, Rival Team: ${rivalTeamData}`);  // Verifica los datos procesados
+    // console.log(`Category: ${category}, Our Team: ${ourTeamData}, Rival Team: ${rivalTeamData}`);  // Verifica los datos procesados
 
     return {
       labels: [category],
@@ -41,7 +41,7 @@ const MatchReportLeft = ({ data }) => {
     const rivalTeamConverted = data.filter(event => event.CATEGORÍA === 'PALI' && event.EQUIPO === 'RIVAL' && event.PALOS === 'CONVERTITO').length;
     const rivalTeamTotal = data.filter(event => event.CATEGORÍA === 'PALI' && event.EQUIPO === 'RIVAL').length;
 
-    console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Rival Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
+    // console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Rival Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
 
     return {
       labels: ['PALI'],
@@ -71,7 +71,7 @@ const MatchReportLeft = ({ data }) => {
     const ourTeamPercentage = Math.round((ourTeamAttackTime / totalTime) * 100);
     const rivalTeamPercentage = Math.round((rivalTeamDefenseTime / totalTime) * 100);
 
-    console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Rival Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
+    // console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Rival Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
 
     return {
       labels: ['POSESIÓN DEL BALÓN'],
@@ -96,7 +96,7 @@ const MatchReportLeft = ({ data }) => {
     const ourTeamTackles = data.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.EQUIPO === 'SAN BENEDETTO').length;
     const rivalTeamTackles = data.filter(event => event.CATEGORÍA === 'PLACCAGGIO' && event.EQUIPO === 'RIVAL').length;
 
-    console.log(`Tackles - Our Team: ${ourTeamTackles}, Rival Team: ${rivalTeamTackles}`);  // Verifica los datos procesados
+    // console.log(`Tackles - Our Team: ${ourTeamTackles}, Rival Team: ${rivalTeamTackles}`);  // Verifica los datos procesados
 
     return {
       labels: ['PLACCAGGIO'],

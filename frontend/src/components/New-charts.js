@@ -102,7 +102,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         types.length ? types.includes(event.CATEGORÍA) : true
       );
 
-      console.log("Filtered Events:", filteredEvents);
+      // console.log("Filtered Events:", filteredEvents);
 
       const tackleEvents = filteredEvents.filter(
         (event) => event.CATEGORÍA === "PLACCAGGIO"
@@ -342,8 +342,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       setTimelineData(timelineData);
       setScatterData(scatterData);
       setFilteredEvents(filteredEvents);
-      console.log("Filtered Events:", filteredEvents);
-      console.log("Timeline Data:", timelineData);
+      // console.log("Filtered Events:", filteredEvents);
+      // console.log("Timeline Data:", timelineData);
     },
     [filterType, filterDescriptors, filterResult]
   );
@@ -409,10 +409,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
   const handleEventClick = useCallback(
     (event) => {
-      console.log("Event dataC:", event.SEGUNDO);
+      // console.log("Event dataC:", event.SEGUNDO);
       const startTime = event.SEGUNDO;
       const duration = event.DURACION; // 5 segundos de duración
-      console.log("Setting tempTime and durationC:", startTime, duration);
+      // console.log("Setting tempTime and durationC:", startTime, duration);
       onEventClick({
         ...event,
         startTime,
@@ -451,7 +451,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const index = elements[0].index;
       const clickedEventLabel = chart.data.labels[index];
 
-      console.log("Clicked Event Label:", clickedEventLabel);
+      // console.log("Clicked Event Label:", clickedEventLabel);
 
       // Buscar todos los eventos correspondientes al grupo seleccionado
       const clickedEvents = events.filter(
@@ -459,7 +459,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       );
 
       if (clickedEvents.length > 0) {
-        console.log("Clicked Events:", clickedEvents);
+        // console.log("Clicked Events:", clickedEvents);
 
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
@@ -467,7 +467,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
 
-        console.log("Updated Events:", updatedEvents);
+        // console.log("Updated Events:", updatedEvents);
 
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
         updateCharts(
@@ -492,13 +492,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const index = elements[0].index;
       const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
 
-      console.log("Clicked Event ID:", clickedEventId);
+      // console.log("Clicked Event ID:", clickedEventId);
 
       // Buscar el evento completo utilizando el ID
       const clickedEvent = events.find((event) => event.ID === clickedEventId);
 
       if (clickedEvent) {
-        console.log("Clicked Event:", clickedEvent);
+        // console.log("Clicked Event:", clickedEvent);
 
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
@@ -506,7 +506,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         );
         const updatedEvents = isAlreadySelected ? events : [clickedEvent];
 
-        console.log("Updated Events:", updatedEvents);
+        // console.log("Updated Events:", updatedEvents);
 
         // Usar updateCharts para actualizar los gráficos con el evento seleccionado
         updateCharts(
@@ -545,12 +545,12 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   };
 
   useEffect(() => {
-    console.log("Events loaded:", events); // Verifica que los eventos se carguen correctamente
+    // console.log("Events loaded:", events); // Verifica que los eventos se carguen correctamente
   }, [events]);
 
   const handleTimelineClick = (event, elements) => {
-    console.log("handleTimelineClick called"); // Verifica que la función se llame
-    console.log("Events:", events); // Verifica que los eventos estén disponibles
+    // console.log("handleTimelineClick called"); // Verifica que la función se llame
+    // console.log("Events:", events); // Verifica que los eventos estén disponibles
 
     if (elements.length > 0) {
       const chart = elements[0].element.$context.chart;
@@ -558,19 +558,19 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const index = elements[0].index;
       const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
 
-      console.log("Clicked Event ID:", clickedEventId);
+      // console.log("Clicked Event ID:", clickedEventId);
 
       // Buscar el evento completo utilizando el ID
       const clickedEvent = events.find((event) => event.ID === clickedEventId);
 
       if (clickedEvent) {
-        console.log("Clicked Event:", clickedEvent);
-        console.log("Clicked Event:", clickedEvent.CATEGORÍA);
+        // console.log("Clicked Event:", clickedEvent);
+        // console.log("Clicked Event:", clickedEvent.CATEGORÍA);
 
         // Filtrar todos los eventos de la misma categoría
         // const filteredEvents = events.filter(event => event.CATEGORÍA === clickedEvent.CATEGORÍA);
 
-        console.log("Filtered Events:", filteredEvents);
+        // console.log("Filtered Events:", filteredEvents);
 
         // Usar updateCharts para actualizar los gráficos con los eventos filtrados
         updateCharts(
@@ -594,7 +594,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
         const category = yScale.getLabelForValue(yValue);
-        console.log("Clicked category:", category); // Agrega este console.log para depurar
+        // // console.log("Clicked category:", category); // Agrega este console.log para depurar
 
         if (category) {
           // Verificar si ya estamos filtrando por esta categoría
@@ -604,16 +604,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
           if (isAlreadyFiltered) {
             // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
-            console.log("Removing filter for category:", category);
+            // console.log("Removing filter for category:", category);
             updateCharts(events, filterType, filterDescriptors, filterResult);
             setFilteredEvents(events);
           } else {
             // Si no, filtrar por la nueva categoría
-            console.log("All events:", events); // Agrega este console.log para ver todos los eventos
+            // // console.log("All events:", events); // Agrega este console.log para ver todos los eventos
             const filtered = events.filter(
               (event) => event.CATEGORÍA === category
             );
-            console.log("Filtered events:", filtered); // Agrega este console.log para depurar
+            // // console.log("Filtered events:", filtered); // Agrega este console.log para depurar
 
             if (filtered.length > 0) {
               // Usar updateCharts para actualizar los gráficos con los eventos filtrados
@@ -646,7 +646,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         if (yScale) {
           const yValue = yScale.getValueForPixel(event.y);
           const category = yScale.getLabelForValue(yValue);
-          console.log("Clicked category:", category); // Agrega este console.log para depurar
+          // // console.log("Clicked category:", category); // Agrega este console.log para depurar
           if (category) {
             handleTimelineClick(event, []);
           }

@@ -1,67 +1,48 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
+import './VideoPlayer.css'; // Importa el archivo CSS
 
-const VideoPlayer = ({ src, tempTime, duration, onEnd, isPlayingFilteredEvents }) => {
-    const videoRef = useRef(null);
+const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd }, ref) => {
+  const videoRef = useRef(null);
 
-    useEffect(() => {
-        const video = videoRef.current;
-        let timeout;
+  useImperativeHandle(ref, () => ({
+    get current() {
+      return videoRef.current;
+    }
+  }));
 
-        const handleTimeUpdate = () => {
-            if (video && video.currentTime >= tempTime + duration && isPlayingFilteredEvents) {                
-                video.pause();
-                if (onEnd) {
-                    onEnd();
-                }
-            }
-        };
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = tempTime;
+      if (isPlayingFilteredEvents) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    }
+  }, [tempTime, isPlayingFilteredEvents]);
 
-        const handlePlay = () => {
-            if (!isPlayingFilteredEvents) {
-                isPlayingFilteredEvents = false;
-            }            
-        };
-
-        const playVideo = async () => {
-            if (video && tempTime !== null) {
-                try {
-                    video.currentTime = tempTime;
-                    await video.play();
-                    timeout = setTimeout(() => {                        
-                        video.pause();
-                        if (onEnd) {
-                            onEnd();
-                        }
-                    }, duration * 1000);
-                } catch (error) {
-                    console.error('Error playing video:', error);
-                }
-            }
-        };
-
-        if (video) {
-            video.addEventListener('timeupdate', handleTimeUpdate);
-            video.addEventListener('play', handlePlay);
-
+  const handlePiP = async () => {
+    const video = videoRef.current;
+    if (video) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
         }
+      } catch (error) {
+        console.error('Error with Picture-in-Picture:', error);
+      }
+    }
+  };
 
-        playVideo();
-
-        return () => {
-            if (video) {
-                video.removeEventListener('timeupdate', handleTimeUpdate);
-            }
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-        };
-    }, [tempTime, duration, isPlayingFilteredEvents, onEnd]);
-
-    return (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-            <video ref={videoRef} src={src} controls width="600" />
-        </div>
-    );
-};
+  return (
+    <div className="video-container">
+      <video ref={videoRef} src={src} controls width="600" />
+      <button className="pip-button" onClick={handlePiP}>Picture-in-Picture</button>
+    </div>
+  );
+});
 
 export default VideoPlayer;
