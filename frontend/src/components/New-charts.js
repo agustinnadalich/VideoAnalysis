@@ -15,6 +15,11 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import HeatMap from "./HeatMap"; // Importa el componente HeatMap
+import { Chart, registerables } from "chart.js";
+import zoomPlugin from "chartjs-plugin-zoom";
+
+Chart.register(...registerables);
+Chart.register(zoomPlugin);
 
 ChartJS.register(
   CategoryScale,
@@ -58,16 +63,43 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [isFiltersVisible, setIsFiltersVisible] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState([]);
 
-  const columnsToInclude = ['ID','ENCUADRE', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORÍA', 'JUGADOR', 'SECTOR','COORDENADA X', 'COORDENADA Y', 'AVANCE'];
-  const columnsToTooltip = ['EQUIPO', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PALOS' ]
-
-
+  const columnsToInclude = [
+    "ID",
+    "ENCUADRE",
+    "FECHA",
+    "RIVAL",
+    "EQUIPO",
+    "CATEGORÍA",
+    "JUGADOR",
+    "SECTOR",
+    "COORDENADA X",
+    "COORDENADA Y",
+    "AVANCE",
+  ];
+  const columnsToTooltip = [
+    "EQUIPO",
+    "JUGADOR",
+    "RESULTADO SCRUM",
+    "AVANCE",
+    "RESULTADO LINE",
+    "CANTIDAD LINE",
+    "POSICION LINE",
+    "TIRADOR LINE",
+    "TIPO QUIEBRE",
+    "CANAL QUIEBRE",
+    "PERDIDA",
+    "TIPO DE INFRACCIÓN",
+    "TIPO DE PIE",
+    "ENCUADRE",
+    "TIEMPO RUCK",
+    "PUNTOS",
+    "PALOS",
+  ];
 
   const updateCharts = useCallback(
     (events, types, descriptors, result) => {
-      const filteredEvents = events.filter(
-        (event) =>
-          (types.length ? types.includes(event.CATEGORÍA) : true)
+      const filteredEvents = events.filter((event) =>
+        types.length ? types.includes(event.CATEGORÍA) : true
       );
 
       console.log("Filtered Events:", filteredEvents);
@@ -134,7 +166,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Tackles Negativos",
             data: playerLabels.map((player) => {
               const count = tackleEvents.filter(
-                (event) => event.JUGADOR === player && event.AVANCE === "NEGATIVO"
+                (event) =>
+                  event.JUGADOR === player && event.AVANCE === "NEGATIVO"
               ).length;
               return {
                 x: player,
@@ -162,7 +195,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Tackles Positivos",
             data: playerLabels.map((player) => {
               const count = tackleEvents.filter(
-                (event) => event.JUGADOR === player && event.AVANCE === "POSITIVO"
+                (event) =>
+                  event.JUGADOR === player && event.AVANCE === "POSITIVO"
               ).length;
               return {
                 x: player,
@@ -184,7 +218,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Tackles Errados",
             data: playerLabels.map((player) => {
               const count = events.filter(
-                (event) => event.JUGADOR === player && event.CATEGORÍA === 'PLAC-SBAGLIATTO' && event.EQUIPO !== 'RIVAL').length;
+                (event) =>
+                  event.JUGADOR === player &&
+                  event.CATEGORÍA === "PLAC-SBAGLIATTO" &&
+                  event.EQUIPO !== "RIVAL"
+              ).length;
               return {
                 x: player,
                 y: count,
@@ -198,14 +236,20 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
       setChartMissedData(barMissedData);
 
-      const uniqueCategories = [...new Set(events.map(event => event.CATEGORÍA))].filter(category => category !== 'FIN');
+      const uniqueCategories = [
+        ...new Set(events.map((event) => event.CATEGORÍA)),
+      ].filter((category) => category !== "FIN");
       const colors = uniqueCategories.reduce((acc, category, index) => {
-        const color = `hsl(${index * 360 / uniqueCategories.length}, 70%, 50%)`;
+        const color = `hsl(${
+          (index * 360) / uniqueCategories.length
+        }, 70%, 50%)`;
         acc[category] = color;
         return acc;
       }, {});
 
-      const filteredCategories = [...new Set(filteredEvents.map(event => event.CATEGORÍA))];
+      const filteredCategories = [
+        ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+      ];
 
       const timelineData = {
         labels: filteredCategories,
@@ -214,10 +258,18 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           data: filteredEvents
             .filter((event) => event.CATEGORÍA === category)
             .map((event) => {
-                let descriptor = "";
-                columnsToTooltip.forEach(column => {
-                if (event[column] !== null && event[column] !== '' && event[column] !== 'N/A' && column !== 'SEGUNDO' && column !== 'DURACION') {
-                  descriptor += `${descriptor ? ', ' : ''}${column}: ${event[column]}`;
+              let descriptor = "";
+              columnsToTooltip.forEach((column) => {
+                if (
+                  event[column] !== null &&
+                  event[column] !== "" &&
+                  event[column] !== "N/A" &&
+                  column !== "SEGUNDO" &&
+                  column !== "DURACION"
+                ) {
+                  descriptor += `${descriptor ? ", " : ""}${column}: ${
+                    event[column]
+                  }`;
                 }
               });
               return {
@@ -225,8 +277,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
                 y: category,
                 id: event.ID,
                 descriptor: descriptor,
-                SEGUNDO: event['SEGUNDO'],
-                DURACION: event['DURACION'],
+                SEGUNDO: event["SEGUNDO"],
+                DURACION: event["DURACION"],
               };
             }),
           backgroundColor: colors[category],
@@ -239,33 +291,46 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         plugins: {
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const data = context.raw;
                 return data.descriptor;
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       };
 
       const scatterData = {
         datasets: filteredEvents
-          .filter(event => {
-            const x = parseFloat(event['COORDENADA X']);
-            const y = parseFloat(event['COORDENADA Y']);
-            return !isNaN(x) && !isNaN(y) && 
-              event.CATEGORÍA !== "DIFESA" && event.CATEGORÍA !== "ATTACCO" && event.CATEGORÍA !== "PARTITA TAGLIATA";
+          .filter((event) => {
+            const x = parseFloat(event["COORDENADA X"]);
+            const y = parseFloat(event["COORDENADA Y"]);
+            return (
+              !isNaN(x) &&
+              !isNaN(y) &&
+              event.CATEGORÍA !== "DIFESA" &&
+              event.CATEGORÍA !== "ATTACCO" &&
+              event.CATEGORÍA !== "PARTITA TAGLIATA"
+            );
           })
           .map((event) => {
-            let descriptor = event['TIEMPO(VIDEO)'];
-            columnsToTooltip.forEach(column => {
+            let descriptor = event["TIEMPO(VIDEO)"];
+            columnsToTooltip.forEach((column) => {
               if (event[column] !== null) {
                 descriptor += `, ${column}: ${event[column]}`;
               }
             });
             return {
               label: `${event.CATEGORÍA}`,
-              data: [{ x: Number(event['COORDENADA Y']), y: Number(event['COORDENADA X']), category: event.CATEGORÍA, id: event.ID, descriptor: descriptor }],
+              data: [
+                {
+                  x: Number(event["COORDENADA Y"]),
+                  y: Number(event["COORDENADA X"]),
+                  category: event.CATEGORÍA,
+                  id: event.ID,
+                  descriptor: descriptor,
+                },
+              ],
               backgroundColor: colors[event.CATEGORÍA],
             };
           }),
@@ -287,21 +352,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     try {
       const response = await getEvents();
       if (response.data && Array.isArray(response.data)) {
-        const allEvents = response.data.map(event => ({
+        const allEvents = response.data.map((event) => ({
           ...event,
-          'COORDENADA X': parseFloat(event['COORDENADA X']),
-          'COORDENADA Y': parseFloat(event['COORDENADA Y']),
-          'SEGUNDO': event['SEGUNDO'], // Asegúrate de que estos campos estén presentes
-          'DURACION': event['DURACION'], // Asegúrate de que estos campos estén presentes
+          "COORDENADA X": parseFloat(event["COORDENADA X"]),
+          "COORDENADA Y": parseFloat(event["COORDENADA Y"]),
+          SEGUNDO: event["SEGUNDO"], // Asegúrate de que estos campos estén presentes
+          DURACION: event["DURACION"], // Asegúrate de que estos campos estén presentes
         }));
         setEvents(allEvents);
         setFilteredEvents(allEvents);
-        updateCharts(
-          allEvents,
-          filterType,
-          filterDescriptors,
-          filterResult
-        );
+        updateCharts(allEvents, filterType, filterDescriptors, filterResult);
       } else {
         console.error("Unexpected response format:", response);
         setError("Unexpected response format");
@@ -353,7 +413,12 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const startTime = event.SEGUNDO;
       const duration = event.DURACION; // 5 segundos de duración
       console.log("Setting tempTime and durationC:", startTime, duration);
-      onEventClick({ ...event, startTime, duration, isPlayingFilteredEvents: false });
+      onEventClick({
+        ...event,
+        startTime,
+        duration,
+        isPlayingFilteredEvents: false,
+      });
     },
     [onEventClick]
   );
@@ -385,24 +450,33 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
       const clickedEventLabel = chart.data.labels[index];
-  
+
       console.log("Clicked Event Label:", clickedEventLabel);
-  
+
       // Buscar todos los eventos correspondientes al grupo seleccionado
-      const clickedEvents = events.filter(event => event.JUGADOR === clickedEventLabel);
-  
+      const clickedEvents = events.filter(
+        (event) => event.JUGADOR === clickedEventLabel
+      );
+
       if (clickedEvents.length > 0) {
         console.log("Clicked Events:", clickedEvents);
-  
+
         // Alternar el filtrado de eventos
-        const isAlreadySelected = selectedEvents.some(event => event.JUGADOR === clickedEventLabel);
+        const isAlreadySelected = selectedEvents.some(
+          (event) => event.JUGADOR === clickedEventLabel
+        );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
-  
+
         console.log("Updated Events:", updatedEvents);
-  
+
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
-        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
-  
+        updateCharts(
+          updatedEvents,
+          filterType,
+          filterDescriptors,
+          filterResult
+        );
+
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
       } else {
@@ -410,44 +484,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       }
     }
   };
-  
-
-  const handleTimelineClick = (event, elements) => {
-  if (elements.length > 0) {
-    const chart = elements[0].element.$context.chart;
-    const datasetIndex = elements[0].datasetIndex;
-    const index = elements[0].index;
-    const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-    console.log("Clicked Event ID:", clickedEventId);
-
-    // Buscar el evento completo utilizando el ID
-    const clickedEvent = events.find(event => event.ID === clickedEventId);
-
-    if (clickedEvent) {
-      console.log("Clicked Event:", clickedEvent);
-
-      // Alternar el filtrado de eventos
-      const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
-      const updatedEvents = isAlreadySelected ? events : [clickedEvent];
-
-      console.log("Updated Events:", updatedEvents);
-
-      // Usar updateCharts para actualizar los gráficos con el evento seleccionado
-      updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
-
-      // Actualizar el estado de los eventos seleccionados
-      setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
-
-      // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
-      if (!isAlreadySelected) {
-        handleEventClick(clickedEvent);
-      }
-    } else {
-      console.error("Event not found with ID:", clickedEventId);
-    }
-  }
-};
 
   const handleScatterClick = (event, elements) => {
     if (elements.length > 0) {
@@ -455,27 +491,34 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
       const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-  
+
       console.log("Clicked Event ID:", clickedEventId);
-  
+
       // Buscar el evento completo utilizando el ID
-      const clickedEvent = events.find(event => event.ID === clickedEventId);
-  
+      const clickedEvent = events.find((event) => event.ID === clickedEventId);
+
       if (clickedEvent) {
         console.log("Clicked Event:", clickedEvent);
-  
+
         // Alternar el filtrado de eventos
-        const isAlreadySelected = selectedEvents.some(event => event.ID === clickedEventId);
+        const isAlreadySelected = selectedEvents.some(
+          (event) => event.ID === clickedEventId
+        );
         const updatedEvents = isAlreadySelected ? events : [clickedEvent];
-  
+
         console.log("Updated Events:", updatedEvents);
-  
+
         // Usar updateCharts para actualizar los gráficos con el evento seleccionado
-        updateCharts(updatedEvents, filterType, filterDescriptors, filterResult);
-  
+        updateCharts(
+          updatedEvents,
+          filterType,
+          filterDescriptors,
+          filterResult
+        );
+
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
-  
+
         // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected) {
           handleEventClick(clickedEvent);
@@ -501,10 +544,156 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     });
   };
 
-  const filteredCategories = [...new Set(filteredEvents.map(event => event.CATEGORÍA))];
+  useEffect(() => {
+    console.log("Events loaded:", events); // Verifica que los eventos se carguen correctamente
+  }, [events]);
+
+  const handleTimelineClick = (event, elements) => {
+    console.log("handleTimelineClick called"); // Verifica que la función se llame
+    console.log("Events:", events); // Verifica que los eventos estén disponibles
+
+    if (elements.length > 0) {
+      const chart = elements[0].element.$context.chart;
+      const datasetIndex = elements[0].datasetIndex;
+      const index = elements[0].index;
+      const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
+
+      console.log("Clicked Event ID:", clickedEventId);
+
+      // Buscar el evento completo utilizando el ID
+      const clickedEvent = events.find((event) => event.ID === clickedEventId);
+
+      if (clickedEvent) {
+        console.log("Clicked Event:", clickedEvent);
+        console.log("Clicked Event:", clickedEvent.CATEGORÍA);
+
+        // Filtrar todos los eventos de la misma categoría
+        // const filteredEvents = events.filter(event => event.CATEGORÍA === clickedEvent.CATEGORÍA);
+
+        console.log("Filtered Events:", filteredEvents);
+
+        // Usar updateCharts para actualizar los gráficos con los eventos filtrados
+        updateCharts(
+          filteredEvents,
+          filterType,
+          filterDescriptors,
+          filterResult
+        );
+
+        // Actualizar el estado de los eventos seleccionados
+        setSelectedEvents(filteredEvents);
+
+        // Iniciar la reproducción del video del evento seleccionado
+        handleEventClick(clickedEvent);
+      } else {
+        console.error("Event not found with ID:", clickedEventId);
+      }
+    } else {
+      // Manejar clics en las etiquetas del eje de la categoría
+      const yScale = event.chart.scales.y;
+      if (yScale) {
+        const yValue = yScale.getValueForPixel(event.y);
+        const category = yScale.getLabelForValue(yValue);
+        console.log("Clicked category:", category); // Agrega este console.log para depurar
+
+        if (category) {
+          // Verificar si ya estamos filtrando por esta categoría
+          const isAlreadyFiltered =
+            filteredEvents.length > 0 &&
+            filteredEvents[0].CATEGORÍA === category;
+
+          if (isAlreadyFiltered) {
+            // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
+            console.log("Removing filter for category:", category);
+            updateCharts(events, filterType, filterDescriptors, filterResult);
+            setFilteredEvents(events);
+          } else {
+            // Si no, filtrar por la nueva categoría
+            console.log("All events:", events); // Agrega este console.log para ver todos los eventos
+            const filtered = events.filter(
+              (event) => event.CATEGORÍA === category
+            );
+            console.log("Filtered events:", filtered); // Agrega este console.log para depurar
+
+            if (filtered.length > 0) {
+              // Usar updateCharts para actualizar los gráficos con los eventos filtrados
+              updateCharts(
+                filtered,
+                filterType,
+                filterDescriptors,
+                filterResult
+              );
+
+              // Actualizar el estado de los eventos filtrados
+              setFilteredEvents(filtered);
+            } else {
+              console.error("No events found for category:", category);
+            }
+          }
+        }
+      } else {
+        console.error("y scale is not defined.");
+      }
+    }
+  };
+
+  const categoryClickPlugin = {
+    id: "categoryClick",
+    afterEvent(chart, args) {
+      const event = args.event;
+      if (event.type === "click") {
+        const yScale = chart.scales.y;
+        if (yScale) {
+          const yValue = yScale.getValueForPixel(event.y);
+          const category = yScale.getLabelForValue(yValue);
+          console.log("Clicked category:", category); // Agrega este console.log para depurar
+          if (category) {
+            handleTimelineClick(event, []);
+          }
+        } else {
+          console.error("y scale is not defined.");
+        }
+      }
+    },
+  };
+
+  ChartJS.register(categoryClickPlugin);
+
+  const uniqueCategories = [
+    ...new Set(events.map((event) => event.CATEGORÍA)),
+  ].filter((category) => category !== "FIN");
+  const colors = uniqueCategories.reduce((acc, category, index) => {
+    const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
+    acc[category] = color;
+    return acc;
+  }, {});
+
+  const filteredCategories = [
+    ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+  ];
 
   const timelineOptions = {
     onClick: handleTimelineClick,
+    onHover: (event, elements) => {
+      const chart = event.chart;
+      if (elements.length > 0) {
+        const element = elements[0];
+        const datasetIndex = element.datasetIndex;
+        const index = element.index;
+
+        // Aumentar el grosor de la barra al pasar el cursor
+        chart.data.datasets[datasetIndex].barThickness = 30;
+        chart.update();
+      } else {
+        // Restablecer el grosor de la barra cuando el cursor no está sobre ella
+        chart.data.datasets.forEach((dataset) => {
+          dataset.data.forEach((data) => {
+            dataset.barThickness = Math.max(20, 40 / filteredCategories.length);
+          });
+        });
+        chart.update();
+      }
+    },
     indexAxis: "y", // Configurar el gráfico de barras para que sea horizontal
     scales: {
       x: {
@@ -514,6 +703,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         title: {
           display: true,
           text: "Tiempo (segundos)",
+        },
+        ticks: {
+          callback: function (value, index, values) {
+            const hours = Math.floor(value / 3600);
+            const minutes = Math.floor((value % 3600) / 60);
+            const seconds = value % 60;
+            return `${hours > 0 ? hours + ":" : ""}${minutes}:${
+              seconds < 10 ? "0" : ""
+            }${seconds}`;
+          },
         },
       },
       y: {
@@ -525,6 +724,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         },
         ticks: {
           padding: 5, // Ajusta el espacio entre las etiquetas y las barras
+          callback: function (value, index, values) {
+            return filteredCategories[value]; // Mostrar las categorías originales
+          },
         },
         stacked: true, // Asegura que las barras se apilen correctamente
       },
@@ -532,11 +734,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     plugins: {
       tooltip: {
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             const data = context.raw;
             return data.descriptor;
-          }
-        }
+          },
+        },
       },
       legend: {
         display: false, // Quitar la leyenda
@@ -544,12 +746,33 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       datalabels: {
         display: false, // Quitar etiquetas de datos dentro de las barras
       },
+      categoryClick: {},
+      zoom: {
+        pan: {
+          enabled: true,
+          modifierKey: "shift",
+          mode: "x",
+        },
+        zoom: {
+          wheel: {
+            enabled: true, // Deshabilitar el zoom con la rueda del ratón
+            modifierKey: "shift", // Habilitar el zoom con la rueda del ratón + tecla Shift
+            speed: 0.05, // Ajustar la velocidad del zoom
+          },
+          pinch: {
+            enabled: true, // Habilitar el zoom por pellizco
+          },
+          mode: "x",
+          drag: {
+            enabled: true,
+            modifierKey: "alt", // Habilitar el arrastre con la tecla Ctrl
+          },
+        },
+      },
     },
     maintainAspectRatio: false,
     responsive: true,
     barThickness: Math.max(20, 40 / filteredCategories.length), // Ajusta el grosor de las barras dinámicamente
-    // categoryPercentage: 1, // Asegura que las barras ocupen todo el espacio de la categoría
-    // barPercentage: 0.5, // Asegura que las barras ocupen todo el espacio disponible dentro de la categoría
   };
 
   return (
@@ -558,17 +781,24 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     >
       {error ? (
         <p>{error}</p>
-      ) : chartTacklesData && chartMissedData && pieData && timelineData && scatterData ? (
+      ) : chartTacklesData &&
+        chartMissedData &&
+        pieData &&
+        timelineData &&
+        scatterData ? (
         <>
-          
-          <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-          <div style={{ width: "3000px", 
-            height: `${Math.max(150, filteredCategories.length * 30)}px` 
-            }}> {/* Ajusta el ancho y la altura según sea necesario */}
-          <Bar
-                data={timelineData}
-                options={timelineOptions}
-              />
+          <div
+            style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}
+          >
+            <div
+              style={{
+                width: "1500px",
+                height: `${Math.max(150, filteredCategories.length * 30)}px`,
+              }}
+            >
+              {" "}
+              {/* Ajusta el ancho y la altura según sea necesario */}
+              <Bar data={timelineData} options={timelineOptions} />
             </div>
           </div>
           <div
@@ -659,7 +889,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             </div>
           </div>
 
-          
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <Scatter
               data={scatterData}
@@ -786,56 +1015,56 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             ))}
           </ul> */}
           <h1>Eventos</h1>
-      <table className="styled-table">
-        <thead>
-          <tr>
-            {columnsToInclude.map((col) => (
-              <th key={col}>{col}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEvents.map((event, index) => (
-            <tr key={index} onClick={() => handleEventClick(event)}>
-              {columnsToInclude.map((col) => (
-                <td key={col}>{event[col]}</td>
+          <table className="styled-table">
+            <thead>
+              <tr>
+                {columnsToInclude.map((col) => (
+                  <th key={col}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEvents.map((event, index) => (
+                <tr key={index} onClick={() => handleEventClick(event)}>
+                  {columnsToInclude.map((col) => (
+                    <td key={col}>{event[col]}</td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <style jsx>{`
-        .styled-table {
-          border-collapse: collapse;
-          margin: 25px 0;
-          font-size: 0.9em;
-          font-family: 'Arial', sans-serif;
-          min-width: 400px;
-          box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-        }
-        .styled-table thead tr {
-          background-color: #009879;
-          color: #ffffff;
-          text-align: left;
-        }
-        .styled-table th,
-        .styled-table td {
-          padding: 12px 15px;
-        }
-        .styled-table tbody tr {
-          border-bottom: 1px solid #dddddd;
-        }
-        .styled-table tbody tr:nth-of-type(even) {
-          background-color: #f3f3f3;
-        }
-        .styled-table tbody tr:last-of-type {
-          border-bottom: 2px solid #009879;
-        }
-        .styled-table tbody tr.active-row {
-          font-weight: bold;
-          color: #009879;
-        }
-      `}</style>
+            </tbody>
+          </table>
+          <style jsx>{`
+            .styled-table {
+              border-collapse: collapse;
+              margin: 25px 0;
+              font-size: 0.9em;
+              font-family: "Arial", sans-serif;
+              min-width: 400px;
+              box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            }
+            .styled-table thead tr {
+              background-color: #009879;
+              color: #ffffff;
+              text-align: left;
+            }
+            .styled-table th,
+            .styled-table td {
+              padding: 12px 15px;
+            }
+            .styled-table tbody tr {
+              border-bottom: 1px solid #dddddd;
+            }
+            .styled-table tbody tr:nth-of-type(even) {
+              background-color: #f3f3f3;
+            }
+            .styled-table tbody tr:last-of-type {
+              border-bottom: 2px solid #009879;
+            }
+            .styled-table tbody tr.active-row {
+              font-weight: bold;
+              color: #009879;
+            }
+          `}</style>
         </>
       ) : (
         <p>Loading...</p>
