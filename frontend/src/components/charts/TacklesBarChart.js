@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
 
-const TacklesBarChart = ({ events, filterType, filterDescriptors, filterResult, handleChartClick }) => {
+const TacklesBarChart = ({ events, onChartClick }) => {
   const tackleEvents = events.filter(
     (event) => event.CATEGORÍA === "PLACCAGGIO"
   );
@@ -10,7 +10,7 @@ const TacklesBarChart = ({ events, filterType, filterDescriptors, filterResult, 
     ...new Set(tackleEvents.map((event) => event.JUGADOR)),
   ].sort((a, b) => a - b);
 
-  const chartTacklesData = {
+  const barChartData = {
     labels: playerLabels,
     datasets: [
       {
@@ -48,7 +48,11 @@ const TacklesBarChart = ({ events, filterType, filterDescriptors, filterResult, 
     ],
   };
 
-  const chartTacklesOptions = {
+  const handleChartClick = (event, elements) => {
+    onChartClick(event, elements, "player");
+  };
+
+  const barChartOptions = {
     responsive: true,
     plugins: {
       legend: {
@@ -83,7 +87,7 @@ const TacklesBarChart = ({ events, filterType, filterDescriptors, filterResult, 
     onClick: handleChartClick,
   };
 
-  return <Bar data={chartTacklesData} options={chartTacklesOptions} />;
+  return <Bar data={barChartData} options={barChartOptions} />;
 };
 
 export default TacklesBarChart;

@@ -9,7 +9,7 @@ import HeatMap from "./HeatMap"; // Importa el componente HeatMap
 import FilterContext from '../context/FilterContext';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
-import PieChart from './charts/PieChart';
+import TacklesPieChart from './charts/TacklesPieChart';
 import ScatterChart from './charts/ScatterChart';
 import TimelineChart from './charts/TimelineChart';
 
@@ -80,15 +80,10 @@ const columnsToInclude = [
 
 
 const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
-  const [chartTacklesData, setChartTacklesData] = useState(null);
-  const [chartMissedData, setChartMissedData] = useState(null); // Corrige el nombre aquí
   const { filterType, filterDescriptors, filterResult } = useContext(FilterContext);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
-  
-  
-  
 
 
   const uniqueCategories = [
@@ -146,31 +141,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
   }, [updateCharts, events, filterType, filterDescriptors, filterResult]);
 
   useEffect(() => {
-    const barTacklesData = {
-      labels: playerLabels,
-      datasets: ["NEGATIVO", "NEUTRO", "POSITIVO"].map((avance, index) => {
-        const colors = ["rgba(255, 99, 132, 0.6)", "rgba(201, 203, 207, 0.6)", "rgba(75, 192, 192, 0.6)"];
-        return {
-          label: `Tackles ${avance}`,
-          data: playerLabels.map((player) => {
-            const count = tackleEvents.filter(
-              (event) => event.JUGADOR === player && event.AVANCE === avance
-            ).length;
-            return {
-              x: player,
-              y: count,
-              id: player,
-            };
-          }),
-          backgroundColor: colors[index],
-        };
-      }),
-    };
-
-
-    setChartTacklesData(barTacklesData);
-
-
     fetchData();
   }, [fetchData, events, filterType, filterDescriptors, filterResult]);
 
@@ -197,31 +167,38 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
     
   );
 
-  const handleChartClick = (event, elements) => {
+  const handleChartClick = (event, elements, chartType) => {
     if (elements.length > 0) {
       const chart = elements[0].element.$context.chart;
-      const datasetIndex = elements[0].datasetIndex;
       const index = elements[0].index;
-      const clickedEventLabel = chart.data.labels[index];
-
-      // console.log("Clicked Event Label:", clickedEventLabel);
-
-      // Buscar todos los eventos correspondientes al grupo seleccionado
-      const clickedEvents = events.filter(
-        (event) => event.JUGADOR === clickedEventLabel
-      );
-
+      let clickedEvents = [];
+  
+      if (chartType === "tackle-advance") {
+        const clickedLabel = chart.data.labels[index];
+        clickedEvents = events.filter(
+          (event) => event.CATEGORÍA === "PLACCAGGIO" && event.AVANCE === clickedLabel
+        );
+      } else if (chartType === "player") {
+        const clickedLabel = chart.data.labels[index];
+        clickedEvents = events.filter(
+          (event) => event.JUGADOR === clickedLabel
+        );
+      } 
+      // else if (chartType === "scatter") {
+      //   const datasetIndex = elements[0].datasetIndex;
+      //   const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
+      //   clickedEvents = events.filter(
+      //     (event) => event.ID === clickedEventId
+      //   );
+      // }
+  
       if (clickedEvents.length > 0) {
-        // console.log("Clicked Events:", clickedEvents);
-
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
-          (event) => event.JUGADOR === clickedEventLabel
+          (event) => event.ID === clickedEvents[0].ID
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
-
-        // console.log("Updated Events:", updatedEvents);
-
+  
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
         updateCharts(
           updatedEvents,
@@ -229,11 +206,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
           filterDescriptors,
           filterResult
         );
-
+  
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
+  
+        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
+        if (!isAlreadySelected && clickedEvents.length === 1) {
+          onEventClick(clickedEvents[0]);
+        }
       } else {
-        console.error("Events not found with label:", clickedEventLabel);
+        console.error("No events found for the selected category and advance.");
       }
     }
   };
@@ -258,64 +240,27 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
     onEventClick(eventData);
   };
 
-  const handleScatterClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const datasetIndex = elements[0].datasetIndex;
-      const index = elements[0].index;
-      const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
-
-      // console.log("Clicked Event ID:", clickedEventId);
-
-      // Buscar el evento completo utilizando el ID
-      const clickedEvent = events.find((event) => event.ID === clickedEventId);
-
-      if (clickedEvent) {
-        // console.log("Clicked Event:", clickedEvent);
-
-        // Alternar el filtrado de eventos
-        const isAlreadySelected = selectedEvents.some(
-          (event) => event.ID === clickedEventId
-        );
-        const updatedEvents = isAlreadySelected ? events : [clickedEvent];
-
-        // console.log("Updated Events:", updatedEvents);
-
-        // Usar updateCharts para actualizar los gráficos con el evento seleccionado
-        updateCharts(
-          updatedEvents,
-          filterType,
-          filterDescriptors,
-          filterResult
-        );
-
-        // Actualizar el estado de los eventos seleccionados
-        setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
-
-        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
-        if (!isAlreadySelected) {
-          handleEventClick(clickedEvent);
-        }
-      } else {
-        console.error("Event not found with ID:", clickedEventId);
-      }
+  const handleScatterClick = (eventData) => {
+    if (eventData) {
+      onEventClick(eventData);
     }
-  };
+      
+      const updatedEvents = eventData ? [eventData] : events;
+
+  
+      updateCharts(
+        updatedEvents,
+        filterType,
+        filterDescriptors,
+        filterResult
+      );
+    };
 
   return (
-    <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
+    <div className="charts" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {error ? (
         <p>{error}</p>
-      ) : 
-        chartTacklesData
-        // chartMissedData &&
-        // pieData &&
-        // TimelineChart 
-        // &&
-        // scatterData 
-        ? (
+      ) : (
         <>
           <div
             style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}
@@ -326,7 +271,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
                 height: `${Math.max(150, filteredCategories.length * 30)}px`,
               }}
             >
-              <TimelineChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} onEventClick={handleTimelineClick} />
+              <TimelineChart               events={events}
+              filteredEvents={filteredEvents}
+              columnsToTooltip={columnsToTooltip}
+              colors={colors}
+              onEventClick={handleEventClick}
+              updateCharts={updateCharts}
+              filterType={filterType}
+              filterDescriptors={filterDescriptors}
+              filterResult={filterResult}
+              setFilteredEvents={setFilteredEvents}/>
 
               
             </div>
@@ -340,24 +294,24 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
             }}
           >
             <div style={{ width: "50%", marginBottom: "20px" }}>
-                      <TacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult} onEventClick={handleChartClick} />
+                      <TacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult}  onChartClick={handleChartClick} />
 
             </div>
 
             <div style={{ width: "50%", marginBottom: "20px" }}>
-                                    <MissedTacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult} onEventClick={handleChartClick} />
+                                    <MissedTacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult}  onChartClick={handleChartClick} />
 
             </div>
           </div>
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <div style={{ width: "40%" }}>
-            <PieChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult} onEventClick={handleChartClick}/>
+            <TacklesPieChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult} onChartClick={handleChartClick}/>
             </div>
           </div>
 
           <div style={{ width: "90%", marginBottom: "20px" }}>
 
-            <ScatterChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} onChartClick={handleScatterClick} width={800} height={600} />
+          <ScatterChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} setSelectedEvents={setSelectedEvents} selectedEvents={selectedEvents} onChartClick={handleChartClick} onEventClick={handleScatterClick} width={800} height={600} />
             
           </div>
           {/* <div style={{ width: "90%", marginBottom: "20px" }}>
@@ -468,8 +422,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
             }
           `}</style>
         </>
-      ) : (
-        <p>Loading...</p>
       )}
     </div>
   );

@@ -32,6 +32,10 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
     setMissedTacklesBarChartData(data);
   }, [events]);
 
+  const handleChartClick = (event, elements) => {
+    onChartClick(event, elements, "bar");
+  };
+
 
   const missedTacklesBarChartOptions = {
     responsive: true,
@@ -65,7 +69,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
       },
     },
     maintainAspectRatio: false,
-    onClick: onChartClick,
+    onClick: handleChartClick,
   };
 
   return missedTacklesBarChartData ? (

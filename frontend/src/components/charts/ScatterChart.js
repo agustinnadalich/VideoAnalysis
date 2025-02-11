@@ -1,7 +1,7 @@
 import React from 'react';
 import { Scatter } from 'react-chartjs-2';
 
-const ScatterChart = ({ events, columnsToTooltip, colors, handleScatterClick }) => {
+const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
   if (!events || events.length === 0 || !columnsToTooltip) {
     return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío
   }
@@ -45,6 +45,41 @@ const ScatterChart = ({ events, columnsToTooltip, colors, handleScatterClick }) 
         };
       }),
   };
+
+  const handleScatterClick = (event, elements) => {
+    if (elements.length > 0) {
+      const chart = elements[0].element.$context.chart;
+      const datasetIndex = elements[0].datasetIndex;
+      const index = elements[0].index;
+      const clickedEventId = chart.data.datasets[datasetIndex].data[index].id;
+  
+      // Buscar el evento completo utilizando el ID
+      const clickedEvent = events.find((event) => event.ID === clickedEventId);
+  
+      if (clickedEvent) {
+        // Alternar el filtrado de eventos
+        const isAlreadySelected = selectedEvents.some(
+          (event) => event.ID === clickedEventId
+        );
+        const updatedEvents = isAlreadySelected ? events : [clickedEvent];
+  
+        // Actualizar el estado de los eventos seleccionados
+        setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
+        
+  
+        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
+        if (!isAlreadySelected) {
+          onEventClick(clickedEvent);
+        } else {
+          // Si el evento ya estaba seleccionado, desfiltrar y actualizar los gráficos
+          onEventClick(null);
+        }
+      } else {
+        console.error("Event not found with ID:", clickedEventId);
+      }
+    }
+  };
+  
 
   const scatterChartOptions = {
     onClick: handleScatterClick,
