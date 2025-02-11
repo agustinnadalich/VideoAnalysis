@@ -1,0 +1,30 @@
+my-app/
+├── public/
+│   ├── index.html
+│   └── ...
+├── src/
+│   ├── assets/
+│   │   └── ... (imágenes, fuentes, etc.)
+│   ├── components/
+│   │   ├── Sidebar.js
+│   │   ├── NewCharts.js
+│   │   ├── charts/
+│   │   │   ├── BarChart.js
+│   │   │   ├── PieChart.js
+│   │   │   ├── ScatterChart.js
+│   │   │   ├── TimelineChart.js
+│   │   │   └── ... (otros tipos de gráficos)
+│   ├── context/
+│   │   ├── FilterContext.js
+│   │   └── FilterProvider.js
+│   ├── hooks/
+│   │   └── ... (custom hooks)
+│   ├── services/
+│   │   └── ... (llamadas a APIs, servicios)
+│   ├── styles/
+│   │   └── ... (archivos CSS o SASS)
+│   ├── utils/
+│   │   └── ... (funciones utilitarias)
+│   ├── App.js
+│   ├── index.js
+│   └── ... (otros archivos de configuración)
