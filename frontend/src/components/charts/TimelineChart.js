@@ -19,7 +19,7 @@ ChartJS.register(
   Legend
 );
 
-const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts, filterType, filterDescriptors, filterResult, setFilteredEvents }) => {
+const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts, filterCategory, filterDescriptors, setFilteredEvents }) => {
   if (!filteredEvents || filteredEvents.length === 0) {
     return null; // Manejar el caso donde filteredEvents es undefined o está vacío
   }
@@ -86,7 +86,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
 
           if (isAlreadyFiltered) {
             // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
-            updateCharts(events, filterType, filterDescriptors, filterResult);
+            updateCharts(events, filterCategory, filterDescriptors);
             setFilteredEvents(events);
           } else if (events) {
             // Si no, filtrar por la nueva categoría
@@ -98,9 +98,8 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
               // Usar updateCharts para actualizar los gráficos con los eventos filtrados
               updateCharts(
                 filtered,
-                filterType,
+                filterCategory,
                 filterDescriptors,
-                filterResult
               );
 
               // Actualizar el estado de los eventos filtrados

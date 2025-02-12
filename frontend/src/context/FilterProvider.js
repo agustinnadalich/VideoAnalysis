@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import FilterContext from './FilterContext';
 
 const FilterProvider = ({ children }) => {
-  const [filterType, setFilterType] = useState([]);
+  const [filterCategory, setFilterCategory] = useState([]);
   const [filterDescriptors, setFilterDescriptors] = useState([]);
-  const [filterResult, setFilterResult] = useState([]);
+  // const [filterValue, setFilterValue] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+
 
   return (
-    <FilterContext.Provider value={{ filterType, setFilterType, filterDescriptors, setFilterDescriptors, filterResult, setFilterResult }}>
+    <FilterContext.Provider value={{ filterCategory, setFilterCategory, filterDescriptors, setFilterDescriptors, selectedTeam, setSelectedTeam }}>
       {children}
     </FilterContext.Provider>
   );

@@ -108,7 +108,7 @@ const App = () => {
               height: "100vh",
             }}
           >
-            <Sidebar data={data} />
+            <Sidebar events={data} />
           </div>
         )}
         <div

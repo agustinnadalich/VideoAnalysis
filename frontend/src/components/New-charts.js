@@ -80,10 +80,11 @@ const columnsToInclude = [
 
 
 const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
-  const { filterType, filterDescriptors, filterResult } = useContext(FilterContext);
+  const { filterCategory, filterDescriptors, selectedTeam} = useContext(FilterContext);  
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
+
 
 
   const uniqueCategories = [
@@ -114,39 +115,67 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
       tackleEvents.filter((event) => event.AVANCE === result).length
   );
 
+
   
 
+  // const updateCharts = useCallback(
+  //   (events, categories, descriptors, value, team) => {
+  //     if (!events) return;
+  //     const filtered = events.filter(event => {
+  //       const categoryMatch = categories.length === 0 || categories.includes(event.CATEGORÍA);
+  //       const descriptorMatch = descriptors.length === 0 || descriptors.some(descriptor => event[descriptor] !== undefined);
+  //       const valueMatch = value.length === 0 || descriptors.some(descriptor => value.includes(event[descriptor]));
+  //       const teamMatch = !team || event.EQUIPO === team;
+        
+  //       return categoryMatch && descriptorMatch && valueMatch && teamMatch;
+  //     });
+      
+  //     console.log(team);
+  //     setFilteredEvents(filtered);
+  //   },
+  //   []
+  // );
+
+
   const updateCharts = useCallback(
-    (events, types, descriptors, result) => {
+    (events, categories, filters, team) => {
       if (!events) return;
       const filtered = events.filter(event => {
-        const typeMatch = types.length === 0 || types.includes(event.CATEGORÍA);
-        const descriptorMatch = descriptors.length === 0 || descriptors.some(descriptor => event[descriptor] !== undefined);
-        const resultMatch = result.length === 0 || result.includes(event.AVANCE);
-        return typeMatch && descriptorMatch && resultMatch;
+        const categoryMatch = categories.length === 0 || categories.includes(event.CATEGORÍA);
+        const filterMatch = filters.length === 0 || filters.every(filter => event[filter.descriptor] === filter.value);
+        const teamMatch = !team || event.EQUIPO === team;
+        
+        return categoryMatch && filterMatch && teamMatch;
       });
-
-      setFilteredEvents(filtered);
       
+      console.log(team);
+      setFilteredEvents(filtered);
     },
-    [filterType, filterDescriptors, filterResult]
+    []
   );
+  
 
   const fetchData = useCallback(async () => {
     try {
-      updateCharts(events, filterType, filterDescriptors, filterResult);
+      updateCharts(events, filterCategory, filterDescriptors, selectedTeam);
     } catch (error) {
       setError(error);
     }
-  }, [updateCharts, events, filterType, filterDescriptors, filterResult]);
+  }, [updateCharts, events, filterCategory, filterDescriptors, selectedTeam]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, events, filterType, filterDescriptors, filterResult]);
+  }, [fetchData, events, filterCategory, filterDescriptors, selectedTeam]);
 
   const filteredCategories = [
     ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
   ];
+
+  useEffect(() => {
+    updateCharts(events, filterCategory, filterDescriptors, selectedTeam);
+  }, [events, filterCategory, filterDescriptors, selectedTeam, updateCharts]);
+
+
 
   const handleEventClick = useCallback(
     (event) => {
@@ -202,9 +231,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
         updateCharts(
           updatedEvents,
-          filterType,
+          filterCategory,
           filterDescriptors,
-          filterResult
         );
   
         // Actualizar el estado de los eventos seleccionados
@@ -220,20 +248,20 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
     }
   };
 
-  const handleEventIdFilter = (eventId) => {
-    setFilteredEvents((prev) => {
-      if (prev.length === 1 && prev[0].id === eventId) {
-        // Si el filtro actual es el mismo evento, quitar el filtro
-        updateCharts(events, filterType, filterDescriptors, filterResult);
-        return events;
-      } else {
-        // Si no, filtrar por el nuevo evento
-        const filtered = events.filter((event) => event.id === eventId);
-        updateCharts(filtered, filterType, filterDescriptors, filterResult);
-        return filtered;
-      }
-    });
-  };
+  // const handleEventIdFilter = (eventId) => {
+  //   setFilteredEvents((prev) => {
+  //     if (prev.length === 1 && prev[0].id === eventId) {
+  //       // Si el filtro actual es el mismo evento, quitar el filtro
+  //       updateCharts(events, filterCategory, filterDescriptors, filterValue);
+  //       return events;
+  //     } else {
+  //       // Si no, filtrar por el nuevo evento
+  //       const filtered = events.filter((event) => event.id === eventId);
+  //       updateCharts(filtered, filterCategory, filterDescriptors, filterValue);
+  //       return filtered;
+  //     }
+  //   });
+  // };
 
 
   const handleTimelineClick = (eventData) => {
@@ -250,10 +278,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
   
       updateCharts(
         updatedEvents,
-        filterType,
-        filterDescriptors,
-        filterResult
-      );
+        filterCategory,
+        filterDescriptors
+            );
     };
 
   return (
@@ -277,9 +304,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
               colors={colors}
               onEventClick={handleEventClick}
               updateCharts={updateCharts}
-              filterType={filterType}
+              filterCategory={filterCategory}
               filterDescriptors={filterDescriptors}
-              filterResult={filterResult}
               setFilteredEvents={setFilteredEvents}/>
 
               
@@ -294,18 +320,18 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
             }}
           >
             <div style={{ width: "50%", marginBottom: "20px" }}>
-                      <TacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult}  onChartClick={handleChartClick} />
+                      <TacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors}  onChartClick={handleChartClick} />
 
             </div>
 
             <div style={{ width: "50%", marginBottom: "20px" }}>
-                                    <MissedTacklesBarChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult}  onChartClick={handleChartClick} />
+                                    <MissedTacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors}  onChartClick={handleChartClick} />
 
             </div>
           </div>
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <div style={{ width: "40%" }}>
-            <TacklesPieChart events={filteredEvents} filterType={filterType} filterDescriptors={filterDescriptors} filterResult={filterResult} onChartClick={handleChartClick}/>
+            <TacklesPieChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick}/>
             </div>
           </div>
 
@@ -330,7 +356,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
                   isMulti
                   options={typeOptions}
                   value={typeOptions.filter((option) =>
-                    filterType.includes(option.value)
+                    filterCategory.includes(option.value)
                   )}
                   onChange={handleTypeChange}
                 />
@@ -352,7 +378,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
                   isMulti
                   options={resultOptions}
                   value={resultOptions.filter((option) =>
-                    filterResult.includes(option.value)
+                    filterValue.includes(option.value)
                   )}
                   onChange={handleResultChange}
                 />
