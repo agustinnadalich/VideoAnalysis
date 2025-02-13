@@ -7,12 +7,12 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})  # Permitir solicitudes desde localhost:3000
 
 # Asegúrate de que el directorio de uploads exista
-UPLOAD_FOLDER = '/Users/Agustin/wa/videoanalisis/VideoAnalysis/frontend/public/'
+UPLOAD_FOLDER = '/app/uploads/'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Ruta del archivo Excel
-file_path = os.path.join(UPLOAD_FOLDER, 'Matriz San Benedetto 24-25 (TEST).xlsx')
+file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_24-25_(TEST).xlsx')
 
 # Lee el archivo Excel
 try:
