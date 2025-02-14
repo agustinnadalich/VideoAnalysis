@@ -67,6 +67,23 @@ const App = () => {
     }
   };
 
+  const handleStop = () => {
+    setIsPlayingFilteredEvents(false);
+  };
+
+  const handleNext = () => {
+    if (currentEventIndex < filteredEvents.length - 1) {
+      playNextEvent(filteredEvents, currentEventIndex + 1);
+      setCurrentEventIndex(currentEventIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentEventIndex > 0) {
+      playNextEvent(filteredEvents, currentEventIndex - 1);
+      setCurrentEventIndex(currentEventIndex - 1);
+    }
+  };
 
   useEffect(() => {
     fetch("http://localhost:5001/events")
@@ -184,6 +201,9 @@ const App = () => {
                       });
                     }
                   }}
+                  onStop={handleStop}
+                  onNext={handleNext}
+                  onPrevious={handlePrevious}
                 />
               </div>
               <div style={{ width: "25%", overflowY: "auto" }}>
