@@ -21,12 +21,12 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
   const [teamOptions, setTeamOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState([]);
 
-    // Inicializar filteredEvents con todos los eventos al cargar el componente
-    useEffect(() => {
-      setFilteredEvents(events);
-    }, [events, setFilteredEvents]);
+  // Inicializar filteredEvents con todos los eventos al cargar el componente
+  useEffect(() => {
+    setFilteredEvents(events);
+  }, [events, setFilteredEvents]);
 
-    console.log('Entrando a sidebar: ', filteredEvents ? filteredEvents.length : 0);
+  console.log('Entrando a sidebar: ', filteredEvents );
 
   const excludeKeys = [
     "COORDENADA X",
@@ -77,7 +77,6 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
   const handleCategoryChange = (selectedOptions) => {
     const selectedCategories = selectedOptions.map((option) => option.value);
     setFilterCategory(selectedCategories);
-    console.log("PASA POR AQUI");
 
     const filteredEvents =
       selectedCategories.length > 0
@@ -129,7 +128,6 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
     }
 
     let filteredEvents = events;
-    console.log("Filtered events count AQUIIIIIII:", filteredEvents.length);
 
     if (filterCategory.length > 0) {
       filteredEvents = filteredEvents.filter(event => filterCategory.includes(event.CATEGORÍA));
@@ -159,6 +157,18 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
     );
     setSelectedFilters(updatedFilters);
     setFilterDescriptors(updatedFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilterCategory([]);
+    setFilterDescriptors([]);
+    setSelectedTeam(null);
+    setSelectedFilters([]);
+    setSelectedDescriptor(null);
+    setSelectedValue(null);
+    setSelectedOption(null); // Restablecer el select de Equipo
+    setFilteredEvents(events);
+    updateDescriptorOptions(events);
   };
 
   return (
@@ -327,6 +337,7 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
         />
       </label>
       <button onClick={handleApplyFilter}>Aplicar Filtro</button>
+      <button onClick={handleClearFilters}>Limpiar Filtros</button>
       <div className="applied-filters">
         {selectedFilters.map((filter, index) => (
           <div key={index} className="filter-tag">
