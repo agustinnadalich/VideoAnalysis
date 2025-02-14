@@ -44,6 +44,7 @@ const App = () => {
     setFilteredEvents(events);
     setCurrentEventIndex(0);
     setIsPlayingFilteredEvents(true);
+    playNextEvent(events, 0);
   };
 
   const playNextEvent = (events, index) => {
@@ -65,6 +66,7 @@ const App = () => {
       setIsPlayingFilteredEvents(false);
     }
   };
+
 
   useEffect(() => {
     fetch("http://localhost:5001/events")
