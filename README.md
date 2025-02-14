@@ -14,7 +14,9 @@
     cd <your-repository-directory>
     ```
 
-2. Place the video file `SBvsLIONS.mp4` in the `frontend/public` directory. You can download the video file from the link provided separately.
+2. Place the video file `SBvsLIONS.mp4` in the `frontend/public` directory. You can download the video file from the link provided separately. 
+
+Link to download (https://drive.google.com/file/d/1vM4BgL9VO7yC5cKg2N4HdBJLyxob31vc/view?usp=sharing )
 
 3. Build and run the containers:
 

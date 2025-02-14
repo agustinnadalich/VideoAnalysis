@@ -80,10 +80,13 @@ const columnsToInclude = [
 
 
 const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
-  const { filterCategory, filterDescriptors, selectedTeam} = useContext(FilterContext);  
-  const [filteredEvents, setFilteredEvents] = useState([]);
+  const { filterCategory, filterDescriptors, selectedTeam, filteredEvents, setFilteredEvents } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
+  // console.log("POR ACA = ", filteredEvents.length);
+
+  
+  
 
 
 
@@ -136,7 +139,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
   //   []
   // );
 
-
   const updateCharts = useCallback(
     (events, categories, filters, team) => {
       if (!events) return;
@@ -148,13 +150,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
         return categoryMatch && filterMatch && teamMatch;
       });
       
-      console.log(team);
       setFilteredEvents(filtered);
+  
+      console.log("Filtered en updateCharts:", filtered);
     },
-    []
+    [setFilteredEvents]
   );
   
-
   const fetchData = useCallback(async () => {
     try {
       updateCharts(events, filterCategory, filterDescriptors, selectedTeam);
@@ -166,14 +168,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
   useEffect(() => {
     fetchData();
   }, [fetchData, events, filterCategory, filterDescriptors, selectedTeam]);
+  
+  useEffect(() => {
+    console.log("filteredEvents en New-charts.js:", filteredEvents);
+  }, [filteredEvents]);
+  
 
   const filteredCategories = [
     ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
   ];
 
-  useEffect(() => {
-    updateCharts(events, filterCategory, filterDescriptors, selectedTeam);
-  }, [events, filterCategory, filterDescriptors, selectedTeam, updateCharts]);
 
 
 
@@ -285,10 +289,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
 
   return (
     <div className="charts" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      {error ? (
-        <p>{error}</p>
-      ) : (
-        <>
+      {error && <div>Error: {error.message}</div>}
+
           <div
             style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}
           >
@@ -447,8 +449,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
               color: #009879;
             }
           `}</style>
-        </>
-      )}
     </div>
   );
 };

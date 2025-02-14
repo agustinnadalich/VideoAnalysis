@@ -15,6 +15,7 @@ const App = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isPlayingFilteredEvents, setIsPlayingFilteredEvents] = useState(false);
+  const [isUserInteracted, setIsUserInteracted] = useState(false);
   const videoRef = useRef(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
@@ -39,10 +40,10 @@ const App = () => {
 
   const handlePlayFilteredEvents = (events) => {
     console.log("Playing filtered events:", events);
+    console.log("Filtered events count received:", events.length);
     setFilteredEvents(events);
     setCurrentEventIndex(0);
     setIsPlayingFilteredEvents(true);
-    playNextEvent(events, 0);
   };
 
   const playNextEvent = (events, index) => {
@@ -93,8 +94,15 @@ const App = () => {
     }
   }, [tempTime, isPlayingFilteredEvents, filteredEvents, duration]);
 
+  const handleUserInteraction = () => {
+    setIsUserInteracted(true);
+    if (filteredEvents.length > 0) {
+      playNextEvent(filteredEvents, 0);
+    }
+  };
+
   return (
-    <FilterProvider>
+    <FilterProvider initialEvents={data}>
       <div style={{ display: "flex", overflow: "hidden" }}>
         {isSidebarVisible && (
           <div
@@ -108,7 +116,7 @@ const App = () => {
               height: "100vh",
             }}
           >
-            <Sidebar events={data} />
+            <Sidebar events={data} onPlayFilteredEvents={handlePlayFilteredEvents} />
           </div>
         )}
         <div
@@ -144,7 +152,7 @@ const App = () => {
               }}
             >
               <div style={{ width: "25%", overflowY: "auto" }}>
-                <MatchReportLeft data={data} />
+                <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data} />
               </div>
               <div
                 style={{
@@ -181,10 +189,12 @@ const App = () => {
               </div>
             </div>
             <div style={{ overflowX: "auto" }}>
-              <Charts
+            <Charts
                 onEventClick={handleEventClick}
                 onPlayFilteredEvents={handlePlayFilteredEvents}
                 events={data}
+                filteredEvents={filteredEvents}
+                setFilteredEvents={setFilteredEvents}
               />
             </div>
           </div>

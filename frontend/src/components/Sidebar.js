@@ -1,9 +1,18 @@
-import React, { useState, useEffect, useContext } from 'react';
-import Select from 'react-select';
-import FilterContext from '../context/FilterContext';
+import React, { useState, useEffect, useContext } from "react";
+import Select from "react-select";
+import FilterContext from "../context/FilterContext";
 
 const Sidebar = ({ events, onPlayFilteredEvents }) => {
-  const { filterCategory, setFilterCategory, filterDescriptors, setFilterDescriptors, selectedTeam, setSelectedTeam } = useContext(FilterContext);
+  const {
+    filterCategory,
+    setFilterCategory,
+    filterDescriptors,
+    setFilterDescriptors,
+    selectedTeam,
+    setSelectedTeam,
+    filteredEvents,
+    setFilteredEvents,
+  } = useContext(FilterContext);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [descriptorOptions, setDescriptorOptions] = useState([]);
   const [valueOptions, setValueOptions] = useState([]);
@@ -11,10 +20,25 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
   const [selectedValue, setSelectedValue] = useState(null);
   const [teamOptions, setTeamOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState(events);
 
+    // Inicializar filteredEvents con todos los eventos al cargar el componente
+    useEffect(() => {
+      setFilteredEvents(events);
+    }, [events, setFilteredEvents]);
 
-  const excludeKeys = ["COORDENADA X", "COORDENADA Y", "DURACION", "ID", "CATEGORÍA", "EQUIPO", "PUNTOS (VALOR)", "SEGUNDO", "TIEMPO(VIDEO)"];
+    console.log('Entrando a sidebar: ', filteredEvents ? filteredEvents.length : 0);
+
+  const excludeKeys = [
+    "COORDENADA X",
+    "COORDENADA Y",
+    "DURACION",
+    "ID",
+    "CATEGORÍA",
+    "EQUIPO",
+    "PUNTOS (VALOR)",
+    "SEGUNDO",
+    "TIEMPO(VIDEO)",
+  ];
 
   const updateDescriptorOptions = (filteredEvents) => {
     const descriptors = filteredEvents.reduce((acc, event) => {
@@ -26,33 +50,40 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
       return acc;
     }, {});
 
-    const descriptorOptions = Object.keys(descriptors).map((key) => ({ value: key, label: key }));
+    const descriptorOptions = Object.keys(descriptors).map((key) => ({
+      value: key,
+      label: key,
+    }));
     setDescriptorOptions(descriptorOptions);
 
     const teams = [
-      ...new Set(filteredEvents.map((event) => event.EQUIPO).filter((team) => team !== null)),
+      ...new Set(
+        filteredEvents
+          .map((event) => event.EQUIPO)
+          .filter((team) => team !== null)
+      ),
     ].map((team) => ({ value: team, label: team }));
     setTeamOptions(teams);
   };
 
-  useEffect(() => {
-    const filteredEvents = filterCategory.length > 0 
-      ? events.filter(event => filterCategory.includes(event.CATEGORÍA))
-      : events;
-    updateDescriptorOptions(filteredEvents);
-  }, [events, filterCategory]);
-
   const categoryOptions = [
-    ...new Set(events.map((event) => event.CATEGORÍA).filter((category) => category !== null)),
+    ...new Set(
+      events
+        .map((event) => event.CATEGORÍA)
+        .filter((category) => category !== null)
+    ),
   ].map((category) => ({ value: category, label: category }));
 
   const handleCategoryChange = (selectedOptions) => {
     const selectedCategories = selectedOptions.map((option) => option.value);
     setFilterCategory(selectedCategories);
+    console.log("PASA POR AQUI");
 
-    const filteredEvents = selectedCategories.length > 0 
-      ? events.filter(event => selectedCategories.includes(event.CATEGORÍA))
-      : events;
+    const filteredEvents =
+      selectedCategories.length > 0
+        ? events.filter((event) => selectedCategories.includes(event.CATEGORÍA))
+        : events;
+    setFilteredEvents(filteredEvents);
     updateDescriptorOptions(filteredEvents);
   };
 
@@ -60,7 +91,11 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
     setSelectedDescriptor(selectedOption);
     if (selectedOption) {
       const values = [
-        ...new Set(events.map((event) => event[selectedOption.value]).filter((value) => value !== null)),
+        ...new Set(
+          events
+            .map((event) => event[selectedOption.value])
+            .filter((value) => value !== null)
+        ),
       ].map((value) => ({ value, label: value }));
       setValueOptions(values);
     } else {
@@ -73,12 +108,10 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
   };
 
   const handleTeamChange = (selectedOption) => {
-    if (selectedOption){
+    if (selectedOption) {
       setSelectedTeam(selectedOption.value);
-    }
-    else{
+    } else {
       setSelectedTeam(selectedOption);
-
     }
     setSelectedOption(selectedOption);
   };
@@ -94,19 +127,39 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
       setSelectedDescriptor(null);
       setSelectedValue(null);
     }
+
+    let filteredEvents = events;
+    console.log("Filtered events count AQUIIIIIII:", filteredEvents.length);
+
+    if (filterCategory.length > 0) {
+      filteredEvents = filteredEvents.filter(event => filterCategory.includes(event.CATEGORÍA));
+    }
+
+    if (selectedTeam) {
+      filteredEvents = filteredEvents.filter(event => event.EQUIPO === selectedTeam);
+    }
+
+    if (filterDescriptors.length > 0) {
+      filteredEvents = filteredEvents.filter(event =>
+        filterDescriptors.every(filter => event[filter.descriptor] === filter.value)
+      );
+    }
+
+    setFilteredEvents(filteredEvents);
+    console.log("Filtered events count AQUI:", filteredEvents.length);
+
+    updateDescriptorOptions(filteredEvents);
   };
 
   const handleRemoveFilter = (filterToRemove) => {
     const updatedFilters = selectedFilters.filter(
-      (filter) => filter.descriptor !== filterToRemove.descriptor || filter.value !== filterToRemove.value
+      (filter) =>
+        filter.descriptor !== filterToRemove.descriptor ||
+        filter.value !== filterToRemove.value
     );
     setSelectedFilters(updatedFilters);
     setFilterDescriptors(updatedFilters);
   };
-
-  // useEffect(() => {
-  //   onApplyFilters(filterCategory, filterDescriptors, filterValue, selectedTeam ? selectedTeam.value : null);
-  // }, [filterCategory, filterDescriptors, filterValue, selectedTeam, onApplyFilters]);
 
   return (
     <div className="sidebar">
@@ -115,7 +168,11 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
         <Select
           isMulti
           options={categoryOptions}
-          value={categoryOptions.filter(option => Array.isArray(filterCategory) && filterCategory.includes(option.value))}
+          value={categoryOptions.filter(
+            (option) =>
+              Array.isArray(filterCategory) &&
+              filterCategory.includes(option.value)
+          )}
           onChange={handleCategoryChange}
           styles={{
             control: (base) => ({
@@ -278,7 +335,10 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
           </div>
         ))}
       </div>
-      <button onClick={() => onPlayFilteredEvents(filteredEvents)}>
+      <button onClick={() => {
+        console.log("Filtered events count en Sidebar:", filteredEvents.length);
+        onPlayFilteredEvents(filteredEvents);
+      }}>
         Reproducir eventos filtrados
       </button>
     </div>
