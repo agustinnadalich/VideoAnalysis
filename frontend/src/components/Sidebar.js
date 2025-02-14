@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import FilterContext from '../context/FilterContext';
 
-const Sidebar = ({ events }) => {
+const Sidebar = ({ events, onPlayFilteredEvents }) => {
   const { filterCategory, setFilterCategory, filterDescriptors, setFilterDescriptors, selectedTeam, setSelectedTeam } = useContext(FilterContext);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [descriptorOptions, setDescriptorOptions] = useState([]);
@@ -11,6 +11,8 @@ const Sidebar = ({ events }) => {
   const [selectedValue, setSelectedValue] = useState(null);
   const [teamOptions, setTeamOptions] = useState([]);
   const [selectedOption, setSelectedOption] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState(events);
+
 
   const excludeKeys = ["COORDENADA X", "COORDENADA Y", "DURACION", "ID", "CATEGORÍA", "EQUIPO", "PUNTOS (VALOR)", "SEGUNDO", "TIEMPO(VIDEO)"];
 
@@ -276,6 +278,9 @@ const Sidebar = ({ events }) => {
           </div>
         ))}
       </div>
+      <button onClick={() => onPlayFilteredEvents(filteredEvents)}>
+        Reproducir eventos filtrados
+      </button>
     </div>
   );
 };
