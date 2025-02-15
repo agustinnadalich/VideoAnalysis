@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import Select from 'react-select';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faExternalLinkAlt, faStepBackward, faStepForward, faChevronLeft, faFilter} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import VideoPlayer from "./components/VideoPlayer";
 import Charts from "./components/New-charts.js";
 import MatchReportLeft from "./components/MatchReportLeft";
@@ -7,6 +9,8 @@ import MatchReportRight from "./components/MatchReportRight";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
+
+library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter);
 
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
@@ -137,7 +141,7 @@ const App = () => {
             }}
           >
             <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
-            </div>
+          </div>
         )}
         <div
           style={{
@@ -154,7 +158,7 @@ const App = () => {
               onClick={toggleSidebar}
               style={{ alignSelf: "flex-start", marginLeft: "10px" }}
             >
-              Mostrar Filtros
+              <FontAwesomeIcon icon="fa-solid fa-filter" />
             </button>
           )}
           <div

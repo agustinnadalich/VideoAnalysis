@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import Select from "react-select";
 import FilterContext from "../context/FilterContext";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
 
 const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const {
@@ -182,7 +184,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     <div className="sidebar">
       <div className="hide-icon" style={{ textAlign: "right" }}>
         <button onClick={toggleSidebar} >
-          &#8592;
+          <FontAwesomeIcon icon="chevron-left" /> 
         </button>
       </div>
 

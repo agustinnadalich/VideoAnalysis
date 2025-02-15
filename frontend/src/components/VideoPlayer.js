@@ -1,4 +1,6 @@
 import React, { useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
 import './VideoPlayer.css'; // Importa el archivo CSS
 
 const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious }, ref) => {
@@ -41,10 +43,18 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
     <div className="video-container">
       <video ref={videoRef} src={src} controls width="600" />
       <div className="button-bar">
-        <button className="pip-button" onClick={handlePiP}>Picture-in-Picture</button>
-        <button className="control-button" onClick={onStop}>Detener</button>
-        <button className="control-button" onClick={onPrevious}>Anterior</button>
-        <button className="control-button" onClick={onNext}>Siguiente</button>
+        <button className="pip-button" style={{ padding: "5px", margin:"5px" }} onClick={handlePiP}>
+          <FontAwesomeIcon icon="external-link-alt" /> {/* Icon for Picture-in-Picture */}
+        </button>
+        <button className="control-button" style={{ padding: "5px", margin:"5px" }} onClick={onStop}>
+          <FontAwesomeIcon icon="stop" /> {/* Icon for Stop */}
+        </button>
+        <button className="control-button" style={{ padding: "5px", margin:"5px" }} onClick={onPrevious}>
+          <FontAwesomeIcon icon="step-backward" /> {/* Icon for Previous */}
+        </button>
+        <button className="control-button" style={{ padding: "5px", margin:"5px" }} onClick={onNext}>
+          <FontAwesomeIcon icon="step-forward" /> {/* Icon for Next */}
+        </button>
       </div>
     </div>
   );
