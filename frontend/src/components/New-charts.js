@@ -79,8 +79,8 @@ const columnsToInclude = [
 
 
 
-const Charts = ({ onEventClick, onPlayFilteredEvents, events }) => {
-  const { filterCategory, filterDescriptors, selectedTeam, filteredEvents, setFilteredEvents } = useContext(FilterContext);
+const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
+  const { filterCategory, filterDescriptors, selectedTeam, events, filteredEvents, setFilteredEvents } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
   // console.log("POR ACA = ", filteredEvents.length);

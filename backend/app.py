@@ -14,9 +14,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Ruta del archivo Excel
 file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_24-25_(TEST).xlsx')
 
-# Lee el archivo Excel
+# Lee la hoja "MATRIZ" del archivo Excel
 try:
-    df = pd.read_excel(file_path)
+    df = pd.read_excel(file_path, sheet_name='MATRIZ')
     # Convierte la columna 'SEGUNDO' a enteros si existe
     if 'SEGUNDO' in df.columns:
         df['SEGUNDO'] = df['SEGUNDO'].astype(int)
@@ -31,14 +31,30 @@ except Exception as e:
     print(f"Error al leer el archivo: {e}")
     df = pd.DataFrame()  # Crea un DataFrame vacío en caso de otros errores
 
+# Lee la hoja "PARTIDOS" del archivo Excel
+try:
+    df_partidos = pd.read_excel(file_path, sheet_name='PARTIDOS')
+    # Reemplaza NaN con None para que sea serializable a JSON
+    df_partidos = df_partidos.where(pd.notnull(df_partidos), None)
+    # Muestra las primeras filas del DataFrame
+    print(df_partidos.head())
+except FileNotFoundError:
+    print(f"Archivo no encontrado: {file_path}")
+    df_partidos = pd.DataFrame()  # Crea un DataFrame vacío si el archivo no se encuentra
+except Exception as e:
+    print(f"Error al leer el archivo: {e}")
+    df_partidos = pd.DataFrame()  # Crea un DataFrame vacío en caso de otros errores
+
+
 @app.route('/events', methods=['GET'])
 def get_events():
     if not os.path.exists(file_path):
         return jsonify({"error": "Archivo Excel no encontrado"}), 404
 
-    df = pd.read_excel(file_path)
+    df = pd.read_excel(file_path, sheet_name='MATRIZ')
     if df.empty:
         return jsonify({"error": "No data available"}), 404
+    
     
     # Selecciona todas las columnas necesarias
     columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORÍA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
@@ -63,8 +79,12 @@ def get_events():
             elif isinstance(value, (pd._libs.tslibs.nattype.NaTType, type(pd.NaT))):
                 event[key] = None
     
+   # Lee los datos generales del partido desde la hoja "PARTIDOS"
+    df_partidos = pd.read_excel(file_path, sheet_name='PARTIDOS')
+    partido_info = df_partidos.to_dict(orient='records')[0]  # Asume que hay solo una fila con datos generales del partido
+    
     print(events)  # Verifica los datos en la consola del servidor
-    return jsonify(events)
+    return jsonify({"header": partido_info, "events": events})
 
 @app.route('/events/filter', methods=['GET'])
 def filter_events():

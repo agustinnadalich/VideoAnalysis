@@ -8,7 +8,7 @@ import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
 
 const App = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState({ events: [], header: {} });
   const [videoSrc] = useState("/SBvsLIONS.mp4");
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
@@ -121,7 +121,7 @@ const App = () => {
   };
 
   return (
-    <FilterProvider initialEvents={data}>
+    <FilterProvider initialResponse={data}>
       <div style={{ display: "flex", overflow: "hidden" }}>
         {isSidebarVisible && (
           <div
@@ -135,7 +135,7 @@ const App = () => {
               height: "100vh",
             }}
           >
-            <Sidebar events={data} onPlayFilteredEvents={handlePlayFilteredEvents} />
+            <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} />
           </div>
         )}
         <div
@@ -171,7 +171,7 @@ const App = () => {
               }}
             >
               <div style={{ width: "25%", overflowY: "auto" }}>
-                <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data} />
+                <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
               </div>
               <div
                 style={{
@@ -207,16 +207,13 @@ const App = () => {
                 />
               </div>
               <div style={{ width: "25%", overflowY: "auto" }}>
-                <MatchReportRight data={data} />
+                <MatchReportRight data={data.events} />
               </div>
             </div>
             <div style={{ overflowX: "auto" }}>
-            <Charts
+              <Charts
                 onEventClick={handleEventClick}
                 onPlayFilteredEvents={handlePlayFilteredEvents}
-                events={data}
-                filteredEvents={filteredEvents}
-                setFilteredEvents={setFilteredEvents}
               />
             </div>
           </div>
