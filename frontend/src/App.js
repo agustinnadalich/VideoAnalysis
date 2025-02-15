@@ -4,6 +4,7 @@ import VideoPlayer from "./components/VideoPlayer";
 import Charts from "./components/New-charts.js";
 import MatchReportLeft from "./components/MatchReportLeft";
 import MatchReportRight from "./components/MatchReportRight";
+import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
 
@@ -153,6 +154,7 @@ const App = () => {
           >
             {isSidebarVisible ? "Ocultar Filtros" : "Mostrar Filtros"}
           </button>
+          <Header />
           <div
             style={{
               flex: 1,

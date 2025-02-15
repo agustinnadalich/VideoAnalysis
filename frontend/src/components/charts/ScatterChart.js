@@ -1,5 +1,25 @@
 import React from 'react';
 import { Scatter } from 'react-chartjs-2';
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+Chart.register(...registerables);
+Chart.register(ChartDataLabels);
+
+const backgroundImagePlugin = {
+  id: "backgroundImage",
+  beforeDraw: (chart) => {
+    if (chart.config.options.backgroundImage) {
+      const ctx = chart.ctx;
+      const { top, left, width, height } = chart.chartArea;
+      const image = new Image();
+      image.src = chart.config.options.backgroundImage;
+      ctx.drawImage(image, left, top, width, height);
+    }
+  },
+};
+
+Chart.register(backgroundImagePlugin);
 
 const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
   if (!events || events.length === 0 || !columnsToTooltip) {

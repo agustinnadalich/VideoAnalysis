@@ -288,24 +288,3 @@ Vista Principal
 │   └── Línea de Tiempo General
 │       ├── Eventos distribuidos por categorías
 │       └── Filtros para reproducir eventos específicos
-
-
-
-
-
-
-
-
-Vamos a incorporar a nuestra App, un header que contenga informacion general del partido:
-├── Datos Generales del Partido
-│   ├── Equipos participantes ( la izquierda irà la opcion de la columna EQUIPO que no sea Rival. A la derecha irà el dato de la columna RIVAL)
-│   ├── Resultado final (Suma de PUNTOS(VALOR) para cada uno de los EQUIPOS)
-│   ├── Fecha del partido 
-│   ├── Campeonato
-│   ├── Cancha donde se ha jugado
-│   ├── Clima
-│   ├── Árbitro
-│   ├── Asistentes de árbitro
-│   └── Público asistente
-
-Colocaremos los datos que no sean null, provenientes de nuestra base de datos (Excel).
