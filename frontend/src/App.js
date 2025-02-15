@@ -136,8 +136,8 @@ const App = () => {
               height: "100vh",
             }}
           >
-            <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} />
-          </div>
+            <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
+            </div>
         )}
         <div
           style={{
@@ -148,13 +148,15 @@ const App = () => {
             marginLeft: isSidebarVisible ? "10%" : "0",
           }}
         >
-          <button
-            onClick={toggleSidebar}
-            style={{ alignSelf: "flex-start", margin: "10px" }}
-          >
-            {isSidebarVisible ? "Ocultar Filtros" : "Mostrar Filtros"}
-          </button>
           <Header />
+          {!isSidebarVisible && (
+            <button
+              onClick={toggleSidebar}
+              style={{ alignSelf: "flex-start", marginLeft: "10px" }}
+            >
+              Mostrar Filtros
+            </button>
+          )}
           <div
             style={{
               flex: 1,
@@ -167,7 +169,8 @@ const App = () => {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                padding: "20px",
+                paddingLeft: "20px",
+                paddingRight: "20px",
                 flex: 1,
                 boxSizing: "border-box",
               }}

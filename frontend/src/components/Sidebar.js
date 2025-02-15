@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import Select from "react-select";
 import FilterContext from "../context/FilterContext";
 
-const Sidebar = ({ events, onPlayFilteredEvents }) => {
+const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const {
     filterCategory,
     setFilterCategory,
@@ -27,7 +27,7 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
     updateDescriptorOptions(events); // Llamar a updateDescriptorOptions con todos los eventos
   }, [events, setFilteredEvents]);
 
-  console.log('Entrando a sidebar: ', filteredEvents );
+  console.log("Entrando a sidebar: ", filteredEvents);
 
   const excludeKeys = [
     "COORDENADA X",
@@ -131,16 +131,22 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
     let filteredEvents = events;
 
     if (filterCategory.length > 0) {
-      filteredEvents = filteredEvents.filter(event => filterCategory.includes(event.CATEGORÍA));
+      filteredEvents = filteredEvents.filter((event) =>
+        filterCategory.includes(event.CATEGORÍA)
+      );
     }
 
     if (selectedTeam) {
-      filteredEvents = filteredEvents.filter(event => event.EQUIPO === selectedTeam);
+      filteredEvents = filteredEvents.filter(
+        (event) => event.EQUIPO === selectedTeam
+      );
     }
 
     if (filterDescriptors.length > 0) {
-      filteredEvents = filteredEvents.filter(event =>
-        filterDescriptors.every(filter => event[filter.descriptor] === filter.value)
+      filteredEvents = filteredEvents.filter((event) =>
+        filterDescriptors.every(
+          (filter) => event[filter.descriptor] === filter.value
+        )
       );
     }
 
@@ -174,6 +180,12 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
 
   return (
     <div className="sidebar">
+      <div className="hide-icon" style={{ textAlign: "right" }}>
+        <button onClick={toggleSidebar} >
+          &#8592;
+        </button>
+      </div>
+
       <label>
         Categorías:
         <Select
@@ -347,10 +359,15 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
           </div>
         ))}
       </div>
-      <button onClick={() => {
-        console.log("Filtered events count en Sidebar:", filteredEvents.length);
-        onPlayFilteredEvents(filteredEvents);
-      }}>
+      <button
+        onClick={() => {
+          console.log(
+            "Filtered events count en Sidebar:",
+            filteredEvents.length
+          );
+          onPlayFilteredEvents(filteredEvents);
+        }}
+      >
         Reproducir eventos filtrados
       </button>
     </div>

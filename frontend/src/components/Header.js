@@ -46,10 +46,15 @@ const Header = () => {
     // No agregar nada acerca del viento
   }
 
+  const getLogoPath = (teamName) => {
+    return `/Logos/${teamName}.jpg`;
+  };
+
   return (
     <div className="header">
       <div className="teams">
         <div className="team">
+          {EQUIPO && <img src={getLogoPath(EQUIPO)} alt={`${EQUIPO} logo`} className="team-logo" onError={(e) => e.target.style.display = 'none'} />}
           <span>{EQUIPO}</span>
         </div>
         <div className="score">
@@ -58,6 +63,7 @@ const Header = () => {
           <span className="points">{puntosRival}</span>
         </div>
         <div className="team">
+          {RIVAL && <img src={getLogoPath(RIVAL)} alt={`${RIVAL} logo`} className="team-logo" onError={(e) => e.target.style.display = 'none'} />}
           <span>{RIVAL}</span>
         </div>
       </div>
