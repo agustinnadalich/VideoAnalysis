@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import FilterContext from '../context/FilterContext';
+import './Header.css'; // Asegúrate de importar el archivo CSS
 
 const Header = () => {
   const { matchInfo } = useContext(FilterContext);
@@ -11,32 +12,63 @@ const Header = () => {
     RIVAL,
     DIA,
     CAMPEONATO,
+    RONDA,
+    FECHA,
     CANCHA,
     LLUVIA,
     BARRO,
     'VIENTO 1°T': VIENTO1T,
     'VIENTO 2°T': VIENTO2T,
     ARBITRO,
+    RESULTADO,
   } = matchInfo;
 
-  const puntosEquipo = matchInfo['PUNTOS(VALOR)']?.[EQUIPO] || 0;
-  const puntosRival = matchInfo['PUNTOS(VALOR)']?.[RIVAL] || 0;
+  const [puntosEquipo, puntosRival] = RESULTADO ? RESULTADO.split('-').map(Number) : [0, 0];
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Los meses son 0-indexados
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const formattedDate = DIA ? formatDate(DIA) : null;
+
+  const clima = [];
+  if (LLUVIA === 'SI') clima.push('Lluvia');
+  if (BARRO === 'SI') clima.push('Barro');
+  if (VIENTO1T === 'F') clima.push('Viento a favor el primer tiempo');
+  if (VIENTO1T === 'C') clima.push('Viento en contra el primer tiempo');
+  if (VIENTO2T === 'F') clima.push('Viento a favor el segundo tiempo');
+  if (VIENTO2T === 'C') clima.push('Viento en contra el segundo tiempo');
+  if (VIENTO1T === '0' && VIENTO2T === '0') {
+    // No agregar nada acerca del viento
+  }
 
   return (
     <div className="header">
-      <h1>Datos Generales del Partido</h1>
       <div className="teams">
-        <span>{EQUIPO}</span> vs <span>{RIVAL}</span>
-      </div>
-      <div className="result">
-        <span>{EQUIPO}: {puntosEquipo}</span> - <span>{RIVAL}: {puntosRival}</span>
+        <div className="team">
+          <span>{EQUIPO}</span>
+        </div>
+        <div className="score">
+          <span className="points">{puntosEquipo}</span>
+          <span>-</span>
+          <span className="points">{puntosRival}</span>
+        </div>
+        <div className="team">
+          <span>{RIVAL}</span>
+        </div>
       </div>
       <div className="details">
-        <div>Fecha: {DIA}</div>
-        <div>Campeonato: {CAMPEONATO}</div>
-        <div>Cancha: {CANCHA}</div>
-        <div>Clima: {LLUVIA ? 'Lluvia' : 'Sin lluvia'}, {BARRO ? 'Barro' : 'Sin barro'}, Viento 1°T: {VIENTO1T}, Viento 2°T: {VIENTO2T}</div>
-        <div>Árbitro: {ARBITRO}</div>
+        {formattedDate && <div>Fecha: {formattedDate}</div>}
+        {CAMPEONATO && CAMPEONATO !== '-' && <div>Campeonato: {CAMPEONATO}</div>}
+        {RONDA && <div>Ronda: {RONDA}</div>}
+        {FECHA && <div>Fecha: {FECHA}</div>}
+        {CANCHA && CANCHA !== '-' && <div>Cancha: {CANCHA}</div>}
+        {clima.length > 0 && <div>Clima: {clima.join(', ')}</div>}
+        {ARBITRO && ARBITRO !== '-' && <div>Árbitro: {ARBITRO}</div>}
       </div>
     </div>
   );

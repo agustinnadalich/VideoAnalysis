@@ -1,0 +1,38 @@
+.header {
+  padding: 10px;
+  background-color: #f8f9fa;
+}
+
+.teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.team {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.score span {
+  margin: 0 5px;
+}
+
+.points {
+  font-size: 2em;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  font-size: 0.9em;
+}
