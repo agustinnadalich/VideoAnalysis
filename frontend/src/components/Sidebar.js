@@ -24,6 +24,7 @@ const Sidebar = ({ events, onPlayFilteredEvents }) => {
   // Inicializar filteredEvents con todos los eventos al cargar el componente
   useEffect(() => {
     setFilteredEvents(events);
+    updateDescriptorOptions(events); // Llamar a updateDescriptorOptions con todos los eventos
   }, [events, setFilteredEvents]);
 
   console.log('Entrando a sidebar: ', filteredEvents );
