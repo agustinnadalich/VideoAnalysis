@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import FilterContext from "../../context/FilterContext";
 
 ChartJS.register(
   CategoryScale,
@@ -19,7 +20,9 @@ ChartJS.register(
   Legend
 );
 
-const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts, filterCategory, filterDescriptors, setFilteredEvents }) => {
+const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts }) => {
+  const { filterCategory, setFilterCategory, filterDescriptors, setFilterDescriptors, setFilteredEvents } = useContext(FilterContext);
+
   if (!filteredEvents || filteredEvents.length === 0) {
     return null; // Manejar el caso donde filteredEvents es undefined o está vacío
   }
@@ -81,12 +84,13 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
         if (category) {
           // Verificar si ya estamos filtrando por esta categoría
           const isAlreadyFiltered =
-            filteredEvents.length > 0 &&
-            filteredEvents[0].CATEGORÍA === category;
+            filterCategory.includes(category);
 
           if (isAlreadyFiltered) {
             // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
-            updateCharts(events, filterCategory, filterDescriptors);
+            const newFilterCategory = filterCategory.filter(cat => cat !== category);
+            setFilterCategory(newFilterCategory);
+            updateCharts(events, newFilterCategory, filterDescriptors);
             setFilteredEvents(events);
           } else if (events) {
             // Si no, filtrar por la nueva categoría
@@ -96,9 +100,11 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
 
             if (filtered.length > 0) {
               // Usar updateCharts para actualizar los gráficos con los eventos filtrados
+              const newFilterCategory = [...filterCategory, category];
+              setFilterCategory(newFilterCategory);
               updateCharts(
                 filtered,
-                filterCategory,
+                newFilterCategory,
                 filterDescriptors,
               );
 

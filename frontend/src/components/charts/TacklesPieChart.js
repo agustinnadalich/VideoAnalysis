@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Pie } from 'react-chartjs-2';
+import FilterContext from "../../context/FilterContext";
 
 const TacklesPieChart = ({ events, onChartClick }) => {
+  const { setFilterDescriptors, filterDescriptors } = useContext(FilterContext);
+
   const tackleEvents = events.filter(
     (event) => event.CATEGORÍA === "PLACCAGGIO"
   );
@@ -35,8 +38,19 @@ const TacklesPieChart = ({ events, onChartClick }) => {
   };
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "tackle-advance");
+    if (elements.length > 0) {
+      const chart = elements[0].element.$context.chart;
+      const index = elements[0].index;
+      const clickedLabel = chart.data.labels[index];
+
+      // Pasar los datos de filtro a la función onChartClick en New-charts.js
+      onChartClick(event, elements, "advance-chart", [
+        { descriptor: "CATEGORÍA", value: "PLACCAGGIO" },
+        { descriptor: "AVANCE", value: clickedLabel }
+      ]);
+    }
   };
+  
 
   const tacklesPieChartOptions = {
     responsive: true,

@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-// import { getEvents } from "../services/api";
-// import Select from "react-select";
 import { Chart, registerables, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend, ArcElement } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { Bar } from 'react-chartjs-2';
-import HeatMap from "./HeatMap"; // Importa el componente HeatMap
 import FilterContext from '../context/FilterContext';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
@@ -63,7 +59,7 @@ const columnsToInclude = [
 ];
 
 const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
-  const { filterCategory, filterDescriptors, selectedTeam, events, filteredEvents, setFilteredEvents } = useContext(FilterContext);
+  const { filterCategory, setFilterCategory, filterDescriptors, selectedTeam, events, filteredEvents, setFilteredEvents, setFilterDescriptors } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
 
@@ -106,7 +102,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       
       setFilteredEvents(filtered);
   
-      console.log("Filtered en updateCharts:", filtered);
+      // console.log("Filtered en updateCharts:", filtered);
     },
     [setFilteredEvents]
   );
@@ -124,7 +120,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   }, [fetchData, events, filterCategory, filterDescriptors, selectedTeam]);
 
   useEffect(() => {
-    console.log("filteredEvents en New-charts.js:", filteredEvents);
+    // console.log("filteredEvents en New-charts.js:", filteredEvents);
   }, [filteredEvents]);
 
   const filteredCategories = [
@@ -145,22 +141,30 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     [onEventClick]
   );
 
-  const handleChartClick = (event, elements, chartType) => {
+  const handleChartClick = (event, elements, chartType, additionalFilters = []) => {
     if (elements.length > 0) {
       const chart = elements[0].element.$context.chart;
       const index = elements[0].index;
       let clickedEvents = [];
+      let newFilter = null;
   
-      if (chartType === "tackle-advance") {
+      if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
-        clickedEvents = events.filter(
-          (event) => event.CATEGORÍA === "PLACCAGGIO" && event.AVANCE === clickedLabel
+        clickedEvents = filteredEvents.filter(
+          (event) => event.AVANCE === clickedLabel
         );
+        const newFilterCategory = additionalFilters.find(filter => filter.descriptor === "CATEGORÍA").value;
+        if (filterCategory.includes(newFilterCategory)) {
+          setFilterCategory(filterCategory.filter(category => category !== newFilterCategory));
+        } else {
+          setFilterCategory([...filterCategory, newFilterCategory]);
+        }
       } else if (chartType === "player") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = events.filter(
           (event) => event.JUGADOR === clickedLabel
         );
+        newFilter = { descriptor: "JUGADOR", value: clickedLabel };
       }
   
       if (clickedEvents.length > 0) {
@@ -183,6 +187,26 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected && clickedEvents.length === 1) {
           onEventClick(clickedEvents[0]);
+        }
+  
+        // Actualizar los filtros en el contexto
+        if (newFilter || additionalFilters.length > 0) {
+          const filtersToAdd = newFilter
+            ? [newFilter, ...additionalFilters.filter(filter => filter.descriptor !== "CATEGORÍA")]
+            : additionalFilters.filter(filter => filter.descriptor !== "CATEGORÍA");
+          setFilterDescriptors((prevFilters) => {
+            const updatedFilters = isAlreadySelected
+              ? prevFilters.filter(
+            (filter) =>
+              !filtersToAdd.some(
+                (newFilter) =>
+            filter.descriptor === newFilter.descriptor &&
+            filter.value === newFilter.value
+              )
+          )
+              : [...prevFilters, ...filtersToAdd];
+            return updatedFilters;
+          });
         }
       } else {
         console.error("No events found for the selected category and advance.");
@@ -224,6 +248,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             filterCategory={filterCategory}
             filterDescriptors={filterDescriptors}
             setFilteredEvents={setFilteredEvents}
+            setFilterDescriptors={setFilterDescriptors} // Pasar setFilterDescriptors como prop
           />
         </div>
       </div>
@@ -237,7 +262,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       </div>
       <div style={{ width: "90%", marginBottom: "20px" }}>
         <div style={{ width: "40%" }}>
-          <TacklesPieChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
+          <TacklesPieChart events={filteredEvents} onChartClick={handleChartClick} />
         </div>
       </div>
       <div style={{ width: "90%", marginBottom: "20px" }}>

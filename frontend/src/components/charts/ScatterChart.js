@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import FilterContext from "../../context/FilterContext";
 
 Chart.register(...registerables);
 Chart.register(ChartDataLabels);
@@ -22,6 +23,8 @@ const backgroundImagePlugin = {
 Chart.register(backgroundImagePlugin);
 
 const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
+  const { filterDescriptors, setFilterDescriptors } = useContext(FilterContext);
+
   if (!events || events.length === 0 || !columnsToTooltip) {
     return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío
   }
@@ -86,20 +89,21 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : [clickedEvent]);
         
-  
         // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected) {
           onEventClick(clickedEvent);
+          // Actualizar los filtros en el contexto
+          setFilterDescriptors([{ descriptor: "ID", value: clickedEventId }]);
         } else {
           // Si el evento ya estaba seleccionado, desfiltrar y actualizar los gráficos
           onEventClick(null);
+          setFilterDescriptors([]);
         }
       } else {
         console.error("Event not found with ID:", clickedEventId);
       }
     }
   };
-  
 
   const scatterChartOptions = {
     onClick: handleScatterClick,
@@ -119,7 +123,6 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
               .filter((column) => context.raw[column] !== null && context.raw[column] !== "N/A"  && context.raw[column] !== undefined)
               .map((column) => `${column}: ${context.raw[column]}`)
               .join(", ");
-            // const id = context.raw.id;
             return `${label}: ${value}  ${descriptores}`;
           },
         },
@@ -168,7 +171,7 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
     },
   };
 
-  return <Scatter data={scatterChartData} options={scatterChartOptions}  width={800} height={600}/>;
+  return <Scatter data={scatterChartData} options={scatterChartOptions} width={800} height={600} />;
 };
 
 export default ScatterChart;

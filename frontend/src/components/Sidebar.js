@@ -29,7 +29,11 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     updateDescriptorOptions(events); // Llamar a updateDescriptorOptions con todos los eventos
   }, [events, setFilteredEvents]);
 
-  console.log("Entrando a sidebar: ", filteredEvents);
+  useEffect(() => {
+    setSelectedFilters(filterDescriptors);
+  }, [filterDescriptors]);
+
+  // console.log("Entrando a sidebar: ", filteredEvents);
 
   const excludeKeys = [
     "COORDENADA X",
@@ -153,7 +157,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     }
 
     setFilteredEvents(filteredEvents);
-    console.log("Filtered events count AQUI:", filteredEvents.length);
+    // console.log("Filtered events count AQUI:", filteredEvents.length);
 
     updateDescriptorOptions(filteredEvents);
   };
@@ -363,10 +367,10 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
       </div>
       <button
         onClick={() => {
-          console.log(
-            "Filtered events count en Sidebar:",
-            filteredEvents.length
-          );
+          // console.log(
+          //   "Filtered events count en Sidebar:",
+          //   filteredEvents.length
+          // );
           onPlayFilteredEvents(filteredEvents);
         }}
       >

@@ -33,7 +33,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
   }, [events]);
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "bar");
+    onChartClick(event, elements, "player");
   };
 
 
