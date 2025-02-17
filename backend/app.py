@@ -57,7 +57,7 @@ def get_events():
     
     
     # Selecciona todas las columnas necesarias
-    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORÍA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
+    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORIA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
     filtered_df = df[columns_to_include]
     
     # Convierte el DataFrame a una lista de diccionarios
@@ -99,7 +99,7 @@ def filter_events():
     filtered_df = df
     
     if category:
-        filtered_df = filtered_df[filtered_df['CATEGORÍA'] == category]
+        filtered_df = filtered_df[filtered_df['CATEGORIA'] == category]
     if time:
         filtered_df = filtered_df[filtered_df['SEGUNDO'] == int(time)]
     if player:
@@ -133,7 +133,7 @@ def events_table():
     filtered_df = df
     
     if category:
-        filtered_df = filtered_df[filtered_df['CATEGORÍA'] == category]
+        filtered_df = filtered_df[filtered_df['CATEGORIA'] == category]
     if player:
         filtered_df = filtered_df[filtered_df['JUGADOR'] == player]
     

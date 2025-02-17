@@ -5,7 +5,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import FilterContext from '../context/FilterContext';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
-import TacklesPieChart from './charts/TacklesPieChart';
+import AdvancePieChart from './charts/AdvancePieChart';
 import ScatterChart from './charts/ScatterChart';
 import TimelineChart from './charts/TimelineChart';
 
@@ -50,7 +50,7 @@ const columnsToInclude = [
   "FECHA",
   "RIVAL",
   "EQUIPO",
-  "CATEGORÍA",
+  "CATEGORIA",
   "JUGADOR",
   "SECTOR",
   "COORDENADA X",
@@ -64,7 +64,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [selectedEvents, setSelectedEvents] = useState([]);
 
   const uniqueCategories = [
-    ...new Set(events.map((event) => event.CATEGORÍA)),
+    ...new Set(events.map((event) => event.CATEGORIA)),
   ].filter((category) => category !== "FIN");
   const colors = uniqueCategories.reduce((acc, category, index) => {
     const color = `hsl(${
@@ -75,7 +75,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   }, {});
 
   const tackleEvents = filteredEvents.filter(
-    (event) => event.CATEGORÍA === "PLACCAGGIO"
+    (event) => event.CATEGORIA === "PLACCAGGIO"
   );
 
   const playerLabels = [
@@ -93,7 +93,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     (events, categories, filters, team) => {
       if (!events) return;
       const filtered = events.filter(event => {
-        const categoryMatch = categories.length === 0 || categories.includes(event.CATEGORÍA);
+        const categoryMatch = categories.length === 0 || categories.includes(event.CATEGORIA);
         const filterMatch = filters.length === 0 || filters.every(filter => event[filter.descriptor] === filter.value);
         const teamMatch = !team || event.EQUIPO === team;
         
@@ -124,7 +124,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   }, [filteredEvents]);
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
   ];
 
   const handleEventClick = useCallback(
@@ -153,7 +153,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         clickedEvents = filteredEvents.filter(
           (event) => event.AVANCE === clickedLabel
         );
-        const newFilterCategory = additionalFilters.find(filter => filter.descriptor === "CATEGORÍA").value;
+        const newFilterCategory = additionalFilters.find(filter => filter.descriptor === "CATEGORIA").value;
         if (filterCategory.includes(newFilterCategory)) {
           setFilterCategory(filterCategory.filter(category => category !== newFilterCategory));
         } else {
@@ -192,8 +192,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         // Actualizar los filtros en el contexto
         if (newFilter || additionalFilters.length > 0) {
           const filtersToAdd = newFilter
-            ? [newFilter, ...additionalFilters.filter(filter => filter.descriptor !== "CATEGORÍA")]
-            : additionalFilters.filter(filter => filter.descriptor !== "CATEGORÍA");
+            ? [newFilter, ...additionalFilters.filter(filter => filter.descriptor !== "CATEGORIA")]
+            : additionalFilters.filter(filter => filter.descriptor !== "CATEGORIA");
           setFilterDescriptors((prevFilters) => {
             const updatedFilters = isAlreadySelected
               ? prevFilters.filter(
@@ -253,21 +253,34 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: "100%" }}>
-        <div style={{ width: "50%", marginBottom: "20px" }}>
-          <TacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
-        </div>
-        <div style={{ width: "50%", marginBottom: "20px" }}>
-          <MissedTacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
-        </div>
+        {filteredEvents.some(event => event.CATEGORIA === "PLACCAGGIO") && (
+          <div style={{ width: "50%", marginBottom: "20px" }}>
+            <TacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
+          </div>
+        )}
+        {filteredEvents.some(event => event.CATEGORIA === "PLAC-SBAGLIATTO") && (
+          <div style={{ width: "50%", marginBottom: "20px" }}>
+            <MissedTacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
+          </div>
+        )}
       </div>
-      <div style={{ width: "90%", marginBottom: "20px" }}>
-        <div style={{ width: "40%" }}>
-          <TacklesPieChart events={filteredEvents} onChartClick={handleChartClick} />
+      <div style={{ width: "90%", marginBottom: "20px", display: "flex", justifyContent: "space-around" }}>
+        {filteredEvents.some(event => event.CATEGORIA === "PLACCAGGIO") && (
+          <div style={{ width: "40%" }}>
+            <AdvancePieChart events={filteredEvents} onChartClick={handleChartClick} category="PLACCAGGIO" />
+          </div>
+        )}
+        {filteredEvents.some(event => event.CATEGORIA === "MISCHIA") && (
+          <div style={{ width: "40%" }}>
+            <AdvancePieChart events={filteredEvents} onChartClick={handleChartClick} category="MISCHIA" />
+          </div>
+        )}
+      </div>
+      {filteredEvents.some(event => event["COORDENADA X"] !== null) && (
+        <div style={{ width: "90%", marginBottom: "20px" }}>
+          <ScatterChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} setSelectedEvents={setSelectedEvents} selectedEvents={selectedEvents} onChartClick={handleChartClick} onEventClick={handleScatterClick} width={800} height={600} />
         </div>
-      </div>
-      <div style={{ width: "90%", marginBottom: "20px" }}>
-        <ScatterChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} setSelectedEvents={setSelectedEvents} selectedEvents={selectedEvents} onChartClick={handleChartClick} onEventClick={handleScatterClick} width={800} height={600} />
-      </div>
+      )}
       <h1>Eventos</h1>
       <table className="styled-table">
         <thead>

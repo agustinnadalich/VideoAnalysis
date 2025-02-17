@@ -2,29 +2,29 @@ import React, { useContext } from 'react';
 import { Pie } from 'react-chartjs-2';
 import FilterContext from "../../context/FilterContext";
 
-const TacklesPieChart = ({ events, onChartClick }) => {
+const AdvancePieChart = ({ events, onChartClick, category }) => {
   const { setFilterDescriptors, filterDescriptors } = useContext(FilterContext);
 
-  const tackleEvents = events.filter(
-    (event) => event.CATEGORÍA === "PLACCAGGIO"
+  const filteredEvents = events.filter(
+    (event) => event.CATEGORIA === category
   );
 
-  const tackleAdvanceLabels = [
-    ...new Set(tackleEvents.map((event) => event.AVANCE).filter((avance) => avance !== null)),
+  const advanceLabels = [
+    ...new Set(filteredEvents.map((event) => event.AVANCE).filter((avance) => avance !== null)),
   ].sort((a, b) => a - b);
 
-  const tackleAdvanceData = tackleAdvanceLabels.map(
+  const advanceData = advanceLabels.map(
     (result) =>
-      tackleEvents.filter((event) => event.AVANCE === result).length
+      filteredEvents.filter((event) => event.AVANCE === result).length
   );
 
-  const tacklesPieChartData = {
-    labels: tackleAdvanceLabels,
+  const pieChartData = {
+    labels: advanceLabels,
     datasets: [
       {
-        label: "Tackles por avance",
-        data: tackleAdvanceData,
-        backgroundColor: tackleAdvanceLabels.map((label) => {
+        label: `Avance por ${category.toLowerCase()}`,
+        data: advanceData,
+        backgroundColor: advanceLabels.map((label) => {
           if (label === "POSITIVO") {
             return "rgba(75, 192, 192, 0.6)";
           } else if (label === "NEGATIVO") {
@@ -45,14 +45,13 @@ const TacklesPieChart = ({ events, onChartClick }) => {
 
       // Pasar los datos de filtro a la función onChartClick en New-charts.js
       onChartClick(event, elements, "advance-chart", [
-        { descriptor: "CATEGORÍA", value: "PLACCAGGIO" },
+        { descriptor: "CATEGORIA", value: category },
         { descriptor: "AVANCE", value: clickedLabel }
       ]);
     }
   };
-  
 
-  const tacklesPieChartOptions = {
+  const pieChartOptions = {
     responsive: true,
     plugins: {
       legend: {
@@ -60,7 +59,7 @@ const TacklesPieChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Distribución de Avances',
+        text: `Distribución de Avances - ${category}`,
       },
       tooltip: {
         callbacks: {
@@ -78,7 +77,7 @@ const TacklesPieChart = ({ events, onChartClick }) => {
     onClick: handleChartClick,
   };
 
-  return <Pie data={tacklesPieChartData} options={tacklesPieChartOptions} />;
+  return <Pie data={pieChartData} options={pieChartOptions} />;
 };
 
-export default TacklesPieChart;
+export default AdvancePieChart;

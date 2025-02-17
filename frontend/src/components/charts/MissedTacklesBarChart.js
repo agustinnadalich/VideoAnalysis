@@ -6,7 +6,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
 
   useEffect(() => {
     const missedTackleEvents = events.filter(
-      (event) => event.CATEGORÍA === "PLAC-SBAGLIATTO"
+      (event) => event.CATEGORIA === "PLAC-SBAGLIATTO"
     );
 
     const playerLabels = [

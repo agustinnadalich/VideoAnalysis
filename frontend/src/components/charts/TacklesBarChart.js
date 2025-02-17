@@ -3,7 +3,7 @@ import { Bar } from 'react-chartjs-2';
 
 const TacklesBarChart = ({ events, onChartClick }) => {
   const tackleEvents = events.filter(
-    (event) => event.CATEGORÍA === "PLACCAGGIO"
+    (event) => event.CATEGORIA === "PLACCAGGIO"
   );
 
   const playerLabels = [

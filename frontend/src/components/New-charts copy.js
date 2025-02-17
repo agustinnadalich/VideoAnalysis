@@ -69,7 +69,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     "FECHA",
     "RIVAL",
     "EQUIPO",
-    "CATEGORÍA",
+    "CATEGORIA",
     "JUGADOR",
     "SECTOR",
     "COORDENADA X",
@@ -99,13 +99,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const updateCharts = useCallback(
     (events, types, descriptors, result) => {
       const filteredEvents = events.filter((event) =>
-        types.length ? types.includes(event.CATEGORÍA) : true
+        types.length ? types.includes(event.CATEGORIA) : true
       );
 
       // console.log("Filtered Events:", filteredEvents);
 
       const tackleEvents = filteredEvents.filter(
-        (event) => event.CATEGORÍA === "PLACCAGGIO"
+        (event) => event.CATEGORIA === "PLACCAGGIO"
       );
 
       const playerLabels = [
@@ -220,7 +220,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
               const count = events.filter(
                 (event) =>
                   event.JUGADOR === player &&
-                  event.CATEGORÍA === "PLAC-SBAGLIATTO" &&
+                  event.CATEGORIA === "PLAC-SBAGLIATTO" &&
                   event.EQUIPO !== "RIVAL"
               ).length;
               return {
@@ -237,7 +237,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       setChartMissedData(barMissedData);
 
       const uniqueCategories = [
-        ...new Set(events.map((event) => event.CATEGORÍA)),
+        ...new Set(events.map((event) => event.CATEGORIA)),
       ].filter((category) => category !== "FIN");
       const colors = uniqueCategories.reduce((acc, category, index) => {
         const color = `hsl(${
@@ -248,7 +248,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       }, {});
 
       const filteredCategories = [
-        ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+        ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
       ];
 
       const timelineData = {
@@ -256,7 +256,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         datasets: filteredCategories.map((category) => ({
           label: category,
           data: filteredEvents
-            .filter((event) => event.CATEGORÍA === category)
+            .filter((event) => event.CATEGORIA === category)
             .map((event) => {
               let descriptor = "";
               columnsToTooltip.forEach((column) => {
@@ -283,7 +283,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             }),
           backgroundColor: colors[category],
           barPercentage: 1.0, // Asegura que las barras ocupen todo el espacio disponible
-          categoryPercentage: 1.0, // Asegura que las barras se centren en sus categorías
+          categoryPercentage: 1.0, // Asegura que las barras se centren en sus CATEGORIAs
         })),
       };
 
@@ -308,9 +308,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             return (
               !isNaN(x) &&
               !isNaN(y) &&
-              event.CATEGORÍA !== "DIFESA" &&
-              event.CATEGORÍA !== "ATTACCO" &&
-              event.CATEGORÍA !== "PARTITA TAGLIATA"
+              event.CATEGORIA !== "DIFESA" &&
+              event.CATEGORIA !== "ATTACCO" &&
+              event.CATEGORIA !== "PARTITA TAGLIATA"
             );
           })
           .map((event) => {
@@ -321,17 +321,17 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
               }
             });
             return {
-              label: `${event.CATEGORÍA}`,
+              label: `${event.CATEGORIA}`,
               data: [
                 {
                   x: Number(event["COORDENADA Y"]),
                   y: Number(event["COORDENADA X"]),
-                  category: event.CATEGORÍA,
+                  category: event.CATEGORIA,
                   id: event.ID,
                   descriptor: descriptor,
                 },
               ],
-              backgroundColor: colors[event.CATEGORÍA],
+              backgroundColor: colors[event.CATEGORIA],
             };
           }),
       };
@@ -423,7 +423,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     [onEventClick]
   );
 
-  const typeOptions = [...new Set(events.map((event) => event.CATEGORÍA))].map(
+  const typeOptions = [...new Set(events.map((event) => event.CATEGORIA))].map(
     (type) => ({
       value: type,
       label: type,
@@ -565,10 +565,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
       if (clickedEvent) {
         // console.log("Clicked Event:", clickedEvent);
-        // console.log("Clicked Event:", clickedEvent.CATEGORÍA);
+        // console.log("Clicked Event:", clickedEvent.CATEGORIA);
 
-        // Filtrar todos los eventos de la misma categoría
-        // const filteredEvents = events.filter(event => event.CATEGORÍA === clickedEvent.CATEGORÍA);
+        // Filtrar todos los eventos de la misma CATEGORIA
+        // const filteredEvents = events.filter(event => event.CATEGORIA === clickedEvent.CATEGORIA);
 
         // console.log("Filtered Events:", filteredEvents);
 
@@ -589,7 +589,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         console.error("Event not found with ID:", clickedEventId);
       }
     } else {
-      // Manejar clics en las etiquetas del eje de la categoría
+      // Manejar clics en las etiquetas del eje de la CATEGORIA
       const yScale = event.chart.scales.y;
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
@@ -597,21 +597,21 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         // // console.log("Clicked category:", category); // Agrega este console.log para depurar
 
         if (category) {
-          // Verificar si ya estamos filtrando por esta categoría
+          // Verificar si ya estamos filtrando por esta CATEGORIA
           const isAlreadyFiltered =
             filteredEvents.length > 0 &&
-            filteredEvents[0].CATEGORÍA === category;
+            filteredEvents[0].CATEGORIA === category;
 
           if (isAlreadyFiltered) {
-            // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
+            // Si ya estamos filtrando por esta CATEGORIA, desfiltrar y mostrar todos los eventos
             // console.log("Removing filter for category:", category);
             updateCharts(events, filterType, filterDescriptors, filterResult);
             setFilteredEvents(events);
           } else {
-            // Si no, filtrar por la nueva categoría
+            // Si no, filtrar por la nueva CATEGORIA
             // // console.log("All events:", events); // Agrega este console.log para ver todos los eventos
             const filtered = events.filter(
-              (event) => event.CATEGORÍA === category
+              (event) => event.CATEGORIA === category
             );
             // // console.log("Filtered events:", filtered); // Agrega este console.log para depurar
 
@@ -660,7 +660,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   ChartJS.register(categoryClickPlugin);
 
   const uniqueCategories = [
-    ...new Set(events.map((event) => event.CATEGORÍA)),
+    ...new Set(events.map((event) => event.CATEGORIA)),
   ].filter((category) => category !== "FIN");
   const colors = uniqueCategories.reduce((acc, category, index) => {
     const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
@@ -669,7 +669,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   }, {});
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
   ];
 
   const timelineOptions = {
@@ -717,15 +717,15 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       },
       y: {
         type: "category",
-        labels: filteredCategories, // Usar las categorías filtradas
+        labels: filteredCategories, // Usar las CATEGORIAs filtradas
         title: {
           display: true,
-          text: "Categoría",
+          text: "CATEGORIA",
         },
         ticks: {
           padding: 5, // Ajusta el espacio entre las etiquetas y las barras
           callback: function (value, index, values) {
-            return filteredCategories[value]; // Mostrar las categorías originales
+            return filteredCategories[value]; // Mostrar las CATEGORIAs originales
           },
         },
         stacked: true, // Asegura que las barras se apilen correctamente

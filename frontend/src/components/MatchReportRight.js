@@ -17,14 +17,14 @@ const MatchReportRight = ({ data }) => {
       value !== null
         ? data.filter(
             (event) =>
-              event.CATEGORÍA === category &&
+              event.CATEGORIA === category &&
               event.EQUIPO === "SAN BENEDETTO" &&
               event["PUNTOS (VALOR)"] === value
           ).length
         : data
             .filter(
               (event) =>
-                event.CATEGORÍA === category && event.EQUIPO === "SAN BENEDETTO"
+                event.CATEGORIA === category && event.EQUIPO === "SAN BENEDETTO"
             )
             .reduce((sum, event) => sum + (event["PUNTOS (VALOR)"] || 0), 0);
 
@@ -32,14 +32,14 @@ const MatchReportRight = ({ data }) => {
       value !== null
         ? data.filter(
             (event) =>
-              event.CATEGORÍA === category &&
+              event.CATEGORIA === category &&
               event.EQUIPO === "RIVAL" &&
               event["PUNTOS (VALOR)"] === value
           ).length
         : data
             .filter(
               (event) =>
-                event.CATEGORÍA === category && event.EQUIPO === "RIVAL"
+                event.CATEGORIA === category && event.EQUIPO === "RIVAL"
             )
             .reduce((sum, event) => sum + (event["PUNTOS (VALOR)"] || 0), 0);
 
@@ -75,10 +75,10 @@ const MatchReportRight = ({ data }) => {
       };
 
     const ourTeamPenales = data.filter(
-      (event) => event.CATEGORÍA === "FALLO" && event.EQUIPO === "SAN BENEDETTO"
+      (event) => event.CATEGORIA === "FALLO" && event.EQUIPO === "SAN BENEDETTO"
     ).length;
     const rivalTeamPenales = data.filter(
-      (event) => event.CATEGORÍA === "FALLO" && event.EQUIPO === "RIVAL"
+      (event) => event.CATEGORIA === "FALLO" && event.EQUIPO === "RIVAL"
     ).length;
 
     // console.log(
@@ -105,8 +105,8 @@ const MatchReportRight = ({ data }) => {
   const getDataForTurnovers = () => {
     if (!data || !data.length) return { labels: ['TURNOVERS'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Rival', data: [0], isRival: true }] };
 
-    const persaCount = data.filter(event => event.CATEGORÍA === 'PERSA').length;
-    const ricuperataCount = data.filter(event => event.CATEGORÍA === 'RICUPERATA').length;
+    const persaCount = data.filter(event => event.CATEGORIA === 'PERSA').length;
+    const ricuperataCount = data.filter(event => event.CATEGORIA === 'RICUPERATA').length;
 
     // console.log(`Turnovers - PERSA: ${persaCount}, RICUPERATA: ${ricuperataCount}`);  // Verifica los datos procesados
 
@@ -138,10 +138,10 @@ const MatchReportRight = ({ data }) => {
       };
 
     const ourTeamBreaks = data.filter(
-      (event) => event.CATEGORÍA === "BREAK" && event.EQUIPO === "SAN BENEDETTO"
+      (event) => event.CATEGORIA === "BREAK" && event.EQUIPO === "SAN BENEDETTO"
     ).length;
     const rivalTeamBreaks = data.filter(
-      (event) => event.CATEGORÍA === "BREAK" && event.EQUIPO === "RIVAL"
+      (event) => event.CATEGORIA === "BREAK" && event.EQUIPO === "RIVAL"
     ).length;
 
     // console.log(
@@ -177,18 +177,18 @@ const MatchReportRight = ({ data }) => {
 
     const ourTeamFormaciones = data.filter(
       (event) =>
-        (event.CATEGORÍA === "TOUCHE" || event.CATEGORÍA === "MISCHIA") &&
+        (event.CATEGORIA === "TOUCHE" || event.CATEGORIA === "MISCHIA") &&
         event.EQUIPO === "SAN BENEDETTO"
     ).length;
     const rivalTeamFormaciones = data.filter(
       (event) =>
-        (event.CATEGORÍA === "TOUCHE" || event.CATEGORÍA === "MISCHIA") &&
+        (event.CATEGORIA === "TOUCHE" || event.CATEGORIA === "MISCHIA") &&
         event.EQUIPO === "RIVAL"
     ).length;
 
     const ourTeamVinta = data.filter(
       (event) =>
-        (event.CATEGORÍA === "TOUCHE" || event.CATEGORÍA === "MISCHIA") &&
+        (event.CATEGORIA === "TOUCHE" || event.CATEGORIA === "MISCHIA") &&
         event.EQUIPO === "SAN BENEDETTO" &&
         (event["RESULTADO SCRUM"] === "VINTA" ||
           event["RESULTADO LINE"] === "PULITA" ||
@@ -196,7 +196,7 @@ const MatchReportRight = ({ data }) => {
     ).length;
     const rivalTeamVinta = data.filter(
       (event) =>
-        (event.CATEGORÍA === "TOUCHE" || event.CATEGORÍA === "MISCHIA") &&
+        (event.CATEGORIA === "TOUCHE" || event.CATEGORIA === "MISCHIA") &&
         event.EQUIPO === "RIVAL" &&
         (event["RESULTADO SCRUM"] === "VINTA" ||
           event["RESULTADO LINE"] === "PULITA" ||

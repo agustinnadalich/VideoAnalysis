@@ -28,7 +28,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
   }
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORÍA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
   ];
 
   const timelineData = {
@@ -36,7 +36,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
     datasets: filteredCategories.map((category) => ({
       label: category,
       data: filteredEvents
-        .filter((event) => event.CATEGORÍA === category)
+        .filter((event) => event.CATEGORIA === category)
         .map((event) => {
           let descriptor = "";
           columnsToTooltip.forEach((column) => {
@@ -63,7 +63,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
         }),
       backgroundColor: colors[category],
       barPercentage: 1.0, // Asegura que las barras ocupen todo el espacio disponible
-      categoryPercentage: 1.0, // Asegura que las barras se centren en sus categorías
+      categoryPercentage: 1.0, // Asegura que las barras se centren en sus CATEGORIAs
     })),
   };
 
@@ -75,27 +75,27 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       const eventData = filteredEvents[index];
       onEventClick(eventData);
     } else {
-      // Manejar clics en las etiquetas del eje de la categoría
+      // Manejar clics en las etiquetas del eje de la CATEGORIA
       const yScale = event.chart.scales.y;
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
         const category = yScale.getLabelForValue(yValue);
 
         if (category) {
-          // Verificar si ya estamos filtrando por esta categoría
+          // Verificar si ya estamos filtrando por esta CATEGORIA
           const isAlreadyFiltered =
             filterCategory.includes(category);
 
           if (isAlreadyFiltered) {
-            // Si ya estamos filtrando por esta categoría, desfiltrar y mostrar todos los eventos
+            // Si ya estamos filtrando por esta CATEGORIA, desfiltrar y mostrar todos los eventos
             const newFilterCategory = filterCategory.filter(cat => cat !== category);
             setFilterCategory(newFilterCategory);
             updateCharts(events, newFilterCategory, filterDescriptors);
             setFilteredEvents(events);
           } else if (events) {
-            // Si no, filtrar por la nueva categoría
+            // Si no, filtrar por la nueva CATEGORIA
             const filtered = events.filter(
-              (event) => event.CATEGORÍA === category
+              (event) => event.CATEGORIA === category
             );
 
             if (filtered.length > 0) {
@@ -168,15 +168,15 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       },
       y: {
         type: "category",
-        labels: filteredCategories, // Usar las categorías filtradas
+        labels: filteredCategories, // Usar las CATEGORIAs filtradas
         title: {
           display: true,
-          text: "Categoría",
+          text: "CATEGORIA",
         },
         ticks: {
           padding: 5, // Ajusta el espacio entre las etiquetas y las barras
           callback: function (value, index, values) {
-            return filteredCategories[value]; // Mostrar las categorías originales
+            return filteredCategories[value]; // Mostrar las CATEGORIAs originales
           },
         },
         stacked: true, // Asegura que las barras se apilen correctamente

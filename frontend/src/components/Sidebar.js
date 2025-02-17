@@ -40,7 +40,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     "COORDENADA Y",
     "DURACION",
     "ID",
-    "CATEGORÍA",
+    "CATEGORIA",
     "EQUIPO",
     "PUNTOS (VALOR)",
     "SEGUNDO",
@@ -76,7 +76,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const categoryOptions = [
     ...new Set(
       events
-        .map((event) => event.CATEGORÍA)
+        .map((event) => event.CATEGORIA)
         .filter((category) => category !== null)
     ),
   ].map((category) => ({ value: category, label: category }));
@@ -87,7 +87,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
 
     const filteredEvents =
       selectedCategories.length > 0
-        ? events.filter((event) => selectedCategories.includes(event.CATEGORÍA))
+        ? events.filter((event) => selectedCategories.includes(event.CATEGORIA))
         : events;
     setFilteredEvents(filteredEvents);
     updateDescriptorOptions(filteredEvents);
@@ -138,7 +138,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
 
     if (filterCategory.length > 0) {
       filteredEvents = filteredEvents.filter((event) =>
-        filterCategory.includes(event.CATEGORÍA)
+        filterCategory.includes(event.CATEGORIA)
       );
     }
 
@@ -193,7 +193,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
       </div>
 
       <label>
-        Categorías:
+        CATEGORIAs:
         <Select
           isMulti
           options={categoryOptions}

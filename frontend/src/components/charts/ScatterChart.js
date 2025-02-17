@@ -37,9 +37,9 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
         return (
           !isNaN(x) &&
           !isNaN(y) &&
-          event.CATEGORÍA !== "DIFESA" &&
-          event.CATEGORÍA !== "ATTACCO" &&
-          event.CATEGORÍA !== "PARTITA TAGLIATA"
+          event.CATEGORIA !== "DIFESA" &&
+          event.CATEGORIA !== "ATTACCO" &&
+          event.CATEGORIA !== "PARTITA TAGLIATA"
         );
       })
       .map((event) => {
@@ -50,12 +50,12 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
           }
         });
         return {
-          label: `${event.CATEGORÍA}`,
+          label: `${event.CATEGORIA}`,
           data: [
             {
               x: Number(event["COORDENADA Y"]),
               y: Number(event["COORDENADA X"]),
-              category: event.CATEGORÍA,
+              category: event.CATEGORIA,
               id: event.ID,
               descriptor: descriptor,
               ...columnsToTooltip.reduce((acc, column) => {
@@ -64,7 +64,7 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
               }, {}),
             },
           ],
-          backgroundColor: colors[event.CATEGORÍA],
+          backgroundColor: colors[event.CATEGORIA],
         };
       }),
   };
