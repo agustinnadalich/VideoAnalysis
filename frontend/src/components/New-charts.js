@@ -22,6 +22,7 @@ import TimelineChart from "./charts/TimelineChart";
 import PlayerPointsChart from "./charts/PlayerPointsChart";
 import PointsTimeChart from "./charts/PointsTimeChart";
 import TacklesTimeChart from "./charts/TacklesTimeChart";
+import CoustomTimeChart from "./charts/CoustomTimeChart";
 
 Chart.register(...registerables);
 Chart.register(zoomPlugin);
@@ -390,6 +391,20 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             />
           </div>
         )}
+        {/* CoustomChart quitado porque hay que resolver problema de altura que crece sin parar.   */}
+        
+              {/* </div>
+              <div maxHeight="400px" style={{ width: "90%", marginBottom: "20px" }}>
+              {filteredEvents.length > 0 && (
+                <div style={{ width: "40%" , maxHeight: "400px", overflowY: "auto"}}>
+                  <CoustomTimeChart
+                    style={{ maxHeight: "400px", overflowY: "auto" }}
+                    events={filteredEvents}
+                    // onChartClick={handleChartClick}
+                    // category="PUNTI"
+                  />
+                </div>
+              )} */}
       </div>
       {filteredEvents.some((event) => event["COORDENADA X"] !== null) && (
         <div style={{ width: "90%", marginBottom: "20px" }}>

@@ -73,7 +73,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Puntos por Tiempo de Juego',
+        text: 'Tackles por Tiempo de Juego',
       },
       tooltip: {
         callbacks: {
