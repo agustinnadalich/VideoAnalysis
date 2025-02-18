@@ -1,13 +1,27 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { Chart, registerables, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend, ArcElement } from "chart.js";
+import {
+  Chart,
+  registerables,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import FilterContext from '../context/FilterContext';
-import TacklesBarChart from './charts/TacklesBarChart';
-import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
-import AdvancePieChart from './charts/AdvancePieChart';
-import ScatterChart from './charts/ScatterChart';
-import TimelineChart from './charts/TimelineChart';
+import FilterContext from "../context/FilterContext";
+import TacklesBarChart from "./charts/TacklesBarChart";
+import MissedTacklesBarChart from "./charts/MissedTacklesBarChart";
+import AdvancePieChart from "./charts/AdvancePieChart";
+import ScatterChart from "./charts/ScatterChart";
+import TimelineChart from "./charts/TimelineChart";
+import PlayerPointsChart from "./charts/PlayerPointsChart";
+import PointsTimeChart from "./charts/PointsTimeChart";
+import TacklesTimeChart from "./charts/TacklesTimeChart";
 
 Chart.register(...registerables);
 Chart.register(zoomPlugin);
@@ -59,7 +73,16 @@ const columnsToInclude = [
 ];
 
 const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
-  const { filterCategory, setFilterCategory, filterDescriptors, selectedTeam, events, filteredEvents, setFilteredEvents, setFilterDescriptors } = useContext(FilterContext);
+  const {
+    filterCategory,
+    setFilterCategory,
+    filterDescriptors,
+    selectedTeam,
+    events,
+    filteredEvents,
+    setFilteredEvents,
+    setFilterDescriptors,
+  } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
 
@@ -67,9 +90,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     ...new Set(events.map((event) => event.CATEGORIA)),
   ].filter((category) => category !== "FIN");
   const colors = uniqueCategories.reduce((acc, category, index) => {
-    const color = `hsl(${
-      (index * 360) / uniqueCategories.length
-    }, 70%, 50%)`;
+    const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
     acc[category] = color;
     return acc;
   }, {});
@@ -85,28 +106,30 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const avanceLabels = ["POSITIVO", "NEUTRO", "NEGATIVO"];
 
   const avanceData = avanceLabels.map(
-    (result) =>
-      tackleEvents.filter((event) => event.AVANCE === result).length
+    (result) => tackleEvents.filter((event) => event.AVANCE === result).length
   );
 
   const updateCharts = useCallback(
     (events, categories, filters, team) => {
       if (!events) return;
-      const filtered = events.filter(event => {
-        const categoryMatch = categories.length === 0 || categories.includes(event.CATEGORIA);
-        const filterMatch = filters.length === 0 || filters.every(filter => event[filter.descriptor] === filter.value);
+      const filtered = events.filter((event) => {
+        const categoryMatch =
+          categories.length === 0 || categories.includes(event.CATEGORIA);
+        const filterMatch =
+          filters.length === 0 ||
+          filters.every((filter) => event[filter.descriptor] === filter.value);
         const teamMatch = !team || event.EQUIPO === team;
-        
+
         return categoryMatch && filterMatch && teamMatch;
       });
-      
+
       setFilteredEvents(filtered);
-  
-      // console.log("Filtered en updateCharts:", filtered);
+
+      console.log("Filtered en updateCharts:", filtered);
     },
     [setFilteredEvents]
   );
-  
+
   const fetchData = useCallback(async () => {
     try {
       updateCharts(events, filterCategory, filterDescriptors, selectedTeam);
@@ -141,21 +164,35 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     [onEventClick]
   );
 
-  const handleChartClick = (event, elements, chartType, additionalFilters = []) => {
+  const parseTime = (timeString) => {
+    const [minutes, seconds] = timeString.split(":").map(Number);
+    return minutes + seconds / 60;
+  };
+
+  const handleChartClick = (
+    event,
+    elements,
+    chartType,
+    additionalFilters = []
+  ) => {
     if (elements.length > 0) {
       const chart = elements[0].element.$context.chart;
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
-  
+
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
           (event) => event.AVANCE === clickedLabel
         );
-        const newFilterCategory = additionalFilters.find(filter => filter.descriptor === "CATEGORIA").value;
+        const newFilterCategory = additionalFilters.find(
+          (filter) => filter.descriptor === "CATEGORIA"
+        ).value;
         if (filterCategory.includes(newFilterCategory)) {
-          setFilterCategory(filterCategory.filter(category => category !== newFilterCategory));
+          setFilterCategory(
+            filterCategory.filter((category) => category !== newFilterCategory)
+          );
         } else {
           setFilterCategory([...filterCategory, newFilterCategory]);
         }
@@ -165,45 +202,56 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           (event) => event.JUGADOR === clickedLabel
         );
         newFilter = { descriptor: "JUGADOR", value: clickedLabel };
+      } else if (chartType === "time") {
+        const clickedLabel = chart.data.labels[index];
+        console.log("Clicked label:", clickedLabel);
+
+        clickedEvents = events.filter(
+          (event) => event.Grupo_Tiempo === clickedLabel
+        );
+        newFilter = { descriptor: "Grupo_Tiempo", value: clickedLabel };
       }
-  
+
       if (clickedEvents.length > 0) {
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
-  
+
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
-        updateCharts(
-          updatedEvents,
-          filterCategory,
-          filterDescriptors,
-        );
-  
+        updateCharts(updatedEvents, filterCategory, filterDescriptors);
+
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
-  
+
         // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected && clickedEvents.length === 1) {
           onEventClick(clickedEvents[0]);
         }
-  
+
         // Actualizar los filtros en el contexto
         if (newFilter || additionalFilters.length > 0) {
           const filtersToAdd = newFilter
-            ? [newFilter, ...additionalFilters.filter(filter => filter.descriptor !== "CATEGORIA")]
-            : additionalFilters.filter(filter => filter.descriptor !== "CATEGORIA");
+            ? [
+                newFilter,
+                ...additionalFilters.filter(
+                  (filter) => filter.descriptor !== "CATEGORIA"
+                ),
+              ]
+            : additionalFilters.filter(
+                (filter) => filter.descriptor !== "CATEGORIA"
+              );
           setFilterDescriptors((prevFilters) => {
             const updatedFilters = isAlreadySelected
               ? prevFilters.filter(
-            (filter) =>
-              !filtersToAdd.some(
-                (newFilter) =>
-            filter.descriptor === newFilter.descriptor &&
-            filter.value === newFilter.value
-              )
-          )
+                  (filter) =>
+                    !filtersToAdd.some(
+                      (newFilter) =>
+                        filter.descriptor === newFilter.descriptor &&
+                        filter.value === newFilter.value
+                    )
+                )
               : [...prevFilters, ...filtersToAdd];
             return updatedFilters;
           });
@@ -222,22 +270,26 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     if (eventData) {
       onEventClick(eventData);
     }
-      
+
     const updatedEvents = eventData ? [eventData] : events;
 
-    updateCharts(
-      updatedEvents,
-      filterCategory,
-      filterDescriptors
-    );
+    updateCharts(updatedEvents, filterCategory, filterDescriptors);
   };
 
   return (
-    <div className="charts" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div
+      className="charts"
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
       {error && <div>Error: {error.message}</div>}
 
       <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-        <div style={{ width: "1500px", height: `${Math.max(150, filteredCategories.length * 30)}px` }}>
+        <div
+          style={{
+            width: "1500px",
+            height: `${Math.max(150, filteredCategories.length * 30)}px`,
+          }}
+        >
           <TimelineChart
             events={events}
             filteredEvents={filteredEvents}
@@ -252,33 +304,106 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           />
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", width: "100%" }}>
-        {filteredEvents.some(event => event.CATEGORIA === "PLACCAGGIO") && (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
           <div style={{ width: "50%", marginBottom: "20px" }}>
-            <TacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
+            <TacklesBarChart
+              events={filteredEvents}
+              filterCategory={filterCategory}
+              filterDescriptors={filterDescriptors}
+              onChartClick={handleChartClick}
+            />
           </div>
         )}
-        {filteredEvents.some(event => event.CATEGORIA === "PLAC-SBAGLIATTO") && (
+        {filteredEvents.some(
+          (event) => event.CATEGORIA === "PLAC-SBAGLIATTO"
+        ) && (
           <div style={{ width: "50%", marginBottom: "20px" }}>
-            <MissedTacklesBarChart events={filteredEvents} filterCategory={filterCategory} filterDescriptors={filterDescriptors} onChartClick={handleChartClick} />
+            <MissedTacklesBarChart
+              events={filteredEvents}
+              filterCategory={filterCategory}
+              filterDescriptors={filterDescriptors}
+              onChartClick={handleChartClick}
+            />
           </div>
         )}
       </div>
-      <div style={{ width: "90%", marginBottom: "20px", display: "flex", justifyContent: "space-around" }}>
-        {filteredEvents.some(event => event.CATEGORIA === "PLACCAGGIO") && (
+      <div
+        style={{
+          width: "90%",
+          marginBottom: "20px",
+          display: "flex",
+          justifyContent: "space-around",
+        }}
+      >
+        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
           <div style={{ width: "40%" }}>
-            <AdvancePieChart events={filteredEvents} onChartClick={handleChartClick} category="PLACCAGGIO" />
+            <AdvancePieChart
+              events={filteredEvents}
+              onChartClick={handleChartClick}
+              category="PLACCAGGIO"
+            />
           </div>
         )}
-        {filteredEvents.some(event => event.CATEGORIA === "MISCHIA") && (
+
+        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
           <div style={{ width: "40%" }}>
-            <AdvancePieChart events={filteredEvents} onChartClick={handleChartClick} category="MISCHIA" />
+            <TacklesTimeChart
+              events={filteredEvents}
+              onChartClick={handleChartClick}
+              category="PLACCAGGIO"
+            />
+          </div>
+        )}
+        {filteredEvents.some((event) => event.CATEGORIA === "MISCHIA") && (
+          <div style={{ width: "40%" }}>
+            <AdvancePieChart
+              events={filteredEvents}
+              onChartClick={handleChartClick}
+              category="MISCHIA"
+            />
+          </div>
+        )}
+        {filteredEvents.some((event) => event.CATEGORIA === "PUNTI") && (
+          <div style={{ width: "40%" }}>
+            <PlayerPointsChart
+              events={filteredEvents}
+              onChartClick={handleChartClick}
+              category="PUNTI"
+            />
+          </div>
+        )}
+
+        {filteredEvents.some((event) => event.CATEGORIA === "PUNTI") && (
+          <div style={{ width: "40%" }}>
+            <PointsTimeChart
+              events={filteredEvents}
+              onChartClick={handleChartClick}
+              category="PUNTI"
+            />
           </div>
         )}
       </div>
-      {filteredEvents.some(event => event["COORDENADA X"] !== null) && (
+      {filteredEvents.some((event) => event["COORDENADA X"] !== null) && (
         <div style={{ width: "90%", marginBottom: "20px" }}>
-          <ScatterChart events={filteredEvents} columnsToTooltip={columnsToTooltip} colors={colors} setSelectedEvents={setSelectedEvents} selectedEvents={selectedEvents} onChartClick={handleChartClick} onEventClick={handleScatterClick} width={800} height={600} />
+          <ScatterChart
+            events={filteredEvents}
+            columnsToTooltip={columnsToTooltip}
+            colors={colors}
+            setSelectedEvents={setSelectedEvents}
+            selectedEvents={selectedEvents}
+            onChartClick={handleChartClick}
+            onEventClick={handleScatterClick}
+            width={800}
+            height={600}
+          />
         </div>
       )}
       <h1>Eventos</h1>

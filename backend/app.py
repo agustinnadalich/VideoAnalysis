@@ -54,19 +54,53 @@ def get_events():
     df = pd.read_excel(file_path, sheet_name='MATRIZ')
     if df.empty:
         return jsonify({"error": "No data available"}), 404
-    
-    
+
     # Selecciona todas las columnas necesarias
     columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORIA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
     filtered_df = df[columns_to_include]
-    
+
+    # Identifica los eventos de inicio y fin de cada mitad
+    kick_off_1 = filtered_df[filtered_df['CATEGORIA'] == 'KICK OFF 1']['SEGUNDO'].min()
+    fin_1 = filtered_df[filtered_df['CATEGORIA'] == 'FIN 1']['SEGUNDO'].max()
+    kick_off_2 = filtered_df[filtered_df['CATEGORIA'] == 'KICK OFF 2']['SEGUNDO'].min()
+    fin_2 = filtered_df[filtered_df['CATEGORIA'] == 'FIN 2']['SEGUNDO'].max()
+
+    # Calcula el tiempo de juego acumulado
+    def calcular_tiempo_de_juego(segundo):
+        if segundo <= fin_1:
+            return segundo - kick_off_1
+        elif segundo >= kick_off_2:
+            return (fin_1 - kick_off_1) + (segundo - kick_off_2)
+        return None
+
+    # Define los grupos de tiempo
+    timeGroups = [
+        { "label": "0'- 20'", "start": 0, "end": 20 * 60 },
+        { "label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1) },
+        { "label": "40' - 60'", "start": calcular_tiempo_de_juego(kick_off_2), "end": calcular_tiempo_de_juego(kick_off_2) + 20 * 60 },
+        { "label": "60' - 80'", "start": calcular_tiempo_de_juego(kick_off_2) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2) }
+    ]
+    print(timeGroups)
+
     # Convierte el DataFrame a una lista de diccionarios
     events = filtered_df.to_dict(orient='records')
     for event in events:
         if 'SEGUNDO' in event and event['SEGUNDO'] is not None:
-            minutes, seconds = divmod(event['SEGUNDO'], 60)
+            minutes, seconds = divmod(int(event['SEGUNDO']), 60)
             event['TIEMPO(VIDEO)'] = f"{minutes:02}:{seconds:02}"
-    
+            tiempo_de_juego = calcular_tiempo_de_juego(event['SEGUNDO'])
+            if tiempo_de_juego is not None:
+                tiempo_de_juego_minutes, tiempo_de_juego_seconds = divmod(tiempo_de_juego, 60)
+                event['Tiempo_de_Juego'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
+                # Asigna el grupo de tiempo correspondiente
+                for group in timeGroups:
+                    if group["start"] <= tiempo_de_juego < group["end"]:
+                        event["Grupo_Tiempo"] = group["label"]
+                        break
+            else:
+                event['Tiempo_de_Juego'] = None
+                event['Grupo_Tiempo'] = None
+
     # Reemplaza NaN con None en la lista de diccionarios y convierte objetos no serializables
     for event in events:
         for key, value in event.items():
@@ -78,11 +112,11 @@ def get_events():
                 event[key] = str(value)
             elif isinstance(value, (pd._libs.tslibs.nattype.NaTType, type(pd.NaT))):
                 event[key] = None
-    
-   # Lee los datos generales del partido desde la hoja "PARTIDOS"
+
+    # Lee los datos generales del partido desde la hoja "PARTIDOS"
     df_partidos = pd.read_excel(file_path, sheet_name='PARTIDOS')
     partido_info = df_partidos.to_dict(orient='records')[0]  # Asume que hay solo una fila con datos generales del partido
-    
+
     print(events)  # Verifica los datos en la consola del servidor
     return jsonify({"header": partido_info, "events": events})
 
