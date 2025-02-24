@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
-const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious }, ref) => {
+const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate }, ref) => {
   const videoRef = useRef(null);
   const [isPiP, setIsPiP] = useState(false);
 
@@ -34,13 +34,24 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
     videoRef.current = event.target;
   };
 
+  const onStateChange = (event) => {
+    if (event.data === YouTube.PlayerState.PLAYING) {
+      const interval = setInterval(() => {
+        const currentTime = videoRef.current.getCurrentTime();
+        onTimeUpdate(currentTime);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  };
+  
+
   return (
     <div className={`video-container ${isPiP ? 'pip' : ''}`}>
       <YouTube 
         videoId={src} 
         onReady={onReady} 
+        onStateChange={onStateChange}
         className={`youtube-video ${isPiP ? '' : ''}`} 
-        // className={`youtube-video ${isPiP ? 'pip' : ''}`} 
         opts={{ 
           width: isPiP ? '320' : '640', 
           height: isPiP ? '180' : '360' 

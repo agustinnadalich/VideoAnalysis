@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,6 +9,8 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import annotationPlugin from 'chartjs-plugin-annotation';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import FilterContext from "../../context/FilterContext";
 
 ChartJS.register(
@@ -17,11 +19,25 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  annotationPlugin,
+  zoomPlugin // Asegúrate de registrar el plugin de zoom
 );
 
-const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts }) => {
+const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filteredEvents, updateCharts, currentTime }) => {
   const { filterCategory, setFilterCategory, filterDescriptors, setFilterDescriptors, setFilteredEvents } = useContext(FilterContext);
+  const [chartInstance, setChartInstance] = useState(null);
+
+  useEffect(() => {
+    if (chartInstance) {
+      chartInstance.options.plugins.annotation.annotations.currentTimeLine.value = currentTime;
+      chartInstance.update();
+    }
+  }, [currentTime, chartInstance]);
+
+  useEffect(() => {
+    console.log("Chart instance set:", chartInstance);
+  }, [chartInstance]);
 
   if (!filteredEvents || filteredEvents.length === 0) {
     return null; // Manejar el caso donde filteredEvents es undefined o está vacío
@@ -72,7 +88,10 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       const element = elements[0];
       const datasetIndex = element.datasetIndex;
       const index = element.index;
-      const eventData = filteredEvents[index];
+      const category = filteredCategories[datasetIndex];
+      const eventData = filteredEvents.find(
+        (event) => event.CATEGORIA === category && event.ID === timelineData.datasets[datasetIndex].data[index].id
+      );
       onEventClick(eventData);
     } else {
       // Manejar clics en las etiquetas del eje de la CATEGORIA
@@ -134,12 +153,14 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
 
         // Aumentar el grosor de la barra al pasar el cursor
         chart.data.datasets[datasetIndex].barThickness = 30;
+        chart.data.datasets[datasetIndex].minBarLength = 8;
         chart.update();
       } else {
         // Restablecer el grosor de la barra cuando el cursor no está sobre ella
         chart.data.datasets.forEach((dataset) => {
           dataset.data.forEach((data) => {
             dataset.barThickness = Math.max(20, 40 / filteredCategories.length);
+            dataset.minBarLength = 3;
           });
         });
         chart.update();
@@ -197,7 +218,23 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       datalabels: {
         display: false, // Quitar etiquetas de datos dentro de las barras
       },
-      categoryClick: {},
+      annotation: {
+        annotations: {
+          currentTimeLine: {
+            type: 'line',
+            mode: 'vertical',
+            scaleID: 'x',
+            value: currentTime,
+            borderColor: 'red',
+            borderWidth: 2,
+            label: {
+              content: 'Tiempo actual',
+              enabled: true,
+              position: 'top'
+            }
+          }
+        }
+      },
       zoom: {
         pan: {
           enabled: true,
@@ -206,7 +243,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
         },
         zoom: {
           wheel: {
-            enabled: true, // Deshabilitar el zoom con la rueda del ratón
+            enabled: false, // Deshabilitar el zoom con la rueda del ratón
             modifierKey: "shift", // Habilitar el zoom con la rueda del ratón + tecla Shift
             speed: 0.05, // Ajustar la velocidad del zoom
           },
@@ -216,7 +253,9 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
           mode: "x",
           drag: {
             enabled: true,
-            modifierKey: "alt", // Habilitar el arrastre con la tecla Ctrl
+            modifierKey: "alt", // Habilitar el arrastre con la tecla Alt
+            backgroundColor: 'rgba(0, 0, 255, 0.1)', // Color de fondo del recuadro de zoom
+            borderColor: 'rgba(0, 0, 255, 0.5)', // Color del borde del recuadro de zoom
           },
         },
       },
@@ -224,9 +263,10 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
     maintainAspectRatio: false,
     responsive: true,
     barThickness: Math.max(20, 40 / filteredCategories.length), // Ajusta el grosor de las barras dinámicamente
+    minBarLength: 3, // Ancho mínimo para que las barras sean clickeables
   };
 
-  return <Bar data={timelineData} options={timelineOptions} />;
+  return <Bar data={timelineData} options={timelineOptions} ref={setChartInstance} />;
 };
 
 export default TimelineChart;

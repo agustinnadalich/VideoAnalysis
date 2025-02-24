@@ -25,8 +25,8 @@
   width: 100%;
   height: auto;
 }
-.ytp-pause-overlay-container {
-  display: none;
+.ytp-pause-overlay-container, .ytp-pause-overlay {
+  display: none !important;
 }
 
 .youtube-video.pip {

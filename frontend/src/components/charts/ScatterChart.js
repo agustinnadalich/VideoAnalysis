@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo, useCallback } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -25,51 +25,53 @@ Chart.register(backgroundImagePlugin);
 const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
   const { filterDescriptors, setFilterDescriptors } = useContext(FilterContext);
 
-  if (!events || events.length === 0 || !columnsToTooltip) {
-    return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío
-  }
+  const scatterChartData = useMemo(() => {
+    if (!events || events.length === 0 || !columnsToTooltip) {
+      return { datasets: [] }; // Retornar un objeto vacío si no hay datos
+    }
 
-  const scatterChartData = {
-    datasets: events
-      .filter((event) => {
-        const x = parseFloat(event["COORDENADA X"]);
-        const y = parseFloat(event["COORDENADA Y"]);
-        return (
-          !isNaN(x) &&
-          !isNaN(y) &&
-          event.CATEGORIA !== "DIFESA" &&
-          event.CATEGORIA !== "ATTACCO" &&
-          event.CATEGORIA !== "PARTITA TAGLIATA"
-        );
-      })
-      .map((event) => {
-        let descriptor = event["TIEMPO(VIDEO)"];
-        columnsToTooltip.forEach((column) => {
-          if (event[column] !== null) {
-            descriptor += `, ${column}: ${event[column]}`;
-          }
-        });
-        return {
-          label: `${event.CATEGORIA}`,
-          data: [
-            {
-              x: Number(event["COORDENADA Y"]),
-              y: Number(event["COORDENADA X"]),
-              category: event.CATEGORIA,
-              id: event.ID,
-              descriptor: descriptor,
-              ...columnsToTooltip.reduce((acc, column) => {
-                acc[column] = event[column];
-                return acc;
-              }, {}),
-            },
-          ],
-          backgroundColor: colors[event.CATEGORIA],
-        };
-      }),
-  };
+    return {
+      datasets: events
+        .filter((event) => {
+          const x = parseFloat(event["COORDENADA X"]);
+          const y = parseFloat(event["COORDENADA Y"]);
+          return (
+            !isNaN(x) &&
+            !isNaN(y) &&
+            event.CATEGORIA !== "DIFESA" &&
+            event.CATEGORIA !== "ATTACCO" &&
+            event.CATEGORIA !== "PARTITA TAGLIATA"
+          );
+        })
+        .map((event) => {
+          let descriptor = event["TIEMPO(VIDEO)"];
+          columnsToTooltip.forEach((column) => {
+            if (event[column] !== null) {
+              descriptor += `, ${column}: ${event[column]}`;
+            }
+          });
+          return {
+            label: `${event.CATEGORIA}`,
+            data: [
+              {
+                x: Number(event["COORDENADA Y"]),
+                y: Number(event["COORDENADA X"]),
+                category: event.CATEGORIA,
+                id: event.ID,
+                descriptor: descriptor,
+                ...columnsToTooltip.reduce((acc, column) => {
+                  acc[column] = event[column];
+                  return acc;
+                }, {}),
+              },
+            ],
+            backgroundColor: colors[event.CATEGORIA],
+          };
+        }),
+    };
+  }, [events, columnsToTooltip, colors]);
 
-  const handleScatterClick = (event, elements) => {
+  const handleScatterClick = useCallback((event, elements) => {
     if (elements.length > 0) {
       const chart = elements[0].element.$context.chart;
       const datasetIndex = elements[0].datasetIndex;
@@ -103,9 +105,9 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
         console.error("Event not found with ID:", clickedEventId);
       }
     }
-  };
+  }, [events, selectedEvents, setSelectedEvents, onEventClick, setFilterDescriptors]);
 
-  const scatterChartOptions = {
+  const scatterChartOptions = useMemo(() => ({
     onClick: handleScatterClick,
     plugins: {
       title: {
@@ -166,10 +168,15 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
     backgroundImage: "/CANCHA-CORTADA.jpg",
     elements: {
       point: {
-        radius: 7,
+        radius: 5,
+        hoverRadius: 10,
       },
     },
-  };
+  }), [handleScatterClick, columnsToTooltip]);
+
+  if (!events || events.length === 0 || !columnsToTooltip) {
+    return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío
+  }
 
   return <Scatter data={scatterChartData} options={scatterChartOptions} width={800} height={600} />;
 };

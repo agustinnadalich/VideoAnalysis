@@ -9,6 +9,8 @@ import MatchReportRight from "./components/MatchReportRight";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
+import TimelineChart from './components/charts/TimelineChart';
+
 
 library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter);
 
@@ -24,6 +26,8 @@ const App = () => {
   const [isUserInteracted, setIsUserInteracted] = useState(false);
   const videoRef = useRef(null);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -83,6 +87,11 @@ const App = () => {
       setCurrentEventIndex(currentEventIndex + 1);
     }
   };
+
+  const handleTimeUpdate = (time) => {
+    setCurrentTime(time);
+  };
+
 
   const handlePrevious = () => {
     if (currentEventIndex > 0) {
@@ -182,6 +191,7 @@ const App = () => {
             >
               <div style={{ width: "25%", overflowY: "auto" }}>
                 <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
+                {/* <MatchReportLeft data={data.events} /> */}
               </div>
               <div
                 style={{
@@ -198,6 +208,7 @@ const App = () => {
                   tempTime={tempTime}
                   duration={duration}
                   isPlayingFilteredEvents={isPlayingFilteredEvents}
+                  onTimeUpdate={handleTimeUpdate}
                   onEnd={() => {
                     if (isPlayingFilteredEvents) {
                       setCurrentEventIndex((prevIndex) => {
@@ -224,6 +235,7 @@ const App = () => {
               <Charts
                 onEventClick={handleEventClick}
                 onPlayFilteredEvents={handlePlayFilteredEvents}
+                currentTime={currentTime}
               />
             </div>
           </div>

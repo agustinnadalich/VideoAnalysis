@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useCallback, useContext, useMemo } from "react";
 import {
   Chart,
   registerables,
@@ -73,7 +73,7 @@ const columnsToInclude = [
   "AVANCE",
 ];
 
-const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
+const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const {
     filterCategory,
     setFilterCategory,
@@ -87,28 +87,29 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
 
-  const uniqueCategories = [
+  const uniqueCategories = useMemo(() => [
     ...new Set(events.map((event) => event.CATEGORIA)),
-  ].filter((category) => category !== "FIN");
-  const colors = uniqueCategories.reduce((acc, category, index) => {
+  ].filter((category) => category !== "FIN"), [events]);
+
+  const colors = useMemo(() => uniqueCategories.reduce((acc, category, index) => {
     const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
     acc[category] = color;
     return acc;
-  }, {});
+  }, {}), [uniqueCategories]);
 
-  const tackleEvents = filteredEvents.filter(
+  const tackleEvents = useMemo(() => filteredEvents.filter(
     (event) => event.CATEGORIA === "PLACCAGGIO"
-  );
+  ), [filteredEvents]);
 
-  const playerLabels = [
+  const playerLabels = useMemo(() => [
     ...new Set(tackleEvents.map((event) => event.JUGADOR)),
-  ].sort((a, b) => a - b);
+  ].sort((a, b) => a - b), [tackleEvents]);
 
   const avanceLabels = ["POSITIVO", "NEUTRO", "NEGATIVO"];
 
-  const avanceData = avanceLabels.map(
+  const avanceData = useMemo(() => avanceLabels.map(
     (result) => tackleEvents.filter((event) => event.AVANCE === result).length
-  );
+  ), [tackleEvents]);
 
   const updateCharts = useCallback(
     (events, categories, filters, team) => {
@@ -302,6 +303,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             filterDescriptors={filterDescriptors}
             setFilteredEvents={setFilteredEvents}
             setFilterDescriptors={setFilterDescriptors} // Pasar setFilterDescriptors como prop
+            currentTime={currentTime}
           />
         </div>
       </div>
