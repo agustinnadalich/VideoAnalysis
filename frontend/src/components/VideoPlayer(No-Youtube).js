@@ -1,12 +1,10 @@
-import React, { useEffect, forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import YouTube from 'react-youtube';
+import React, { useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
 const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious }, ref) => {
   const videoRef = useRef(null);
-  const [isPiP, setIsPiP] = useState(false);
 
   useImperativeHandle(ref, () => ({
     get current() {
@@ -17,35 +15,33 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.seekTo(tempTime);
+      video.currentTime = tempTime;
       if (isPlayingFilteredEvents) {
-        video.playVideo();
+        video.play();
       } else {
-        video.pauseVideo();
+        video.pause();
       }
     }
   }, [tempTime, isPlayingFilteredEvents]);
 
-  const handlePiP = () => {
-    setIsPiP(!isPiP);
-  };
-
-  const onReady = (event) => {
-    videoRef.current = event.target;
+  const handlePiP = async () => {
+    const video = videoRef.current;
+    if (video) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
+        }
+      } catch (error) {
+        console.error('Error with Picture-in-Picture:', error);
+      }
+    }
   };
 
   return (
-    <div className={`video-container ${isPiP ? 'pip' : ''}`}>
-      <YouTube 
-        videoId={src} 
-        onReady={onReady} 
-        className={`youtube-video ${isPiP ? '' : ''}`} 
-        // className={`youtube-video ${isPiP ? 'pip' : ''}`} 
-        opts={{ 
-          width: isPiP ? '320' : '640', 
-          height: isPiP ? '180' : '360' 
-        }} 
-      />
+    <div className="video-container">
+      <video ref={videoRef} src={src} controls width="600" />
       <div className="button-bar">
         <button className="pip-button" style={{ padding: "5px", margin:"5px" }} onClick={handlePiP}>
           <FontAwesomeIcon icon="external-link-alt" /> {/* Icon for Picture-in-Picture */}
