@@ -56,14 +56,14 @@ def get_events():
         return jsonify({"error": "No data available"}), 404
 
     # Selecciona todas las columnas necesarias
-    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORIA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'PALOS']
+    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORIA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'TIEMPOS', 'PALOS']
     filtered_df = df[columns_to_include]
 
     # Identifica los eventos de inicio y fin de cada mitad
-    kick_off_1 = filtered_df[filtered_df['CATEGORIA'] == 'KICK OFF 1']['SEGUNDO'].min()
-    fin_1 = filtered_df[filtered_df['CATEGORIA'] == 'FIN 1']['SEGUNDO'].max()
-    kick_off_2 = filtered_df[filtered_df['CATEGORIA'] == 'KICK OFF 2']['SEGUNDO'].min()
-    fin_2 = filtered_df[filtered_df['CATEGORIA'] == 'FIN 2']['SEGUNDO'].max()
+    kick_off_1 = filtered_df[(filtered_df['CATEGORIA'] == 'KICK OFF') & (filtered_df['TIEMPOS'] == 1)]['SEGUNDO'].min()
+    fin_1 = filtered_df[(filtered_df['CATEGORIA'] == 'FIN') & (filtered_df['TIEMPOS'] == 1)]['SEGUNDO'].max()
+    kick_off_2 = filtered_df[(filtered_df['CATEGORIA'] == 'KICK OFF') & (filtered_df['TIEMPOS'] == 2)]['SEGUNDO'].min()
+    fin_2 = filtered_df[(filtered_df['CATEGORIA'] == 'FIN') & (filtered_df['TIEMPOS'] == 2)]['SEGUNDO'].max()
 
     # Calcula el tiempo de juego acumulado
     def calcular_tiempo_de_juego(segundo):

@@ -44,7 +44,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
   }
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORIA).filter(category => category !== 'FIN')),
   ];
 
   const timelineData = {
