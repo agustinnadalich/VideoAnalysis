@@ -100,24 +100,22 @@ const App = () => {
     }
   };
 
-  // useEffect(() => {
-  //   fetch("http://localhost:5001/events")
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log("Data: ", data); // Verifica los datos en la consola del cliente
-  //       setData(data);
-  //     })
-  //     .catch((error) => console.error("Error fetching data:", error));
-  // }, []);
-
   useEffect(() => {
-    fetch("https://videoanalysis-back.onrender.com/events")
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchData = async () => {
+      const url = process.env.NODE_ENV === 'development' 
+        ? "http://localhost:5001/events" 
+        : "https://videoanalysis-back.onrender.com/events";
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
         console.log("Data: ", data); // Verifica los datos en la consola del cliente
         setData(data);
-      })
-      .catch((error) => console.error("Error fetching data:", error));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
