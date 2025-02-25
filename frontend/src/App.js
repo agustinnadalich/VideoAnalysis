@@ -111,7 +111,7 @@ const App = () => {
   // }, []);
 
   useEffect(() => {
-    fetch("https://videoanalysis-back.onrender.com:5001/events")
+    fetch("https://videoanalysis-back.onrender.com/events")
       .then((response) => response.json())
       .then((data) => {
         console.log("Data: ", data); // Verifica los datos en la consola del cliente
