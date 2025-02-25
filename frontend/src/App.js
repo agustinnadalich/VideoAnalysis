@@ -100,18 +100,8 @@ const App = () => {
     }
   };
 
-  useEffect(() => {
-    fetch("http://localhost:5001/events")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Data: ", data); // Verifica los datos en la consola del cliente
-        setData(data);
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
-
   // useEffect(() => {
-  //   fetch("https://videoanalysis-back.onrender.com/events")
+  //   fetch("http://localhost:5001/events")
   //     .then((response) => response.json())
   //     .then((data) => {
   //       console.log("Data: ", data); // Verifica los datos en la consola del cliente
@@ -119,6 +109,16 @@ const App = () => {
   //     })
   //     .catch((error) => console.error("Error fetching data:", error));
   // }, []);
+
+  useEffect(() => {
+    fetch("https://videoanalysis-back.onrender.com/events")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Data: ", data); // Verifica los datos en la consola del cliente
+        setData(data);
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  }, []);
 
   useEffect(() => {
     if (isPlayingFilteredEvents && tempTime !== null) {
