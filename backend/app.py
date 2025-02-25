@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})  # Permitir solicitudes desde localhost:3000
+CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://videoanalysis-front.onrender.com"]}})  # Permitir solicitudes desde localhost:3000 y videoanalysis-front.onrender.com
 
 # Asegúrate de que el directorio de uploads exista
 UPLOAD_FOLDER = '/app/uploads/'
