@@ -23,7 +23,9 @@ import PlayerPointsChart from "./charts/PlayerPointsChart";
 import PointsTimeChart from "./charts/PointsTimeChart";
 import TacklesTimeChart from "./charts/TacklesTimeChart";
 import CoustomTimeChart from "./charts/CoustomTimeChart";
+import annotationPlugin from 'chartjs-plugin-annotation';
 
+Chart.register(annotationPlugin);
 Chart.register(...registerables);
 Chart.register(zoomPlugin);
 
