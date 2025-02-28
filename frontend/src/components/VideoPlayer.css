@@ -22,7 +22,7 @@
 }
 
 .youtube-video {
-  width: 100%;
+  /* max-width: 100%; */
   height: auto;
 }
 .ytp-pause-overlay-container, .ytp-pause-overlay {
