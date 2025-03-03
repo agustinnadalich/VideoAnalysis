@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext, useMemo } from "react";
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import {
   Chart,
   registerables,
@@ -24,6 +24,8 @@ import PointsTimeChart from "./charts/PointsTimeChart";
 import TacklesTimeChart from "./charts/TacklesTimeChart";
 import CoustomTimeChart from "./charts/CoustomTimeChart";
 import annotationPlugin from 'chartjs-plugin-annotation';
+import FilterProvider from '../context/FilterProvider'; // Importa FilterProvider
+import Carousel from './Carousel'; // Asegúrate de importar el componente Carousel
 
 Chart.register(annotationPlugin);
 Chart.register(...registerables);
@@ -74,6 +76,12 @@ const columnsToInclude = [
   "COORDENADA Y",
   "AVANCE",
 ];
+
+// Define initialResponse antes de usarlo
+const initialResponse = {
+  events: [], // Aquí puedes agregar los eventos iniciales si los tienes
+  header: {}, // Aquí puedes agregar la información del partido inicial si la tienes
+};
 
 const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const {
@@ -281,202 +289,104 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   };
 
   return (
-    <div
-      className="charts"
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-      {error && <div>Error: {error.message}</div>}
-
-      <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
-        <div
-          style={{
-            width: "1500px",
-            height: `${Math.max(150, filteredCategories.length * 30)}px`,
-          }}
-        >
-          <TimelineChart
-            events={events}
-            filteredEvents={filteredEvents}
-            columnsToTooltip={columnsToTooltip}
-            colors={colors}
-            onEventClick={handleEventClick}
-            updateCharts={updateCharts}
-            filterCategory={filterCategory}
-            filterDescriptors={filterDescriptors}
-            setFilteredEvents={setFilteredEvents}
-            setFilterDescriptors={setFilterDescriptors} // Pasar setFilterDescriptors como prop
-            currentTime={currentTime}
-          />
-        </div>
-      </div>
+    <FilterProvider initialResponse={initialResponse}>
       <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          width: "100%",
-        }}
+        className="charts"
+        style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
       >
-        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div style={{ width: "50%", marginBottom: "20px" }}>
-            <TacklesBarChart
-              events={filteredEvents}
+        {error && <div>Error: {error.message}</div>}
+
+        <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
+          <div
+            style={{
+              width: "1500px",
+              height: `${Math.max(150, filteredCategories.length * 30)}px`,
+            }}
+          >
+            <TimelineChart
+              events={events}
+              filteredEvents={filteredEvents}
+              columnsToTooltip={columnsToTooltip}
+              colors={colors}
+              onEventClick={handleEventClick}
+              updateCharts={updateCharts}
               filterCategory={filterCategory}
               filterDescriptors={filterDescriptors}
-              onChartClick={handleChartClick}
+              setFilteredEvents={setFilteredEvents}
+              setFilterDescriptors={setFilterDescriptors} // Pasar setFilterDescriptors como prop
+              currentTime={currentTime}
             />
           </div>
-        )}
-        {filteredEvents.some(
-          (event) => event.CATEGORIA === "PLAC-SBAGLIATTO"
-        ) && (
-          <div style={{ width: "50%", marginBottom: "20px" }}>
-            <MissedTacklesBarChart
-              events={filteredEvents}
-              filterCategory={filterCategory}
-              filterDescriptors={filterDescriptors}
-              onChartClick={handleChartClick}
-            />
-          </div>
-        )}
-      </div>
-      <div
-        style={{
-          width: "90%",
-          marginBottom: "20px",
-          display: "flex",
-          justifyContent: "space-around",
-        }}
-      >
-        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div style={{ width: "40%" }}>
-            <AdvancePieChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="PLACCAGGIO"
-            />
-          </div>
-        )}
-
-        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div style={{ width: "40%" }}>
-            <TacklesTimeChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="PLACCAGGIO"
-            />
-          </div>
-        )}
-        {filteredEvents.some((event) => event.CATEGORIA === "MISCHIA") && (
-          <div style={{ width: "40%" }}>
-            <AdvancePieChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="MISCHIA"
-            />
-          </div>
-        )}
-        {filteredEvents.some((event) => event.CATEGORIA === "PUNTI") && (
-          <div style={{ width: "40%" }}>
-            <PlayerPointsChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="PUNTI"
-            />
-          </div>
-        )}
-
-        {filteredEvents.some((event) => event.CATEGORIA === "PUNTI") && (
-          <div style={{ width: "40%" }}>
-            <PointsTimeChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="PUNTI"
-            />
-          </div>
-        )}
-        {/* CoustomChart quitado porque hay que resolver problema de altura que crece sin parar.   */}
-        
-              {/* </div>
-              <div maxHeight="400px" style={{ width: "90%", marginBottom: "20px" }}>
-              {filteredEvents.length > 0 && (
-                <div style={{ width: "40%" , maxHeight: "400px", overflowY: "auto"}}>
-                  <CoustomTimeChart
-                    style={{ maxHeight: "400px", overflowY: "auto" }}
-                    events={filteredEvents}
-                    // onChartClick={handleChartClick}
-                    // category="PUNTI"
-                  />
-                </div>
-              )} */}
-      </div>
-      {filteredEvents.some((event) => event["COORDENADA X"] !== null) && (
-        <div style={{ width: "90%", marginBottom: "20px" }}>
-          <ScatterChart
-            events={filteredEvents}
-            columnsToTooltip={columnsToTooltip}
-            colors={colors}
-            setSelectedEvents={setSelectedEvents}
-            selectedEvents={selectedEvents}
-            onChartClick={handleChartClick}
-            onEventClick={handleScatterClick}
-            width={800}
-            height={600}
-          />
         </div>
-      )}
-      <h1>Eventos</h1>
-      <table className="styled-table">
-        <thead>
-          <tr>
-            {columnsToInclude.map((col) => (
-              <th key={col}>{col}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEvents.map((event, index) => (
-            <tr key={index} onClick={() => handleEventClick(event)}>
+        <Carousel filteredEvents={filteredEvents} handleChartClick={handleChartClick} />
+        {filteredEvents.some((event) => event["COORDENADA X"] !== null) && (
+          <div style={{ width: "90%", marginBottom: "20px" }}>
+            <ScatterChart
+              events={filteredEvents}
+              columnsToTooltip={columnsToTooltip}
+              colors={colors}
+              setSelectedEvents={setSelectedEvents}
+              selectedEvents={selectedEvents}
+              onChartClick={handleChartClick}
+              onEventClick={handleScatterClick}
+              width={800}
+              height={600}
+            />
+          </div>
+        )}
+        <h1>Eventos</h1>
+        <table className="styled-table">
+          <thead>
+            <tr>
               {columnsToInclude.map((col) => (
-                <td key={col}>{event[col]}</td>
+                <th key={col}>{col}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <style jsx="true">{`
-        .styled-table {
-          border-collapse: collapse;
-          margin: 25px 0;
-          font-size: 0.9em;
-          font-family: "Arial", sans-serif;
-          min-width: 400px;
-          box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-        }
-        .styled-table thead tr {
-          background-color: #009879;
-          color: #ffffff;
-          text-align: left;
-        }
-        .styled-table th,
-        .styled-table td {
-          padding: 12px 15px;
-        }
-        .styled-table tbody tr {
-          border-bottom: 1px solid #dddddd;
-        }
-        .styled-table tbody tr:nth-of-type(even) {
-          background-color: #f3f3f3;
-        }
-        .styled-table tbody tr:last-of-type {
-          border-bottom: 2px solid #009879;
-        }
-        .styled-table tbody tr.active-row {
-          font-weight: bold;
-          color: #009879;
-        }
-      `}</style>
-    </div>
+          </thead>
+          <tbody>
+            {filteredEvents.map((event, index) => (
+              <tr key={index} onClick={() => handleEventClick(event)}>
+                {columnsToInclude.map((col) => (
+                  <td key={col}>{event[col]}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <style jsx="true">{`
+          .styled-table {
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.9em;
+            font-family: "Arial", sans-serif;
+            min-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+          }
+          .styled-table thead tr {
+            background-color: #009879;
+            color: #ffffff;
+            text-align: left;
+          }
+          .styled-table th,
+          .styled-table td {
+            padding: 12px 15px;
+          }
+          .styled-table tbody tr {
+            border-bottom: 1px solid #dddddd;
+          }
+          .styled-table tbody tr:nth-of-type(even) {
+            background-color: #f3f3f3;
+          }
+          .styled-table tbody tr:last-of-type {
+            border-bottom: 2px solid #009879;
+          }
+          .styled-table tbody tr.active-row {
+            font-weight: bold;
+            color: #009879;
+          }
+        `}</style>
+      </div>
+    </FilterProvider>
   );
 };
 

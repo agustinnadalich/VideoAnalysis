@@ -202,6 +202,8 @@ Vista Principal
 │   ├── Tackles
 │   │   └── Vista Detallada de Tackles
 │   │       ├── Tackles por jugador
+│   │       ├── Tackles errados por jugador
+│   │       ├── Efectividad de tackles
 │   │       ├── Avance del tackle realizado (positivo, neutro, negativo)
 │   │       ├── Hombro de encuadre (interno, externo, doble tackle)
 │   │       └── Razón de tackles fallidos:
