@@ -4,6 +4,9 @@ import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
 import AdvancePieChart from './charts/AdvancePieChart';
 import TacklesEffectivityChart from './charts/TacklesEffectivityChart';
 import TacklesTimeChart from './charts/TacklesTimeChart';
+import PenaltiesPlayerBarChart from './charts/PenaltiesPlayerBarChart';
+import PenaltiesTimeChart from './charts/PenaltiesTimeChart';
+import PenaltiesCausePieChart from './charts/PenaltiesCausePieChart';
 import FilterContext from '../context/FilterContext';
 import './Carousel.css';
 
@@ -38,6 +41,8 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
   const hasTeamMissedTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
   const hasRivalTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "TACKLE");
   const hasRivalMissedTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
+
+  const hasPenalties = filteredEvents.some((event) => event.CATEGORY === "PENALTY");
 
   return (
     <Tabs>
@@ -86,6 +91,19 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
               />
             </div>
           )}
+        </div>
+      ) : null}
+      {hasPenalties ? (
+        <div label="Penalties" className="tab-content">
+          <div className="chart-container">
+            <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} />
+          </div>
+          <div className="chart-container">
+            <PenaltiesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <PenaltiesCausePieChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} />
+          </div>
         </div>
       ) : null}
       {/* Agrega más tabs según sea necesario */}
