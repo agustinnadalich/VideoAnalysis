@@ -63,7 +63,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       try {
         const response = await getEvents();
         if (Array.isArray(response.data)) {
-          console.log("Fetched events:", response.data);
           setEvents(response.data);
           setFilteredEvents(response.data);
 
@@ -71,7 +70,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           const tackles = response.data.filter(
             (event) => event.CATEGORY === "TACKLE" && event.PLAYER
           );
-          console.log("Filtered tackles:", tackles);
 
           // Agrupa los tackles por jugador
           const tacklesPorJugador = tackles.reduce((acc, event) => {
@@ -82,7 +80,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             acc[jugador]++;
             return acc;
           }, {});
-          console.log("tackles por jugador:", tacklesPorJugador);
 
           // Prepara los datos para el gráfico de barras
           const labels = Object.keys(tacklesPorJugador);
@@ -135,7 +132,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           : true) &&
         (filterResult.length ? filterResult.includes(event.SECOND) : true)
     );
-    console.log("Filtered events after applying filters:", filtered);
     setFilteredEvents(filtered);
   }, [events, filterType, filterDescriptors, filterResult]);
 
@@ -144,9 +140,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       if (elements.length > 0) {
         const index = elements[0].index;
         const player = barData.labels[index];
-        console.log("Clicked player:", player);
-        console.log("Current filteredJugador:", filteredJugador);
-  
+
         if (filteredJugador !== player) {
           setFilteredJugador(player); // Guardar el player filtrado
           const filtered = events.filter(
@@ -154,14 +148,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             (event) => event.CATEGORY === "TACKLE" && event.TEAM !== "OPPONENT" && event.PLAYER.toString() === player
           );
           setFilteredEvents(filtered);
-          console.log("Filtered events for player:", filtered);
         } else {
-          console.log("Removing filter for player:", player);
           // Mostrar todos los eventos de tipo "TACKLE"
-          const filtered = events.filter(
-            (event) => event.CATEGORY === "TACKLE" && event.TEAM === "SAN BENEDETTO"
-          );
-          console.log("Filtered events after removing filterXXX:", filtered);
+            const filtered = events.filter(
+            (event) => event.CATEGORY === "TACKLE" && event.TEAM !== "OPPONENT"
+            );
           setFilteredJugador(null); // Resetear el player filtrado
           setFilteredEvents(filtered);
           
@@ -173,10 +164,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
   const handleEventClick = useCallback(
     (event) => {
-      console.log("Event dataC:", event.SECOND);
       const startTime = event.SECOND;
       const duration = 5; // 5 segundos de duración
-      console.log("Setting tempTime and durationC:", startTime, duration);
       onEventClick({ ...event, startTime, duration });
     },
     [onEventClick]

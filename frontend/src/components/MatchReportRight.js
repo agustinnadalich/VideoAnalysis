@@ -18,13 +18,13 @@ const MatchReportRight = ({ data }) => {
         ? data.filter(
             (event) =>
               event.CATEGORY === category &&
-              event.TEAM === "SAN BENEDETTO" &&
+              event.TEAM !== "OPPONENT" &&
               event["POINTS(VALUE)"] === value
           ).length
         : data
             .filter(
               (event) =>
-                event.CATEGORY === category && event.TEAM === "SAN BENEDETTO"
+                event.CATEGORY === category && event.TEAM !== "OPPONENT"
             )
             .reduce((sum, event) => sum + (event["POINTS(VALUE)"] || 0), 0);
 
@@ -75,7 +75,7 @@ const MatchReportRight = ({ data }) => {
       };
 
     const ourTeamPenales = data.filter(
-      (event) => event.CATEGORY === "PENALTY" && event.TEAM === "SAN BENEDETTO"
+      (event) => event.CATEGORY === "PENALTY" && event.TEAM !== "OPPONENT"
     ).length;
     const rivalTeamPenales = data.filter(
       (event) => event.CATEGORY === "PENALTY" && event.TEAM === "OPPONENT"
@@ -138,7 +138,7 @@ const MatchReportRight = ({ data }) => {
       };
 
     const ourTeamBreaks = data.filter(
-      (event) => event.CATEGORY === "BREAK" && event.TEAM === "SAN BENEDETTO"
+      (event) => event.CATEGORY === "BREAK" && event.TEAM !== "OPPONENT"
     ).length;
     const rivalTeamBreaks = data.filter(
       (event) => event.CATEGORY === "BREAK" && event.TEAM === "OPPONENT"
@@ -178,7 +178,7 @@ const MatchReportRight = ({ data }) => {
     const ourTeamFormaciones = data.filter(
       (event) =>
         (event.CATEGORY === "LINEOUT" || event.CATEGORY === "SCRUM") &&
-        event.TEAM === "SAN BENEDETTO"
+        event.TEAM !== "OPPONENT"
     ).length;
     const rivalTeamFormaciones = data.filter(
       (event) =>
@@ -189,7 +189,7 @@ const MatchReportRight = ({ data }) => {
     const ourTeamVinta = data.filter(
       (event) =>
         (event.CATEGORY === "LINEOUT" || event.CATEGORY === "SCRUM") &&
-        event.TEAM === "SAN BENEDETTO" &&
+        event.TEAM !== "OPPONENT" &&
         (event["SCRUM_RESULT"] === "WIN" ||
           event["LINE_RESULT"] === "CLEAN" ||
           event["LINE_RESULT"] === "DIRTY")

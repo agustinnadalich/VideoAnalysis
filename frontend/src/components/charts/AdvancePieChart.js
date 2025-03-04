@@ -22,7 +22,7 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
     labels: advanceLabels,
     datasets: [
       {
-        label: `Avance por ${category.toLowerCase()}`,
+        label: `Advance by ${category.toLowerCase()}`,
         data: advanceData,
         backgroundColor: advanceLabels.map((label) => {
           if (label === "POSITIVE") {
@@ -43,7 +43,7 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
       const index = elements[0].index;
       const clickedLabel = chart.data.labels[index];
 
-      // Pasar los datos de filtro a la función onChartClick en New-charts.js
+      // Pass filter data to the onChartClick function in New-charts.js
       onChartClick(event, elements, "advance-chart", [
         { descriptor: "CATEGORY", value: category },
         { descriptor: "ADVANCE", value: clickedLabel }
@@ -59,7 +59,7 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
       },
       title: {
         display: true,
-        text: `Distribución de Avances - ${category}`,
+        text: `Advance Distribution - ${category}`,
       },
       tooltip: {
         callbacks: {

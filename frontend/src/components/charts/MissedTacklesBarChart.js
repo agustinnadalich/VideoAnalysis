@@ -17,7 +17,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
       labels: playerLabels,
       datasets: [
         {
-          label: "Tackles Errados",
+          label: "Missed Tackles",
           data: playerLabels.map((player) => {
             const count = missedTackleEvents.filter(
               (event) => event.PLAYER === player  && event.TEAM !== "OPPONENT"
@@ -45,7 +45,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Tackles Errados por Jugador',
+        text: 'Missed Tackles by Player',
       },
       tooltip: {
         callbacks: {

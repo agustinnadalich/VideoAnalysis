@@ -14,7 +14,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
     labels: playerLabels,
     datasets: [
       {
-        label: "Tackles Negativos",
+        label: "Negative Tackles ",
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
             (event) =>
@@ -25,7 +25,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         backgroundColor: "rgba(255, 99, 132, 0.6)",
       },
       {
-        label: "Tackles Neutros",
+        label: "Neutral Tackles",
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
             (event) => event.PLAYER === player && event.ADVANCE === "NEUTRAL"
@@ -35,7 +35,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         backgroundColor: "rgba(201, 203, 207, 0.6)",
       },
       {
-        label: "Tackles Positivos",
+        label: "Positive Tackles ",
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
             (event) =>
@@ -60,7 +60,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Tackles por Jugador',
+        text: 'Tackles by player',
       },
       tooltip: {
         callbacks: {

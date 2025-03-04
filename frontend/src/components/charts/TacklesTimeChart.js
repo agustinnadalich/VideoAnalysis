@@ -19,24 +19,24 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
     const data = {
       labels: timeGroups,
       datasets: [
-        {
-          label: "Tackles por tiempo de juego (Equipo)",
-          data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
-            const totalTackles = groupEvents.length;
-            return totalTackles;
-          }),
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-        },
-        {
-          label: "Tackles por tiempo de juego (Opponent)",
-          data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
-            const totalTackles = groupEvents.length;
-            return totalTackles;
-          }),
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-        },
+      {
+        label: "Tackles by Game Time (Our Team)",
+        data: timeGroups.map(group => {
+        const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
+        const totalTackles = groupEvents.length;
+        return totalTackles;
+        }),
+        backgroundColor: "rgba(75, 192, 192, 0.6)",
+      },
+      {
+        label: "Tackles by Game Time (Opponent)",
+        data: timeGroups.map(group => {
+        const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
+        const totalTackles = groupEvents.length;
+        return totalTackles;
+        }),
+        backgroundColor: "rgba(255, 99, 132, 0.6)",
+      },
       ],
     };
 
@@ -73,7 +73,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Tackles por Tiempo de Juego',
+        text: 'Tackles by Game Time',
       },
       tooltip: {
         callbacks: {

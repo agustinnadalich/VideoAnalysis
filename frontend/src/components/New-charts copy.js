@@ -215,7 +215,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         labels: playerLabels,
         datasets: [
           {
-            label: "Tackles Errados",
+            label: "Missed Tackles",
             data: playerLabels.map((player) => {
               const count = events.filter(
                 (event) =>
