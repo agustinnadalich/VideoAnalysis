@@ -6,16 +6,16 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
   const { setFilterDescriptors, filterDescriptors } = useContext(FilterContext);
 
   const filteredEvents = events.filter(
-    (event) => event.CATEGORIA === category
+    (event) => event.CATEGORY === category
   );
 
   const advanceLabels = [
-    ...new Set(filteredEvents.map((event) => event.AVANCE).filter((avance) => avance !== null)),
+    ...new Set(filteredEvents.map((event) => event.ADVANCE).filter((avance) => avance !== null)),
   ].sort((a, b) => a - b);
 
   const advanceData = advanceLabels.map(
     (result) =>
-      filteredEvents.filter((event) => event.AVANCE === result).length
+      filteredEvents.filter((event) => event.ADVANCE === result).length
   );
 
   const pieChartData = {
@@ -25,9 +25,9 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
         label: `Avance por ${category.toLowerCase()}`,
         data: advanceData,
         backgroundColor: advanceLabels.map((label) => {
-          if (label === "POSITIVO") {
+          if (label === "POSITIVE") {
             return "rgba(75, 192, 192, 0.6)";
-          } else if (label === "NEGATIVO") {
+          } else if (label === "NEGATIVE") {
             return "rgba(255, 99, 132, 0.6)";
           } else {
             return "rgba(201, 203, 207, 0.6)";
@@ -45,8 +45,8 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
 
       // Pasar los datos de filtro a la función onChartClick en New-charts.js
       onChartClick(event, elements, "advance-chart", [
-        { descriptor: "CATEGORIA", value: category },
-        { descriptor: "AVANCE", value: clickedLabel }
+        { descriptor: "CATEGORY", value: category },
+        { descriptor: "ADVANCE", value: clickedLabel }
       ]);
     }
   };

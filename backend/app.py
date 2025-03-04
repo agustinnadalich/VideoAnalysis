@@ -12,14 +12,14 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Ruta del archivo Excel
-file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_24-25_(TEST).xlsx')
+file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_24-25_(ENG).xlsx')
 
 # Lee la hoja "MATRIZ" del archivo Excel
 try:
     df = pd.read_excel(file_path, sheet_name='MATRIZ')
-    # Convierte la columna 'SEGUNDO' a enteros si existe
-    if 'SEGUNDO' in df.columns:
-        df['SEGUNDO'] = df['SEGUNDO'].astype(int)
+    # Convierte la columna 'SECOND' a enteros si existe
+    if 'SECOND' in df.columns:
+        df['SECOND'] = df['SECOND'].astype(int)
     # Reemplaza NaN con None para que sea serializable a JSON
     df = df.where(pd.notnull(df), None)
     # Muestra las primeras filas del DataFrame
@@ -31,9 +31,9 @@ except Exception as e:
     print(f"Error al leer el archivo: {e}")
     df = pd.DataFrame()  # Crea un DataFrame vacío en caso de otros errores
 
-# Lee la hoja "PARTIDOS" del archivo Excel
+# Lee la hoja "MATCHES" del archivo Excel
 try:
-    df_partidos = pd.read_excel(file_path, sheet_name='PARTIDOS')
+    df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
     # Reemplaza NaN con None para que sea serializable a JSON
     df_partidos = df_partidos.where(pd.notnull(df_partidos), None)
     # Muestra las primeras filas del DataFrame
@@ -56,21 +56,24 @@ def get_events():
         return jsonify({"error": "No data available"}), 404
 
     # Selecciona todas las columnas necesarias
-    columns_to_include = ['ID', 'RIVAL', 'SEGUNDO', 'DURACION', 'CATEGORIA', 'EQUIPO', 'COORDENADA X', 'COORDENADA Y', 'SECTOR', 'JUGADOR', 'RESULTADO SCRUM', 'AVANCE', 'RESULTADO LINE', 'CANTIDAD LINE', 'POSICION LINE', 'TIRADOR LINE', 'JUGADA LINE', 'SALTADOR RIVAL', 'TIPO QUIEBRE', 'CANAL QUIEBRE', 'PERDIDA', 'TIPO DE INFRACCIÓN', 'TIPO DE PIE', 'ENCUADRE', 'TIEMPO RUCK', 'PUNTOS', 'PUNTOS (VALOR)', 'TIEMPOS', 'PALOS']
+    columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'LOST_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS_(VALUE)', 'PERIODS', 'GOAL_KICK']
+
+
+
     filtered_df = df[columns_to_include]
 
     # Identifica los eventos de inicio y fin de cada mitad
-    kick_off_1 = filtered_df[(filtered_df['CATEGORIA'] == 'KICK OFF') & (filtered_df['TIEMPOS'] == 1)]['SEGUNDO'].min()
-    fin_1 = filtered_df[(filtered_df['CATEGORIA'] == 'FIN') & (filtered_df['TIEMPOS'] == 1)]['SEGUNDO'].max()
-    kick_off_2 = filtered_df[(filtered_df['CATEGORIA'] == 'KICK OFF') & (filtered_df['TIEMPOS'] == 2)]['SEGUNDO'].min()
-    fin_2 = filtered_df[(filtered_df['CATEGORIA'] == 'FIN') & (filtered_df['TIEMPOS'] == 2)]['SEGUNDO'].max()
+    kick_off_1 = filtered_df[(filtered_df['CATEGORY'] == 'KICK OFF') & (filtered_df['PERIODS'] == 1)]['SECOND'].min()
+    fin_1 = filtered_df[(filtered_df['CATEGORY'] == 'END') & (filtered_df['PERIODS'] == 1)]['SECOND'].max()
+    kick_off_2 = filtered_df[(filtered_df['CATEGORY'] == 'KICK OFF') & (filtered_df['PERIODS'] == 2)]['SECOND'].min()
+    fin_2 = filtered_df[(filtered_df['CATEGORY'] == 'END') & (filtered_df['PERIODS'] == 2)]['SECOND'].max()
 
     # Calcula el tiempo de juego acumulado
-    def calcular_tiempo_de_juego(segundo):
-        if segundo <= fin_1:
-            return segundo - kick_off_1
-        elif segundo >= kick_off_2:
-            return (fin_1 - kick_off_1) + (segundo - kick_off_2)
+    def calcular_tiempo_de_juego(second):
+        if second <= fin_1:
+            return second - kick_off_1
+        elif second >= kick_off_2:
+            return (fin_1 - kick_off_1) + (second - kick_off_2)
         return None
 
     # Define los grupos de tiempo
@@ -85,21 +88,21 @@ def get_events():
     # Convierte el DataFrame a una lista de diccionarios
     events = filtered_df.to_dict(orient='records')
     for event in events:
-        if 'SEGUNDO' in event and event['SEGUNDO'] is not None:
-            minutes, seconds = divmod(int(event['SEGUNDO']), 60)
-            event['TIEMPO(VIDEO)'] = f"{minutes:02}:{seconds:02}"
-            tiempo_de_juego = calcular_tiempo_de_juego(event['SEGUNDO'])
+        if 'SECOND' in event and event['SECOND'] is not None:
+            minutes, seconds = divmod(int(event['SECOND']), 60)
+            event['TIME(VIDEO)'] = f"{minutes:02}:{seconds:02}"
+            tiempo_de_juego = calcular_tiempo_de_juego(event['SECOND'])
             if tiempo_de_juego is not None:
                 tiempo_de_juego_minutes, tiempo_de_juego_seconds = divmod(tiempo_de_juego, 60)
-                event['Tiempo_de_Juego'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
+                event['Game_Time'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
                 # Asigna el grupo de tiempo correspondiente
                 for group in timeGroups:
                     if group["start"] <= tiempo_de_juego < group["end"]:
-                        event["Grupo_Tiempo"] = group["label"]
+                        event["Time_Group"] = group["label"]
                         break
             else:
-                event['Tiempo_de_Juego'] = None
-                event['Grupo_Tiempo'] = None
+                event['Game_Time'] = None
+                event['Time_Group'] = None
 
     # Reemplaza NaN con None en la lista de diccionarios y convierte objetos no serializables
     for event in events:
@@ -113,8 +116,8 @@ def get_events():
             elif isinstance(value, (pd._libs.tslibs.nattype.NaTType, type(pd.NaT))):
                 event[key] = None
 
-    # Lee los datos generales del partido desde la hoja "PARTIDOS"
-    df_partidos = pd.read_excel(file_path, sheet_name='PARTIDOS')
+    # Lee los datos generales del partido desde la hoja "MATCHES"
+    df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
     partido_info = df_partidos.to_dict(orient='records')[0]  # Asume que hay solo una fila con datos generales del partido
 
     print(events)  # Verifica los datos en la consola del servidor
@@ -133,11 +136,11 @@ def filter_events():
     filtered_df = df
     
     if category:
-        filtered_df = filtered_df[filtered_df['CATEGORIA'] == category]
+        filtered_df = filtered_df[filtered_df['CATEGORY'] == category]
     if time:
-        filtered_df = filtered_df[filtered_df['SEGUNDO'] == int(time)]
+        filtered_df = filtered_df[filtered_df['SECOND'] == int(time)]
     if player:
-        filtered_df = filtered_df[filtered_df['JUGADOR'] == player]
+        filtered_df = filtered_df[filtered_df['PLAYER'] == player]
     
     events = filtered_df.to_dict(orient='records')
     
@@ -167,9 +170,9 @@ def events_table():
     filtered_df = df
     
     if category:
-        filtered_df = filtered_df[filtered_df['CATEGORIA'] == category]
+        filtered_df = filtered_df[filtered_df['CATEGORY'] == category]
     if player:
-        filtered_df = filtered_df[filtered_df['JUGADOR'] == player]
+        filtered_df = filtered_df[filtered_df['PLAYER'] == player]
     
     # Convierte el DataFrame filtrado a una tabla HTML
     table_html = filtered_df.to_html(classes='table table-striped', index=False)

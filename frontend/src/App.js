@@ -34,16 +34,16 @@ const App = () => {
   };
 
   const handleEventClick = (event) => {
-    console.log("Event data1:", event.SEGUNDO, event.DURACION);
+    console.log("Event data1:", event.SECOND, event.DURATION);
     setTempTime(null); // Resetea el tiempo temporal
     setTimeout(() => {
       console.log(
         "Setting tempTime and duration1:",
-        event.SEGUNDO,
-        event.DURACION
+        event.SECOND,
+        event.DURATION
       );
-      setTempTime(event.SEGUNDO || 0);
-      setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
+      setTempTime(event.SECOND || 0);
+      setDuration(event.DURATION || 5); // Ajusta la duración a 5 segundos
       setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
     }, 10); // Espera un breve momento antes de establecer el tiempo correcto
   };
@@ -65,11 +65,11 @@ const App = () => {
       setTimeout(() => {
         console.log(
           "Setting tempTime and duration for next event:",
-          event.SEGUNDO,
+          event.SECOND,
           5
         );
-        setTempTime(event.SEGUNDO || 0);
-        setDuration(event.DURACION || 5); // Ajusta la duración a 5 segundos
+        setTempTime(event.SECOND || 0);
+        setDuration(event.DURATION || 5); // Ajusta la duración a 5 segundos
         setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
       }, 10); // Espera un breve momento antes de establecer el tiempo correcto
     } else {
@@ -130,7 +130,7 @@ const App = () => {
           }
           return nextIndex;
         });
-      }, (duration + 1) * 1000); // Espera la duración del video más un segundo adicional
+      }, (duration + 1) * 1000); // Espera la duración del video más un second adicional
 
       return () => clearTimeout(timer);
     }

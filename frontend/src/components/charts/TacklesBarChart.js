@@ -3,11 +3,11 @@ import { Bar } from 'react-chartjs-2';
 
 const TacklesBarChart = ({ events, onChartClick }) => {
   const tackleEvents = events.filter(
-    (event) => event.CATEGORIA === "PLACCAGGIO"
+    (event) => event.CATEGORY === "TACKLE"
   );
 
   const playerLabels = [
-    ...new Set(tackleEvents.map((event) => event.JUGADOR)),
+    ...new Set(tackleEvents.map((event) => event.PLAYER)),
   ].sort((a, b) => a - b);
 
   const barChartData = {
@@ -18,7 +18,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
             (event) =>
-              event.JUGADOR === player && event.AVANCE === "NEGATIVO"
+              event.PLAYER === player && event.ADVANCE === "NEGATIVE"
           ).length;
           return count;
         }),
@@ -28,7 +28,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         label: "Tackles Neutros",
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
-            (event) => event.JUGADOR === player && event.AVANCE === "NEUTRO"
+            (event) => event.PLAYER === player && event.ADVANCE === "NEUTRAL"
           ).length;
           return count;
         }),
@@ -39,7 +39,7 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         data: playerLabels.map((player) => {
           const count = tackleEvents.filter(
             (event) =>
-              event.JUGADOR === player && event.AVANCE === "POSITIVO"
+              event.PLAYER === player && event.ADVANCE === "POSITIVE"
           ).length;
           return count;
         }),

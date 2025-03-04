@@ -6,11 +6,11 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
 
   useEffect(() => {
     const pointsEvents = events.filter(
-      (event) => event.CATEGORIA === "PUNTI"
+      (event) => event.CATEGORY === "POINTS"
     );    
 
     const playerLabels = [
-      ...new Set(pointsEvents.map((event) => event.JUGADOR)),
+      ...new Set(pointsEvents.map((event) => event.PLAYER)),
     ].sort((a, b) => a - b);
 
     const data = {
@@ -20,7 +20,7 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
           label: "Puntos por jugador",
           data: playerLabels.map((player) => {
             const totalPoints = pointsEvents
-              .filter((event) => event.JUGADOR === player && event.EQUIPO !== "RIVAL")
+              .filter((event) => event.PLAYER === player && event.TEAM !== "OPPONENT")
               .reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
             return totalPoints;
           }),

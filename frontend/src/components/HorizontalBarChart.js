@@ -27,7 +27,7 @@ const HorizontalBarChart = ({ data }) => {
   const percentages = datasets.map(dataset => ({
     ...dataset,
     data: [(dataset.data[0] / total) * 100],
-    backgroundColor: dataset.isRival ? '#f44336' : '#4caf50', // Rojo para el rival, verde para nuestro equipo
+    backgroundColor: dataset.isRival ? '#f44336' : '#4caf50', // Rojo para el opponent, verde para nuestro equipo
   }));
 
   const chartData = {
@@ -84,7 +84,7 @@ const HorizontalBarChart = ({ data }) => {
             <span>{Math.round(datasets[0].data[0])}%</span>
             <span>{Math.round(datasets[1].data[0])}%</span>
           </>
-        ) : labels[0] === 'PALI' || labels[0] === 'FORMACIONES FIJAS' ? (
+        ) : labels[0] === 'GOAL-KICK' || labels[0] === 'FORMACIONES FIJAS' ? (
           <>
             <span>{datasets[0].label}</span>
             <span>{datasets[1].label}</span>

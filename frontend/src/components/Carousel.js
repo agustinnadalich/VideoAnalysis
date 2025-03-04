@@ -2,6 +2,8 @@ import React, { useState, useContext } from 'react';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
 import AdvancePieChart from './charts/AdvancePieChart';
+import TacklesEffectivityChart from './charts/TacklesEffectivityChart';
+import TacklesTimeChart from './charts/TacklesTimeChart';
 import FilterContext from '../context/FilterContext';
 import './Carousel.css';
 
@@ -28,36 +30,64 @@ const Tabs = ({ children }) => {
 };
 
 const Carousel = ({ filteredEvents, handleChartClick }) => {
+  const { selectedTeam } = useContext(FilterContext);
+
+  const hasTackles = filteredEvents.some((event) => event.CATEGORY === "TACKLE");
+  const hasMissedTackles = filteredEvents.some((event) => event.CATEGORY === "MISSED-TACKLE");
+  const hasTeamTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "TACKLE");
+  const hasTeamMissedTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
+  const hasRivalTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "TACKLE");
+  const hasRivalMissedTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
+
   return (
     <Tabs>
-      <div label="Tackles" className="tab-content">
-        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div className="chart-container">
-            <TacklesBarChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-            />
-          </div>
-        )}
-        {filteredEvents.some((event) => event.CATEGORIA === "PLAC-SBAGLIATTO") && (
-          <div className="chart-container">
-            <MissedTacklesBarChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-            />
-          </div>
-        )}
-        {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div className="chart-container">
-            <AdvancePieChart
-              events={filteredEvents}
-              onChartClick={handleChartClick}
-              category="PLACCAGGIO"
-            />
-          </div>
-        )}
-        {/* Aquí puedes agregar los otros gráficos relacionados con Tackles */}
-      </div>
+      {hasTackles || hasMissedTackles ? (
+        <div label="Tackles" className="tab-content">
+          {hasTeamTackles && (
+            <div className="chart-container">
+              <TacklesBarChart
+                events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")}
+                onChartClick={handleChartClick}
+              />
+            </div>
+          )}
+          {hasTeamMissedTackles && (
+            <div className="chart-container">
+              <MissedTacklesBarChart
+                events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")}
+                onChartClick={handleChartClick}
+              />
+            </div>
+          )}
+          {hasTeamTackles && (
+            <div className="chart-container">
+              <AdvancePieChart
+                events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")}
+                onChartClick={handleChartClick}
+                category="TACKLE"
+              />
+            </div>
+          )}
+          {hasTeamTackles || hasTeamMissedTackles ? (
+            <div className="chart-container">
+              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} />
+            </div>
+          ) : null}
+          {hasRivalTackles || hasRivalMissedTackles ? (
+            <div className="chart-container">
+              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" />
+            </div>
+          ) : null}
+          {hasTackles && (
+            <div className="chart-container">
+              <TacklesTimeChart
+                events={filteredEvents}
+                onChartClick={handleChartClick}
+              />
+            </div>
+          )}
+        </div>
+      ) : null}
       {/* Agrega más tabs según sea necesario */}
     </Tabs>
   );

@@ -6,8 +6,8 @@ const CoustomTimeChart = ({ events, onChartClick }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
 
   // Obtener las categorías únicas de los eventos
-  // const categories = [...new Set(events.map(event => event.CATEGORIA))];
-  const allowedCategories = ['PLACCAGGIO', 'PLAC-SBAGLIATTO', 'PUNTI', 'BREAK', 'CALCIO', 'FREE-KICK', 'FALLO', 'MAUL', 'MISCHIA', 'PALI', 'PERSA', 'RICUPERATA', 'TOUCHE'];
+  // const categories = [...new Set(events.map(event => event.CATEGORY))];
+  const allowedCategories = ['TACKLE', 'MISSED-TACKLE', 'POINTS', 'BREAK', 'KICK', 'FREE-KICK', 'PENALTY', 'MAUL', 'SCRUM', 'GOAL-KICK', 'TURNOVER-', 'TURNOVER+', 'LINEOUT'];
   // const filteredCategories = categories.filter(category => allowedCategories.includes(category));
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const CoustomTimeChart = ({ events, onChartClick }) => {
     if (selectedCategory === "") return;
 
     const coustomEvents = events.filter(
-      (event) => event.CATEGORIA === selectedCategory
+      (event) => event.CATEGORY === selectedCategory
     );
 
     const timeGroups = [
@@ -34,18 +34,18 @@ const CoustomTimeChart = ({ events, onChartClick }) => {
       labels: timeGroups,
       datasets: [
         {
-          label: `Eventos por tiempo de juego (Equipo) - ${selectedCategory}`,
+          label: `Events by game time - ${selectedCategory}`,
           data: timeGroups.map(group => {
-            const groupEvents = coustomEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO !== "RIVAL");
+            const groupEvents = coustomEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
             const totalEvents = groupEvents.length;
             return totalEvents;
           }),
           backgroundColor: "rgba(75, 192, 192, 0.6)",
         },
         {
-          label: `Eventos por tiempo de juego (Rival) - ${selectedCategory}`,
+          label: `Events by game time (Opponent) - ${selectedCategory}`,
           data: timeGroups.map(group => {
-            const groupEvents = coustomEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO === "RIVAL");
+            const groupEvents = coustomEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
             const totalEvents = groupEvents.length;
             return totalEvents;
           }),

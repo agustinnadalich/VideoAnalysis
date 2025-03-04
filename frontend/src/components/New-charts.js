@@ -43,38 +43,20 @@ Chart.register(
   ChartDataLabels
 );
 
-const columnsToTooltip = [
-  "EQUIPO",
-  "JUGADOR",
-  "RESULTADO SCRUM",
-  "AVANCE",
-  "RESULTADO LINE",
-  "CANTIDAD LINE",
-  "POSICION LINE",
-  "TIRADOR LINE",
-  "TIPO QUIEBRE",
-  "CANAL QUIEBRE",
-  "PERDIDA",
-  "TIPO DE INFRACCIÓN",
-  "TIPO DE PIE",
-  "ENCUADRE",
-  "TIEMPO RUCK",
-  "PUNTOS",
-  "PALOS",
-];
+const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'LOST_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS_(VALUE)', 'PERIODS', 'GOAL_KICK'];
 
 const columnsToInclude = [
   "ID",
-  "ENCUADRE",
-  "FECHA",
-  "RIVAL",
-  "EQUIPO",
-  "CATEGORIA",
-  "JUGADOR",
+  "SQUARE",
+  "GAME",
+  "OPPONENT",
+  "TEAM",
+  "CATEGORY",
+  "PLAYER",
   "SECTOR",
-  "COORDENADA X",
-  "COORDENADA Y",
-  "AVANCE",
+  "COORDINATE_X",
+  "COORDINATE_Y",
+  "ADVANCE",
 ];
 
 // Define initialResponse antes de usarlo
@@ -98,8 +80,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const [selectedEvents, setSelectedEvents] = useState([]);
 
   const uniqueCategories = useMemo(() => [
-    ...new Set(events.map((event) => event.CATEGORIA)),
-  ].filter((category) => category !== "FIN"), [events]);
+    ...new Set(events.map((event) => event.CATEGORY)),
+  ].filter((category) => category !== "END"), [events]);
 
   const colors = useMemo(() => uniqueCategories.reduce((acc, category, index) => {
     const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
@@ -108,17 +90,17 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   }, {}), [uniqueCategories]);
 
   const tackleEvents = useMemo(() => filteredEvents.filter(
-    (event) => event.CATEGORIA === "PLACCAGGIO"
+    (event) => event.CATEGORY === "TACKLE"
   ), [filteredEvents]);
 
   const playerLabels = useMemo(() => [
-    ...new Set(tackleEvents.map((event) => event.JUGADOR)),
+    ...new Set(tackleEvents.map((event) => event.PLAYER)),
   ].sort((a, b) => a - b), [tackleEvents]);
 
-  const avanceLabels = ["POSITIVO", "NEUTRO", "NEGATIVO"];
+  const avanceLabels = ["POSITIVE", "NEUTRAL", "NEGATIVE"];
 
   const avanceData = useMemo(() => avanceLabels.map(
-    (result) => tackleEvents.filter((event) => event.AVANCE === result).length
+    (result) => tackleEvents.filter((event) => event.ADVANCE === result).length
   ), [tackleEvents]);
 
   const updateCharts = useCallback(
@@ -126,11 +108,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       if (!events) return;
       const filtered = events.filter((event) => {
         const categoryMatch =
-          categories.length === 0 || categories.includes(event.CATEGORIA);
+          categories.length === 0 || categories.includes(event.CATEGORY);
         const filterMatch =
           filters.length === 0 ||
           filters.every((filter) => event[filter.descriptor] === filter.value);
-        const teamMatch = !team || event.EQUIPO === team;
+        const teamMatch = !team || event.TEAM === team;
 
         return categoryMatch && filterMatch && teamMatch;
       });
@@ -159,13 +141,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   }, [filteredEvents]);
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORY)),
   ];
 
   const handleEventClick = useCallback(
     (event) => {
-      const startTime = event.SEGUNDO;
-      const duration = event.DURACION; // 5 segundos de duración
+      const startTime = event.SECOND;
+      const duration = event.DURATION; // 5 segundos de duración
       onEventClick({
         ...event,
         startTime,
@@ -196,10 +178,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
-          (event) => event.AVANCE === clickedLabel
+          (event) => event.ADVANCE === clickedLabel
         );
         const newFilterCategory = additionalFilters.find(
-          (filter) => filter.descriptor === "CATEGORIA"
+          (filter) => filter.descriptor === "CATEGORY"
         ).value;
         if (filterCategory.includes(newFilterCategory)) {
           setFilterCategory(
@@ -211,17 +193,17 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       } else if (chartType === "player") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = events.filter(
-          (event) => event.JUGADOR === clickedLabel
+          (event) => event.PLAYER === clickedLabel
         );
-        newFilter = { descriptor: "JUGADOR", value: clickedLabel };
+        newFilter = { descriptor: "PLAYER", value: clickedLabel };
       } else if (chartType === "time") {
         const clickedLabel = chart.data.labels[index];
         console.log("Clicked label:", clickedLabel);
 
         clickedEvents = events.filter(
-          (event) => event.Grupo_Tiempo === clickedLabel
+          (event) => event.Time_Group === clickedLabel
         );
-        newFilter = { descriptor: "Grupo_Tiempo", value: clickedLabel };
+        newFilter = { descriptor: "Time_Group", value: clickedLabel };
       }
 
       if (clickedEvents.length > 0) {
@@ -248,11 +230,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             ? [
                 newFilter,
                 ...additionalFilters.filter(
-                  (filter) => filter.descriptor !== "CATEGORIA"
+                  (filter) => filter.descriptor !== "CATEGORY"
                 ),
               ]
             : additionalFilters.filter(
-                (filter) => filter.descriptor !== "CATEGORIA"
+                (filter) => filter.descriptor !== "CATEGORY"
               );
           setFilterDescriptors((prevFilters) => {
             const updatedFilters = isAlreadySelected
@@ -319,7 +301,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           </div>
         </div>
         <Carousel filteredEvents={filteredEvents} handleChartClick={handleChartClick} />
-        {filteredEvents.some((event) => event["COORDENADA X"] !== null) && (
+        {filteredEvents.some((event) => event["COORDINATE_X"] !== null) && (
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <ScatterChart
               events={filteredEvents}

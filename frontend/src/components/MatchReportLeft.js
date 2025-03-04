@@ -4,17 +4,17 @@ import HorizontalBarChart from './HorizontalBarChart';
 
 const MatchReportLeft = ({ data }) => {
   const getDataForCategory = (category, value = null) => {
-    if (!data || !data.length) return { labels: [category], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Rival', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: [category], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
 
     const ourTeamData = value !== null
-      ? data.filter(event => event.CATEGORIA === category && event.EQUIPO === 'SAN BENEDETTO' && event['PUNTOS (VALOR)'] === value).length
-      : data.filter(event => event.CATEGORIA === category && event.EQUIPO === 'SAN BENEDETTO').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
+      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO' && event['PUNTOS (VALOR)'] === value).length
+      : data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
 
     const rivalTeamData = value !== null
-      ? data.filter(event => event.CATEGORIA === category && event.EQUIPO === 'RIVAL' && event['PUNTOS (VALOR)'] === value).length
-      : data.filter(event => event.CATEGORIA === category && event.EQUIPO === 'RIVAL').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
+      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT' && event['PUNTOS (VALOR)'] === value).length
+      : data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
 
-    // console.log(`Category: ${category}, Our Team: ${ourTeamData}, Rival Team: ${rivalTeamData}`);  // Verifica los datos procesados
+    // console.log(`Category: ${category}, Our Team: ${ourTeamData}, Opponent Team: ${rivalTeamData}`);  // Verifica los datos procesados
 
     return {
       labels: [category],
@@ -25,7 +25,7 @@ const MatchReportLeft = ({ data }) => {
           isRival: false,
         },
         {
-          label: 'Equipo Rival',
+          label: 'Equipo Opponent',
           data: [rivalTeamData],
           isRival: true,
         },
@@ -34,17 +34,17 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForPali = () => {
-    if (!data || !data.length) return { labels: ['PALI'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Rival', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['GOAL-KICK'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
 
-    const ourTeamConverted = data.filter(event => event.CATEGORIA === 'PALI' && event.EQUIPO === 'SAN BENEDETTO' && event.PALOS === 'CONVERTITO').length;
-    const ourTeamTotal = data.filter(event => event.CATEGORIA === 'PALI' && event.EQUIPO === 'SAN BENEDETTO').length;
-    const rivalTeamConverted = data.filter(event => event.CATEGORIA === 'PALI' && event.EQUIPO === 'RIVAL' && event.PALOS === 'CONVERTITO').length;
-    const rivalTeamTotal = data.filter(event => event.CATEGORIA === 'PALI' && event.EQUIPO === 'RIVAL').length;
+    const ourTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO' && event.PALOS === 'CONVERTITO').length;
+    const ourTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO').length;
+    const rivalTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT' && event.PALOS === 'CONVERTITO').length;
+    const rivalTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT').length;
 
-    // console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Rival Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
+    // console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Opponent Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
 
     return {
-      labels: ['PALI'],
+      labels: ['GOAL-KICK'],
       datasets: [
         {
           label: `${ourTeamConverted}/${ourTeamTotal}`,
@@ -61,17 +61,17 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForPosesion = () => {
-    if (!data || !data.length) return { labels: ['POSESIÓN DEL BALÓN'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Rival', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['POSESIÓN DEL BALÓN'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
 
-    const ourTeamAttackTime = data.filter(event => event.CATEGORIA === 'ATTACCO').reduce((sum, event) => sum + (event.DURACION || 0), 0);
-    const rivalTeamDefenseTime = data.filter(event => event.CATEGORIA === 'DIFESA').reduce((sum, event) => sum + (event.DURACION || 0), 0);
+    const ourTeamAttackTime = data.filter(event => event.CATEGORY === 'ATTACK').reduce((sum, event) => sum + (event.DURATION || 0), 0);
+    const rivalTeamDefenseTime = data.filter(event => event.CATEGORY === 'DEFENCE').reduce((sum, event) => sum + (event.DURATION || 0), 0);
 
     const totalTime = ourTeamAttackTime + rivalTeamDefenseTime;
 
     const ourTeamPercentage = Math.round((ourTeamAttackTime / totalTime) * 100);
     const rivalTeamPercentage = Math.round((rivalTeamDefenseTime / totalTime) * 100);
 
-    // console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Rival Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
+    // console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Opponent Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
 
     return {
       labels: ['POSESIÓN DEL BALÓN'],
@@ -91,15 +91,15 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForTackles = () => {
-    if (!data || !data.length) return { labels: ['PLACCAGGIO'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Rival', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['TACKLE'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
 
-    const ourTeamTackles = data.filter(event => event.CATEGORIA === 'PLACCAGGIO' && event.EQUIPO === 'SAN BENEDETTO').length;
-    const rivalTeamTackles = data.filter(event => event.CATEGORIA === 'PLACCAGGIO' && event.EQUIPO === 'RIVAL').length;
+    const ourTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'SAN BENEDETTO').length;
+    const rivalTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'OPPONENT').length;
 
-    // console.log(`Tackles - Our Team: ${ourTeamTackles}, Rival Team: ${rivalTeamTackles}`);  // Verifica los datos procesados
+    // console.log(`Tackles - Our Team: ${ourTeamTackles}, Opponent Team: ${rivalTeamTackles}`);  // Verifica los datos procesados
 
     return {
-      labels: ['PLACCAGGIO'],
+      labels: ['TACKLE'],
       datasets: [
         {
           label: 'Nuestro Equipo',
@@ -107,7 +107,7 @@ const MatchReportLeft = ({ data }) => {
           isRival: false,
         },
         {
-          label: 'Equipo Rival',
+          label: 'Equipo Opponent',
           data: [rivalTeamTackles],
           isRival: true,
         },
@@ -115,8 +115,8 @@ const MatchReportLeft = ({ data }) => {
     };
   };
 
-  const puntosTotalesData = getDataForCategory('PUNTI');
-  const triesData = getDataForCategory('PUNTI', 5);
+  const puntosTotalesData = getDataForCategory('POINTS');
+  const triesData = getDataForCategory('POINTS', 5);
   const patadasPalosData = getDataForPali();
   const posesionData = getDataForPosesion();
   const tacklesData = getDataForTackles();

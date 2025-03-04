@@ -6,11 +6,11 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
 
   useEffect(() => {
     const missedTackleEvents = events.filter(
-      (event) => event.CATEGORIA === "PLAC-SBAGLIATTO"
+      (event) => event.CATEGORY === "MISSED-TACKLE"
     );
 
     const playerLabels = [
-      ...new Set(missedTackleEvents.map((event) => event.JUGADOR)),
+      ...new Set(missedTackleEvents.map((event) => event.PLAYER)),
     ].sort((a, b) => a - b);
 
     const data = {
@@ -20,7 +20,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
           label: "Tackles Errados",
           data: playerLabels.map((player) => {
             const count = missedTackleEvents.filter(
-              (event) => event.JUGADOR === player  && event.EQUIPO !== "RIVAL"
+              (event) => event.PLAYER === player  && event.TEAM !== "OPPONENT"
             ).length;
             return count;
           }),

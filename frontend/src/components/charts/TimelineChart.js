@@ -44,7 +44,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
   }
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORIA).filter(category => category !== 'FIN')),
+    ...new Set(filteredEvents.map((event) => event.CATEGORY).filter(category => category !== 'END')),
   ];
 
   const timelineData = {
@@ -52,7 +52,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
     datasets: filteredCategories.map((category) => ({
       label: category,
       data: filteredEvents
-        .filter((event) => event.CATEGORIA === category)
+        .filter((event) => event.CATEGORY === category)
         .map((event) => {
           let descriptor = "";
           columnsToTooltip.forEach((column) => {
@@ -60,8 +60,8 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
               event[column] !== null &&
               event[column] !== "" &&
               event[column] !== "N/A" &&
-              column !== "SEGUNDO" &&
-              column !== "DURACION"
+              column !== "SECOND" &&
+              column !== "DURATION"
             ) {
               descriptor += `${descriptor ? ", " : ""}${column}: ${
                 event[column]
@@ -69,12 +69,12 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
             }
           });
           return {
-            x: [event.SEGUNDO, event.SEGUNDO + event.DURACION], // Usar un array para representar el rango
+            x: [event.SECOND, event.SECOND + event.DURATION], // Usar un array para representar el rango
             y: category,
             id: event.ID,
             descriptor: descriptor,
-            SEGUNDO: event["SEGUNDO"],
-            DURACION: event["DURACION"],
+            SECOND: event["SECOND"],
+            DURATION: event["DURATION"],
           };
         }),
       backgroundColor: colors[category],
@@ -90,31 +90,31 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       const index = element.index;
       const category = filteredCategories[datasetIndex];
       const eventData = filteredEvents.find(
-        (event) => event.CATEGORIA === category && event.ID === timelineData.datasets[datasetIndex].data[index].id
+        (event) => event.CATEGORY === category && event.ID === timelineData.datasets[datasetIndex].data[index].id
       );
       onEventClick(eventData);
     } else {
-      // Manejar clics en las etiquetas del eje de la CATEGORIA
+      // Manejar clics en las etiquetas del eje de la CATEGORY
       const yScale = event.chart.scales.y;
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
         const category = yScale.getLabelForValue(yValue);
 
         if (category) {
-          // Verificar si ya estamos filtrando por esta CATEGORIA
+          // Verificar si ya estamos filtrando por esta CATEGORY
           const isAlreadyFiltered =
             filterCategory.includes(category);
 
           if (isAlreadyFiltered) {
-            // Si ya estamos filtrando por esta CATEGORIA, desfiltrar y mostrar todos los eventos
+            // Si ya estamos filtrando por esta CATEGORY, desfiltrar y mostrar todos los eventos
             const newFilterCategory = filterCategory.filter(cat => cat !== category);
             setFilterCategory(newFilterCategory);
             updateCharts(events, newFilterCategory, filterDescriptors);
             setFilteredEvents(events);
           } else if (events) {
-            // Si no, filtrar por la nueva CATEGORIA
+            // Si no, filtrar por la nueva CATEGORY
             const filtered = events.filter(
-              (event) => event.CATEGORIA === category
+              (event) => event.CATEGORY === category
             );
 
             if (filtered.length > 0) {
@@ -192,7 +192,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
         labels: filteredCategories, // Usar las CATEGORIAs filtradas
         title: {
           display: true,
-          text: "CATEGORIA",
+          text: "CATEGORY",
         },
         ticks: {
           padding: 5, // Ajusta el espacio entre las etiquetas y las barras

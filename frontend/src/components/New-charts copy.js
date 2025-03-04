@@ -67,25 +67,25 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     "ID",
     "ENCUADRE",
     "FECHA",
-    "RIVAL",
-    "EQUIPO",
-    "CATEGORIA",
-    "JUGADOR",
+    "OPPONENT",
+    "TEAM",
+    "CATEGORY",
+    "PLAYER",
     "SECTOR",
-    "COORDENADA X",
-    "COORDENADA Y",
-    "AVANCE",
+    "COORDINATE_X",
+    "COORDINATE_Y",
+    "ADVANCE",
   ];
   const columnsToTooltip = [
-    "EQUIPO",
-    "JUGADOR",
-    "RESULTADO SCRUM",
-    "AVANCE",
-    "RESULTADO LINE",
+    "TEAM",
+    "PLAYER",
+    "SCRUM_RESULT",
+    "ADVANCE",
+    "LINE_RESULT",
     "CANTIDAD LINE",
-    "POSICION LINE",
-    "TIRADOR LINE",
-    "TIPO QUIEBRE",
+    "LINE_POSITION",
+    "LINE_THROWER",
+    "BREAK_TYPE",
     "CANAL QUIEBRE",
     "PERDIDA",
     "TIPO DE INFRACCIÓN",
@@ -99,45 +99,45 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const updateCharts = useCallback(
     (events, types, descriptors, result) => {
       const filteredEvents = events.filter((event) =>
-        types.length ? types.includes(event.CATEGORIA) : true
+        types.length ? types.includes(event.CATEGORY) : true
       );
 
       // console.log("Filtered Events:", filteredEvents);
 
       const tackleEvents = filteredEvents.filter(
-        (event) => event.CATEGORIA === "PLACCAGGIO"
+        (event) => event.CATEGORY === "TACKLE"
       );
 
       const playerLabels = [
-        ...new Set(tackleEvents.map((event) => event.JUGADOR)),
+        ...new Set(tackleEvents.map((event) => event.PLAYER)),
       ].sort((a, b) => a - b);
 
-      const resultLabels = ["POSITIVO", "NEUTRO", "NEGATIVO"];
+      const resultLabels = ["POSITIVE", "NEUTRAL", "NEGATIVE"];
 
       const positiveTackles = playerLabels.map(
         (player) =>
           tackleEvents.filter(
-            (event) => event.JUGADOR === player && event.AVANCE === "POSITIVO"
+            (event) => event.PLAYER === player && event.ADVANCE === "POSITIVE"
           ).length
       );
 
       const neutralTackles = playerLabels.map(
         (player) =>
           tackleEvents.filter(
-            (event) => event.JUGADOR === player && event.AVANCE === "NEUTRO"
+            (event) => event.PLAYER === player && event.ADVANCE === "NEUTRAL"
           ).length
       );
 
       const negativeTackles = playerLabels.map(
         (player) =>
           tackleEvents.filter(
-            (event) => event.JUGADOR === player && event.AVANCE === "NEGATIVO"
+            (event) => event.PLAYER === player && event.ADVANCE === "NEGATIVE"
           ).length
       );
 
       const resultData = resultLabels.map(
         (result) =>
-          tackleEvents.filter((event) => event.AVANCE === result).length
+          tackleEvents.filter((event) => event.ADVANCE === result).length
       );
 
       const pieData = {
@@ -147,9 +147,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Cantidad de tackles por avance",
             data: resultData,
             backgroundColor: resultLabels.map((label) => {
-              if (label === "POSITIVO") {
+              if (label === "POSITIVE") {
                 return "rgba(75, 192, 192, 0.6)";
-              } else if (label === "NEGATIVO") {
+              } else if (label === "NEGATIVE") {
                 return "rgba(255, 99, 132, 0.6)";
               } else {
                 return "rgba(201, 203, 207, 0.6)";
@@ -167,7 +167,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             data: playerLabels.map((player) => {
               const count = tackleEvents.filter(
                 (event) =>
-                  event.JUGADOR === player && event.AVANCE === "NEGATIVO"
+                  event.PLAYER === player && event.ADVANCE === "NEGATIVE"
               ).length;
               return {
                 x: player,
@@ -181,7 +181,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             label: "Tackles Neutros",
             data: playerLabels.map((player) => {
               const count = tackleEvents.filter(
-                (event) => event.JUGADOR === player && event.AVANCE === "NEUTRO"
+                (event) => event.PLAYER === player && event.ADVANCE === "NEUTRAL"
               ).length;
               return {
                 x: player,
@@ -196,7 +196,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             data: playerLabels.map((player) => {
               const count = tackleEvents.filter(
                 (event) =>
-                  event.JUGADOR === player && event.AVANCE === "POSITIVO"
+                  event.PLAYER === player && event.ADVANCE === "POSITIVE"
               ).length;
               return {
                 x: player,
@@ -219,9 +219,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             data: playerLabels.map((player) => {
               const count = events.filter(
                 (event) =>
-                  event.JUGADOR === player &&
-                  event.CATEGORIA === "PLAC-SBAGLIATTO" &&
-                  event.EQUIPO !== "RIVAL"
+                  event.PLAYER === player &&
+                  event.CATEGORY === "MISSED-TACKLE" &&
+                  event.TEAM !== "OPPONENT"
               ).length;
               return {
                 x: player,
@@ -237,8 +237,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       setChartMissedData(barMissedData);
 
       const uniqueCategories = [
-        ...new Set(events.map((event) => event.CATEGORIA)),
-      ].filter((category) => category !== "FIN");
+        ...new Set(events.map((event) => event.CATEGORY)),
+      ].filter((category) => category !== "END");
       const colors = uniqueCategories.reduce((acc, category, index) => {
         const color = `hsl(${
           (index * 360) / uniqueCategories.length
@@ -248,7 +248,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       }, {});
 
       const filteredCategories = [
-        ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
+        ...new Set(filteredEvents.map((event) => event.CATEGORY)),
       ];
 
       const timelineData = {
@@ -256,7 +256,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         datasets: filteredCategories.map((category) => ({
           label: category,
           data: filteredEvents
-            .filter((event) => event.CATEGORIA === category)
+            .filter((event) => event.CATEGORY === category)
             .map((event) => {
               let descriptor = "";
               columnsToTooltip.forEach((column) => {
@@ -264,8 +264,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
                   event[column] !== null &&
                   event[column] !== "" &&
                   event[column] !== "N/A" &&
-                  column !== "SEGUNDO" &&
-                  column !== "DURACION"
+                  column !== "SECOND" &&
+                  column !== "DURATION"
                 ) {
                   descriptor += `${descriptor ? ", " : ""}${column}: ${
                     event[column]
@@ -273,12 +273,12 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
                 }
               });
               return {
-                x: [event.SEGUNDO, event.SEGUNDO + event.DURACION], // Usar un array para representar el rango
+                x: [event.SECOND, event.SECOND + event.DURATION], // Usar un array para representar el rango
                 y: category,
                 id: event.ID,
                 descriptor: descriptor,
-                SEGUNDO: event["SEGUNDO"],
-                DURACION: event["DURACION"],
+                SECOND: event["SECOND"],
+                DURATION: event["DURATION"],
               };
             }),
           backgroundColor: colors[category],
@@ -303,35 +303,35 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       const scatterData = {
         datasets: filteredEvents
           .filter((event) => {
-            const x = parseFloat(event["COORDENADA X"]);
-            const y = parseFloat(event["COORDENADA Y"]);
+            const x = parseFloat(event["COORDINATE_X"]);
+            const y = parseFloat(event["COORDINATE_Y"]);
             return (
               !isNaN(x) &&
               !isNaN(y) &&
-              event.CATEGORIA !== "DIFESA" &&
-              event.CATEGORIA !== "ATTACCO" &&
-              event.CATEGORIA !== "PARTITA TAGLIATA"
+              event.CATEGORY !== "DEFENCE" &&
+              event.CATEGORY !== "ATTACK" &&
+              event.CATEGORY !== "SHORT-MATCH"
             );
           })
           .map((event) => {
-            let descriptor = event["TIEMPO(VIDEO)"];
+            let descriptor = event["TIME(VIDEO)"];
             columnsToTooltip.forEach((column) => {
               if (event[column] !== null) {
                 descriptor += `, ${column}: ${event[column]}`;
               }
             });
             return {
-              label: `${event.CATEGORIA}`,
+              label: `${event.CATEGORY}`,
               data: [
                 {
-                  x: Number(event["COORDENADA Y"]),
-                  y: Number(event["COORDENADA X"]),
-                  category: event.CATEGORIA,
+                  x: Number(event["COORDINATE_Y"]),
+                  y: Number(event["COORDINATE_X"]),
+                  category: event.CATEGORY,
                   id: event.ID,
                   descriptor: descriptor,
                 },
               ],
-              backgroundColor: colors[event.CATEGORIA],
+              backgroundColor: colors[event.CATEGORY],
             };
           }),
       };
@@ -354,10 +354,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       if (response.data && Array.isArray(response.data)) {
         const allEvents = response.data.map((event) => ({
           ...event,
-          "COORDENADA X": parseFloat(event["COORDENADA X"]),
-          "COORDENADA Y": parseFloat(event["COORDENADA Y"]),
-          SEGUNDO: event["SEGUNDO"], // Asegúrate de que estos campos estén presentes
-          DURACION: event["DURACION"], // Asegúrate de que estos campos estén presentes
+          "COORDINATE_X": parseFloat(event["COORDINATE_X"]),
+          "COORDINATE_Y": parseFloat(event["COORDINATE_Y"]),
+          SECOND: event["SECOND"], // Asegúrate de que estos campos estén presentes
+          DURATION: event["DURATION"], // Asegúrate de que estos campos estén presentes
         }));
         setEvents(allEvents);
         setFilteredEvents(allEvents);
@@ -409,9 +409,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
   const handleEventClick = useCallback(
     (event) => {
-      // console.log("Event dataC:", event.SEGUNDO);
-      const startTime = event.SEGUNDO;
-      const duration = event.DURACION; // 5 segundos de duración
+      // console.log("Event dataC:", event.SECOND);
+      const startTime = event.SECOND;
+      const duration = event.DURATION; // 5 segundos de duración
       // console.log("Setting tempTime and durationC:", startTime, duration);
       onEventClick({
         ...event,
@@ -423,7 +423,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     [onEventClick]
   );
 
-  const typeOptions = [...new Set(events.map((event) => event.CATEGORIA))].map(
+  const typeOptions = [...new Set(events.map((event) => event.CATEGORY))].map(
     (type) => ({
       value: type,
       label: type,
@@ -431,13 +431,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   );
 
   const descriptorOptions = [
-    ...new Set(events.map((event) => event.JUGADOR)),
+    ...new Set(events.map((event) => event.PLAYER)),
   ].map((descriptor) => ({
     value: descriptor,
     label: descriptor,
   }));
 
-  const resultOptions = [...new Set(events.map((event) => event.AVANCE))].map(
+  const resultOptions = [...new Set(events.map((event) => event.ADVANCE))].map(
     (result) => ({
       value: result,
       label: result,
@@ -455,7 +455,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
       // Buscar todos los eventos correspondientes al grupo seleccionado
       const clickedEvents = events.filter(
-        (event) => event.JUGADOR === clickedEventLabel
+        (event) => event.PLAYER === clickedEventLabel
       );
 
       if (clickedEvents.length > 0) {
@@ -463,7 +463,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
-          (event) => event.JUGADOR === clickedEventLabel
+          (event) => event.PLAYER === clickedEventLabel
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
 
@@ -565,10 +565,10 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
       if (clickedEvent) {
         // console.log("Clicked Event:", clickedEvent);
-        // console.log("Clicked Event:", clickedEvent.CATEGORIA);
+        // console.log("Clicked Event:", clickedEvent.CATEGORY);
 
-        // Filtrar todos los eventos de la misma CATEGORIA
-        // const filteredEvents = events.filter(event => event.CATEGORIA === clickedEvent.CATEGORIA);
+        // Filtrar todos los eventos de la misma CATEGORY
+        // const filteredEvents = events.filter(event => event.CATEGORY === clickedEvent.CATEGORY);
 
         // console.log("Filtered Events:", filteredEvents);
 
@@ -589,7 +589,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         console.error("Event not found with ID:", clickedEventId);
       }
     } else {
-      // Manejar clics en las etiquetas del eje de la CATEGORIA
+      // Manejar clics en las etiquetas del eje de la CATEGORY
       const yScale = event.chart.scales.y;
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
@@ -597,21 +597,21 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         // // console.log("Clicked category:", category); // Agrega este console.log para depurar
 
         if (category) {
-          // Verificar si ya estamos filtrando por esta CATEGORIA
+          // Verificar si ya estamos filtrando por esta CATEGORY
           const isAlreadyFiltered =
             filteredEvents.length > 0 &&
-            filteredEvents[0].CATEGORIA === category;
+            filteredEvents[0].CATEGORY === category;
 
           if (isAlreadyFiltered) {
-            // Si ya estamos filtrando por esta CATEGORIA, desfiltrar y mostrar todos los eventos
+            // Si ya estamos filtrando por esta CATEGORY, desfiltrar y mostrar todos los eventos
             // console.log("Removing filter for category:", category);
             updateCharts(events, filterType, filterDescriptors, filterResult);
             setFilteredEvents(events);
           } else {
-            // Si no, filtrar por la nueva CATEGORIA
+            // Si no, filtrar por la nueva CATEGORY
             // // console.log("All events:", events); // Agrega este console.log para ver todos los eventos
             const filtered = events.filter(
-              (event) => event.CATEGORIA === category
+              (event) => event.CATEGORY === category
             );
             // // console.log("Filtered events:", filtered); // Agrega este console.log para depurar
 
@@ -660,8 +660,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   ChartJS.register(categoryClickPlugin);
 
   const uniqueCategories = [
-    ...new Set(events.map((event) => event.CATEGORIA)),
-  ].filter((category) => category !== "FIN");
+    ...new Set(events.map((event) => event.CATEGORY)),
+  ].filter((category) => category !== "END");
   const colors = uniqueCategories.reduce((acc, category, index) => {
     const color = `hsl(${(index * 360) / uniqueCategories.length}, 70%, 50%)`;
     acc[category] = color;
@@ -669,7 +669,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   }, {});
 
   const filteredCategories = [
-    ...new Set(filteredEvents.map((event) => event.CATEGORIA)),
+    ...new Set(filteredEvents.map((event) => event.CATEGORY)),
   ];
 
   const timelineOptions = {
@@ -720,7 +720,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         labels: filteredCategories, // Usar las CATEGORIAs filtradas
         title: {
           display: true,
-          text: "CATEGORIA",
+          text: "CATEGORY",
         },
         ticks: {
           padding: 5, // Ajusta el espacio entre las etiquetas y las barras

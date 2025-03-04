@@ -36,15 +36,15 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   // console.log("Entrando a sidebar: ", filteredEvents);
 
   const excludeKeys = [
-    "COORDENADA X",
-    "COORDENADA Y",
-    "DURACION",
+    "COORDINATE_X",
+    "COORDINATE_Y",
+    "DURATION",
     "ID",
-    "CATEGORIA",
-    "EQUIPO",
+    "CATEGORY",
+    "TEAM",
     "PUNTOS (VALOR)",
-    "SEGUNDO",
-    "TIEMPO(VIDEO)",
+    "SECOND",
+    "TIME(VIDEO)",
   ];
 
   const updateDescriptorOptions = (filteredEvents) => {
@@ -66,7 +66,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     const teams = [
       ...new Set(
         filteredEvents
-          .map((event) => event.EQUIPO)
+          .map((event) => event.TEAM)
           .filter((team) => team !== null)
       ),
     ].map((team) => ({ value: team, label: team }));
@@ -76,7 +76,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const categoryOptions = [
     ...new Set(
       events
-        .map((event) => event.CATEGORIA)
+        .map((event) => event.CATEGORY)
         .filter((category) => category !== null)
     ),
   ].map((category) => ({ value: category, label: category }));
@@ -87,7 +87,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
 
     const filteredEvents =
       selectedCategories.length > 0
-        ? events.filter((event) => selectedCategories.includes(event.CATEGORIA))
+        ? events.filter((event) => selectedCategories.includes(event.CATEGORY))
         : events;
     setFilteredEvents(filteredEvents);
     updateDescriptorOptions(filteredEvents);
@@ -138,13 +138,13 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
 
     if (filterCategory.length > 0) {
       filteredEvents = filteredEvents.filter((event) =>
-        filterCategory.includes(event.CATEGORIA)
+        filterCategory.includes(event.CATEGORY)
       );
     }
 
     if (selectedTeam) {
       filteredEvents = filteredEvents.filter(
-        (event) => event.EQUIPO === selectedTeam
+        (event) => event.TEAM === selectedTeam
       );
     }
 

@@ -6,7 +6,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
 
   useEffect(() => {
     const pointsEvents = events.filter(
-      (event) => event.CATEGORIA === "PLACCAGGIO"
+      (event) => event.CATEGORY === "TACKLE"
     );
 
     const timeGroups = [
@@ -22,16 +22,16 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
         {
           label: "Tackles por tiempo de juego (Equipo)",
           data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO !== "RIVAL");
+            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
             const totalTackles = groupEvents.length;
             return totalTackles;
           }),
           backgroundColor: "rgba(75, 192, 192, 0.6)",
         },
         {
-          label: "Tackles por tiempo de juego (Rival)",
+          label: "Tackles por tiempo de juego (Opponent)",
           data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO === "RIVAL");
+            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
             const totalTackles = groupEvents.length;
             return totalTackles;
           }),
@@ -54,7 +54,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
   //     ];
   //     if (index >= 0 && index < timeGroups.length) {
   //       const timeGroup = timeGroups[index];
-  //       onChartClick(event, elements, "time", [{ descriptor: "Grupo_Tiempo", value: timeGroup }]);
+  //       onChartClick(event, elements, "time", [{ descriptor: "Time_Group", value: timeGroup }]);
   //     } else {
   //       console.error("Index out of bounds:", index);
   //     }

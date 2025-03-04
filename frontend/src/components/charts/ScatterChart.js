@@ -33,30 +33,30 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
     return {
       datasets: events
         .filter((event) => {
-          const x = parseFloat(event["COORDENADA X"]);
-          const y = parseFloat(event["COORDENADA Y"]);
+          const x = parseFloat(event["COORDINATE_X"]);
+          const y = parseFloat(event["COORDINATE_Y"]);
           return (
             !isNaN(x) &&
             !isNaN(y) &&
-            event.CATEGORIA !== "DIFESA" &&
-            event.CATEGORIA !== "ATTACCO" &&
-            event.CATEGORIA !== "PARTITA TAGLIATA"
+            event.CATEGORY !== "DEFENCE" &&
+            event.CATEGORY !== "ATTACK" &&
+            event.CATEGORY !== "SHORT-MATCH"
           );
         })
         .map((event) => {
-          let descriptor = event["TIEMPO(VIDEO)"];
+          let descriptor = event["TIME(VIDEO)"];
           columnsToTooltip.forEach((column) => {
             if (event[column] !== null) {
               descriptor += `, ${column}: ${event[column]}`;
             }
           });
           return {
-            label: `${event.CATEGORIA}`,
+            label: `${event.CATEGORY}`,
             data: [
               {
-                x: Number(event["COORDENADA Y"]),
-                y: Number(event["COORDENADA X"]),
-                category: event.CATEGORIA,
+                x: Number(event["COORDINATE_Y"]),
+                y: Number(event["COORDINATE_X"]),
+                category: event.CATEGORY,
                 id: event.ID,
                 descriptor: descriptor,
                 ...columnsToTooltip.reduce((acc, column) => {
@@ -65,7 +65,7 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
                 }, {}),
               },
             ],
-            backgroundColor: colors[event.CATEGORIA],
+            backgroundColor: colors[event.CATEGORY],
           };
         }),
     };

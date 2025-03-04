@@ -6,7 +6,7 @@ const PointsTimeChart = ({ events, onChartClick }) => {
 
   useEffect(() => {
     const pointsEvents = events.filter(
-      (event) => event.CATEGORIA === "PUNTI"
+      (event) => event.CATEGORY === "POINTS"
     );
 
     const timeGroups = [
@@ -22,16 +22,16 @@ const PointsTimeChart = ({ events, onChartClick }) => {
         {
           label: "Puntos por tiempo de juego (Equipo)",
           data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO !== "RIVAL");
+            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
             const totalPoints = groupEvents.reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
             return totalPoints;
           }),
           backgroundColor: "rgba(75, 192, 192, 0.6)",
         },
         {
-          label: "Puntos por tiempo de juego (Rival)",
+          label: "Puntos por tiempo de juego (Opponent)",
           data: timeGroups.map(group => {
-            const groupEvents = pointsEvents.filter(event => event.Grupo_Tiempo === group && event.EQUIPO === "RIVAL");
+            const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
             const totalPoints = groupEvents.reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
             return totalPoints;
           }),
@@ -54,7 +54,7 @@ const PointsTimeChart = ({ events, onChartClick }) => {
   //     ];
   //     if (index >= 0 && index < timeGroups.length) {
   //       const timeGroup = timeGroups[index];
-  //       onChartClick(event, elements, "time", [{ descriptor: "Grupo_Tiempo", value: timeGroup }]);
+  //       onChartClick(event, elements, "time", [{ descriptor: "Time_Group", value: timeGroup }]);
   //     } else {
   //       console.error("Index out of bounds:", index);
   //     }

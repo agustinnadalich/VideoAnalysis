@@ -41,7 +41,7 @@ const backgroundImagePlugin = {
   },
 };
 
-const columnsToInclude = ['ID', 'FECHA', 'RIVAL', 'EQUIPO', 'CATEGORIA', 'JUGADOR', 'SECTOR','COORDENADA X', ,'COORDENADA Y', 'AVANCE'];
+const columnsToInclude = ['ID', 'FECHA', 'OPPONENT', 'TEAM', 'CATEGORY', 'PLAYER', 'SECTOR','COORDINATE_X', ,'COORDINATE_Y', 'ADVANCE'];
 
 
 ChartJS.register(backgroundImagePlugin);
@@ -67,32 +67,32 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
           setEvents(response.data);
           setFilteredEvents(response.data);
 
-          // Filtra los eventos de tipo "PLACCAGGIO"
-          const placcaggios = response.data.filter(
-            (event) => event.CATEGORIA === "PLACCAGGIO" && event.JUGADOR
+          // Filtra los eventos de tipo "TACKLE"
+          const tackles = response.data.filter(
+            (event) => event.CATEGORY === "TACKLE" && event.PLAYER
           );
-          console.log("Filtered placcaggios:", placcaggios);
+          console.log("Filtered tackles:", tackles);
 
-          // Agrupa los placcaggios por jugador
-          const placcaggiosPorJugador = placcaggios.reduce((acc, event) => {
-            const jugador = event.JUGADOR;
+          // Agrupa los tackles por jugador
+          const tacklesPorJugador = tackles.reduce((acc, event) => {
+            const jugador = event.PLAYER;
             if (!acc[jugador]) {
               acc[jugador] = 0;
             }
             acc[jugador]++;
             return acc;
           }, {});
-          console.log("Placcaggios por jugador:", placcaggiosPorJugador);
+          console.log("tackles por jugador:", tacklesPorJugador);
 
           // Prepara los datos para el gráfico de barras
-          const labels = Object.keys(placcaggiosPorJugador);
-          const data = Object.values(placcaggiosPorJugador);
+          const labels = Object.keys(tacklesPorJugador);
+          const data = Object.values(tacklesPorJugador);
 
           setBarData({
             labels,
             datasets: [
               {
-                label: "Placcaggios por Jugador",
+                label: "tackles por Jugador",
                 data,
                 backgroundColor: "rgba(75, 192, 192, 0.2)",
                 borderColor: "rgba(75, 192, 192, 1)",
@@ -129,11 +129,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
   const applyFilters = useCallback(() => {
     const filtered = events.filter(
       (event) =>
-        (filterType.length ? filterType.includes(event.CATEGORIA) : true) &&
+        (filterType.length ? filterType.includes(event.CATEGORY) : true) &&
         (filterDescriptors.length
-          ? filterDescriptors.includes(event.JUGADOR)
+          ? filterDescriptors.includes(event.PLAYER)
           : true) &&
-        (filterResult.length ? filterResult.includes(event.SEGUNDO) : true)
+        (filterResult.length ? filterResult.includes(event.SECOND) : true)
     );
     console.log("Filtered events after applying filters:", filtered);
     setFilteredEvents(filtered);
@@ -150,16 +150,16 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         if (filteredJugador !== player) {
           setFilteredJugador(player); // Guardar el player filtrado
           const filtered = events.filter(
-            // (event) => event.CATEGORIA === "PLACCAGGIO" && event.EQUIPO !== "RIVAL" && event.JUGADOR === player
-            (event) => event.CATEGORIA === "PLACCAGGIO" && event.EQUIPO !== "RIVAL" && event.JUGADOR.toString() === player
+            // (event) => event.CATEGORY === "TACKLE" && event.TEAM !== "OPPONENT" && event.PLAYER === player
+            (event) => event.CATEGORY === "TACKLE" && event.TEAM !== "OPPONENT" && event.PLAYER.toString() === player
           );
           setFilteredEvents(filtered);
           console.log("Filtered events for player:", filtered);
         } else {
           console.log("Removing filter for player:", player);
-          // Mostrar todos los eventos de tipo "PLACCAGGIO"
+          // Mostrar todos los eventos de tipo "TACKLE"
           const filtered = events.filter(
-            (event) => event.CATEGORIA === "PLACCAGGIO" && event.EQUIPO === "SAN BENEDETTO"
+            (event) => event.CATEGORY === "TACKLE" && event.TEAM === "SAN BENEDETTO"
           );
           console.log("Filtered events after removing filterXXX:", filtered);
           setFilteredJugador(null); // Resetear el player filtrado
@@ -173,8 +173,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
   const handleEventClick = useCallback(
     (event) => {
-      console.log("Event dataC:", event.SEGUNDO);
-      const startTime = event.SEGUNDO;
+      console.log("Event dataC:", event.SECOND);
+      const startTime = event.SECOND;
       const duration = 5; // 5 segundos de duración
       console.log("Setting tempTime and durationC:", startTime, duration);
       onEventClick({ ...event, startTime, duration });
@@ -199,8 +199,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             options={[
               ...new Set(
                 events.map((event) => ({
-                  value: event.CATEGORIA,
-                  label: event.CATEGORIA,
+                  value: event.CATEGORY,
+                  label: event.CATEGORY,
                 }))
               ),
             ]}
@@ -214,8 +214,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             options={[
               ...new Set(
                 events.map((event) => ({
-                  value: event.JUGADOR,
-                  label: event.JUGADOR,
+                  value: event.PLAYER,
+                  label: event.PLAYER,
                 }))
               ),
             ]}
@@ -229,8 +229,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
             options={[
               ...new Set(
                 events.map((event) => ({
-                  value: event.SEGUNDO,
-                  label: event.SEGUNDO,
+                  value: event.SECOND,
+                  label: event.SECOND,
                 }))
               ),
             ]}
@@ -246,7 +246,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       </button>
       {barData && (
         <div>
-          <h2>Placcaggios por Jugador</h2>
+          <h2>tackles por Jugador</h2>
           <Bar
             data={barData}
             options={{
@@ -309,7 +309,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
       {/* <ul>
         {Array.isArray(filteredEvents) && filteredEvents.map((event, index) => (
           <li key={index} onClick={() => handleEventClick(event)}>
-            {event.CATEGORIA} - {event.SEGUNDO} - {event.JUGADOR}
+            {event.CATEGORY} - {event.SECOND} - {event.PLAYER}
           </li>
         ))}
       </ul> */}
