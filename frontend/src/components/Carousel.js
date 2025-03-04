@@ -10,7 +10,7 @@ const Tabs = ({ children }) => {
   const childrenArray = React.Children.toArray(children);
 
   return (
-    <div>
+    <div className="carousel-container">
       <div className="tabs">
         {childrenArray.map((tab, index) => (
           <button
@@ -30,9 +30,9 @@ const Tabs = ({ children }) => {
 const Carousel = ({ filteredEvents, handleChartClick }) => {
   return (
     <Tabs>
-      <div label="Tackles">
+      <div label="Tackles" className="tab-content">
         {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div style={{ width: '100%', height: '400px' }}>
+          <div className="chart-container">
             <TacklesBarChart
               events={filteredEvents}
               onChartClick={handleChartClick}
@@ -40,7 +40,7 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
           </div>
         )}
         {filteredEvents.some((event) => event.CATEGORIA === "PLAC-SBAGLIATTO") && (
-          <div style={{ width: '100%', height: '400px' }}>
+          <div className="chart-container">
             <MissedTacklesBarChart
               events={filteredEvents}
               onChartClick={handleChartClick}
@@ -48,7 +48,7 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
           </div>
         )}
         {filteredEvents.some((event) => event.CATEGORIA === "PLACCAGGIO") && (
-          <div style={{ width: '100%', height: '400px' }}>
+          <div className="chart-container">
             <AdvancePieChart
               events={filteredEvents}
               onChartClick={handleChartClick}
