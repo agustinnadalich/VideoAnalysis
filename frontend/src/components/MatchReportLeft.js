@@ -4,28 +4,32 @@ import HorizontalBarChart from './HorizontalBarChart';
 
 const MatchReportLeft = ({ data }) => {
   const getDataForCategory = (category, value = null) => {
-    if (!data || !data.length) return { labels: [category], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: [category], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
     const ourTeamData = value !== null
-      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO' && event['PUNTOS (VALOR)'] === value).length
-      : data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
+      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO' && event['POINTS(VALUE)'] === value).length
+      : data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO').reduce((sum, event) => sum + (event['POINTS(VALUE)'] || 0), 0);
 
     const rivalTeamData = value !== null
-      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT' && event['PUNTOS (VALOR)'] === value).length
-      : data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').reduce((sum, event) => sum + (event['PUNTOS (VALOR)'] || 0), 0);
+      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT' && event['POINTS(VALUE)'] === value).length
+      : data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').reduce((sum, event) => sum + (event['POINTS(VALUE)'] || 0), 0);
 
-    // console.log(`Category: ${category}, Our Team: ${ourTeamData}, Opponent Team: ${rivalTeamData}`);  // Verifica los datos procesados
+    console.log(`Category: ${category}, Our Team: ${ourTeamData}, Opponent Team: ${rivalTeamData}`);  // Verifica los datos procesados
+    console.log('Filtered data for category:', category, data.filter(event => event.CATEGORY === category));
+    console.log('Filtered data for our team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO'));
+    console.log('Filtered data for opponent team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT'));
+    console.log('Values for opponent team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').map(event => event['POINTS(VALUE)']));
 
     return {
       labels: [category],
       datasets: [
         {
-          label: 'Nuestro Equipo',
+          label: 'Our Team',
           data: [ourTeamData],
           isRival: false,
         },
         {
-          label: 'Equipo Opponent',
+          label: 'Opponent',
           data: [rivalTeamData],
           isRival: true,
         },
@@ -34,14 +38,17 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForPali = () => {
-    if (!data || !data.length) return { labels: ['GOAL-KICK'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['GOAL-KICK'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
-    const ourTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO' && event.PALOS === 'CONVERTITO').length;
+    const ourTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO' && event.GOAL_KICK === 'SUCCESS').length;
     const ourTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO').length;
-    const rivalTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT' && event.PALOS === 'CONVERTITO').length;
+    const rivalTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT' && event.GOAL_KICK === 'SUCCESS').length;
     const rivalTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT').length;
 
-    // console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Opponent Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
+    console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Opponent Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
+    console.log('Filtered data for GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK'));
+    console.log('Filtered data for our team GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO'));
+    console.log('Filtered data for opponent team GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT'));
 
     return {
       labels: ['GOAL-KICK'],
@@ -61,7 +68,7 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForPosesion = () => {
-    if (!data || !data.length) return { labels: ['POSESIÓN DEL BALÓN'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['BALL POSSESSION'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
     const ourTeamAttackTime = data.filter(event => event.CATEGORY === 'ATTACK').reduce((sum, event) => sum + (event.DURATION || 0), 0);
     const rivalTeamDefenseTime = data.filter(event => event.CATEGORY === 'DEFENCE').reduce((sum, event) => sum + (event.DURATION || 0), 0);
@@ -74,7 +81,7 @@ const MatchReportLeft = ({ data }) => {
     // console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Opponent Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
 
     return {
-      labels: ['POSESIÓN DEL BALÓN'],
+      labels: ['BALL POSSESSION'],
       datasets: [
         {
           label: `${ourTeamPercentage}%`,
@@ -91,7 +98,7 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForTackles = () => {
-    if (!data || !data.length) return { labels: ['TACKLE'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['TACKLE'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
     const ourTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'SAN BENEDETTO').length;
     const rivalTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'OPPONENT').length;
@@ -102,12 +109,12 @@ const MatchReportLeft = ({ data }) => {
       labels: ['TACKLE'],
       datasets: [
         {
-          label: 'Nuestro Equipo',
+          label: 'Our Team',
           data: [ourTeamTackles],
           isRival: false,
         },
         {
-          label: 'Equipo Opponent',
+          label: 'Opponent',
           data: [rivalTeamTackles],
           isRival: true,
         },
@@ -123,7 +130,7 @@ const MatchReportLeft = ({ data }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <h3>Estadísticas</h3>
+      <h3>Stats</h3>
       <div style={{ width: "100%", marginRight: "5px", marginLeft: "5px" }}>
         <div
           style={{
@@ -135,12 +142,12 @@ const MatchReportLeft = ({ data }) => {
             justifyContent: "space-between",
           }}
         >
-          <h4 style={{ margin: "0px" }}>Local</h4>
-          <h4 style={{ margin: "0px" }}>Visitante</h4>
+          <h4 style={{ margin: "0px" }}>Our Team</h4>
+          <h4 style={{ margin: "0px" }}>Opponent</h4>
         </div>
       </div>
       <div style={{ width: '100%', marginBottom: '5px', textAlign: 'center' }}>
-        <h4 style={{ margin: "0px" }}>Puntos Totales</h4>
+        <h4 style={{ margin: "0px" }}>Total points</h4>
         <HorizontalBarChart data={puntosTotalesData} />
       </div>
       <div style={{ width: '100%', marginBottom: '5px', textAlign: 'center' }}>
@@ -148,11 +155,11 @@ const MatchReportLeft = ({ data }) => {
         <HorizontalBarChart data={triesData} />
       </div>
       <div style={{ width: '100%', marginBottom: '5px', textAlign: 'center' }}>
-        <h4 style={{ margin: "0px" }}>Patadas a los Palos</h4>
+        <h4 style={{ margin: "0px" }}>Goal kicks</h4>
         <HorizontalBarChart data={patadasPalosData} />
       </div>
       <div style={{ width: '100%', marginBottom: '5px', textAlign: 'center' }}>
-        <h4 style={{ margin: "0px" }}>Posesión del Balón</h4>
+        <h4 style={{ margin: "0px" }}>Possession</h4>
         <HorizontalBarChart data={posesionData} />
       </div>
       <div style={{ width: '100%', marginBottom: '5px', textAlign: 'center' }}>

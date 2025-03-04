@@ -8,8 +8,8 @@ const MatchReportRight = ({ data }) => {
       return {
         labels: [category],
         datasets: [
-          { label: "Nuestro Equipo", data: [0], isRival: false },
-          { label: "Equipo Opponent", data: [0], isRival: true },
+          { label: "Our Team", data: [0], isRival: false },
+          { label: "Opponent", data: [0], isRival: true },
         ],
       };
 
@@ -19,14 +19,14 @@ const MatchReportRight = ({ data }) => {
             (event) =>
               event.CATEGORY === category &&
               event.TEAM === "SAN BENEDETTO" &&
-              event["PUNTOS (VALOR)"] === value
+              event["POINTS(VALUE)"] === value
           ).length
         : data
             .filter(
               (event) =>
                 event.CATEGORY === category && event.TEAM === "SAN BENEDETTO"
             )
-            .reduce((sum, event) => sum + (event["PUNTOS (VALOR)"] || 0), 0);
+            .reduce((sum, event) => sum + (event["POINTS(VALUE)"] || 0), 0);
 
     const rivalTeamData =
       value !== null
@@ -34,14 +34,14 @@ const MatchReportRight = ({ data }) => {
             (event) =>
               event.CATEGORY === category &&
               event.TEAM === "OPPONENT" &&
-              event["PUNTOS (VALOR)"] === value
+              event["POINTS(VALUE)"] === value
           ).length
         : data
             .filter(
               (event) =>
                 event.CATEGORY === category && event.TEAM === "OPPONENT"
             )
-            .reduce((sum, event) => sum + (event["PUNTOS (VALOR)"] || 0), 0);
+            .reduce((sum, event) => sum + (event["POINTS(VALUE)"] || 0), 0);
 
     // console.log(
     //   `Category: ${category}, Our Team: ${ourTeamData}, Opponent Team: ${rivalTeamData}`
@@ -51,12 +51,12 @@ const MatchReportRight = ({ data }) => {
       labels: [category],
       datasets: [
         {
-          label: "Nuestro Equipo",
+          label: "Our Team",
           data: [ourTeamData],
           isRival: false,
         },
         {
-          label: "Equipo Opponent",
+          label: "Opponent",
           data: [rivalTeamData],
           isRival: true,
         },
@@ -69,8 +69,8 @@ const MatchReportRight = ({ data }) => {
       return {
         labels: ["PENALTY"],
         datasets: [
-          { label: "Nuestro Equipo", data: [0], isRival: false },
-          { label: "Equipo Opponent", data: [0], isRival: true },
+          { label: "Our Team", data: [0], isRival: false },
+          { label: "Opponent", data: [0], isRival: true },
         ],
       };
 
@@ -89,12 +89,12 @@ const MatchReportRight = ({ data }) => {
       labels: ["PENALTY"],
       datasets: [
         {
-          label: "Nuestro Equipo",
+          label: "Our Team",
           data: [ourTeamPenales],
           isRival: false,
         },
         {
-          label: "Equipo Opponent",
+          label: "Opponent",
           data: [rivalTeamPenales],
           isRival: true,
         },
@@ -103,7 +103,7 @@ const MatchReportRight = ({ data }) => {
   };
 
   const getDataForTurnovers = () => {
-    if (!data || !data.length) return { labels: ['TURNOVERS'], datasets: [{ label: 'Nuestro Equipo', data: [0], isRival: false }, { label: 'Equipo Opponent', data: [0], isRival: true }] };
+    if (!data || !data.length) return { labels: ['TURNOVERS'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
     const persaCount = data.filter(event => event.CATEGORY === 'TURNOVER-').length;
     const ricuperataCount = data.filter(event => event.CATEGORY === 'TURNOVER+').length;
@@ -114,12 +114,12 @@ const MatchReportRight = ({ data }) => {
       labels: ['TURNOVERS'],
       datasets: [
         {
-          label: 'Nuestro Equipo',
+          label: 'Our Team',
           data: [ricuperataCount],
           isRival: false,
         },
         {
-          label: 'Equipo Opponent',
+          label: 'Opponent',
           data: [persaCount],
           isRival: true,
         },
@@ -132,8 +132,8 @@ const MatchReportRight = ({ data }) => {
       return {
         labels: ["BREAK"],
         datasets: [
-          { label: "Nuestro Equipo", data: [0], isRival: false },
-          { label: "Equipo Opponent", data: [0], isRival: true },
+          { label: "Our Team", data: [0], isRival: false },
+          { label: "Opponent", data: [0], isRival: true },
         ],
       };
 
@@ -152,12 +152,12 @@ const MatchReportRight = ({ data }) => {
       labels: ["BREAK"],
       datasets: [
         {
-          label: "Nuestro Equipo",
+          label: "Our Team",
           data: [ourTeamBreaks],
           isRival: false,
         },
         {
-          label: "Equipo Opponent",
+          label: "Opponent",
           data: [rivalTeamBreaks],
           isRival: true,
         },
@@ -168,10 +168,10 @@ const MatchReportRight = ({ data }) => {
   const getDataForFormacionesFijas = () => {
     if (!data || !data.length)
       return {
-        labels: ["FORMACIONES FIJAS"],
+        labels: ["SET PIECES"],
         datasets: [
-          { label: "Nuestro Equipo", data: [0], isRival: false },
-          { label: "Equipo Opponent", data: [0], isRival: true },
+          { label: "Our Team", data: [0], isRival: false },
+          { label: "Opponent", data: [0], isRival: true },
         ],
       };
 
@@ -190,17 +190,17 @@ const MatchReportRight = ({ data }) => {
       (event) =>
         (event.CATEGORY === "LINEOUT" || event.CATEGORY === "SCRUM") &&
         event.TEAM === "SAN BENEDETTO" &&
-        (event["SCRUM_RESULT"] === "VINTA" ||
-          event["LINE_RESULT"] === "PULITA" ||
-          event["LINE_RESULT"] === "SPORCA")
+        (event["SCRUM_RESULT"] === "WIN" ||
+          event["LINE_RESULT"] === "CLEAN" ||
+          event["LINE_RESULT"] === "DIRTY")
     ).length;
     const rivalTeamVinta = data.filter(
       (event) =>
         (event.CATEGORY === "LINEOUT" || event.CATEGORY === "SCRUM") &&
         event.TEAM === "OPPONENT" &&
-        (event["SCRUM_RESULT"] === "VINTA" ||
-          event["LINE_RESULT"] === "PULITA" ||
-          event["LINE_RESULT"] === "SPORCA")
+        (event["SCRUM_RESULT"] === "WIN" ||
+          event["LINE_RESULT"] === "CLEAN" ||
+          event["LINE_RESULT"] === "DIRTY")
     ).length;
 
     // console.log(
@@ -208,7 +208,7 @@ const MatchReportRight = ({ data }) => {
     // ); // Verifica los datos procesados
 
     return {
-      labels: ["FORMACIONES FIJAS"],
+      labels: ["SET PIECES"],
       datasets: [
         {
           label: `${ourTeamVinta}/${ourTeamFormaciones}`,
@@ -234,7 +234,7 @@ const MatchReportRight = ({ data }) => {
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
     >
-      <h3>Estadísticas</h3>
+      <h3>Stats</h3>
       <div style={{ width: "100%", marginRight: "5px", marginLeft: "5px" }}>
         <div
           style={{
@@ -246,12 +246,12 @@ const MatchReportRight = ({ data }) => {
             justifyContent: "space-between",
           }}
         >
-          <h4 style={{ margin: "0px" }}>Local</h4>
-          <h4 style={{ margin: "0px" }}>Visitante</h4>
+          <h4 style={{ margin: "0px" }}>Our Team</h4>
+          <h4 style={{ margin: "0px" }}>Opponent</h4>
         </div>
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
-        <h4 style={{ margin: "0px" }}>Penales</h4>
+        <h4 style={{ margin: "0px" }}>Penalties</h4>
         <HorizontalBarChart data={penalesData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
@@ -259,15 +259,15 @@ const MatchReportRight = ({ data }) => {
         <HorizontalBarChart data={turnoversData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
-        <h4 style={{ margin: "0px" }}>Quiebres de Línea</h4>
+        <h4 style={{ margin: "0px" }}>Breaks</h4>
         <HorizontalBarChart data={quiebresData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
-        <h4 style={{ margin: "0px" }}>Tarjetas</h4>
+        <h4 style={{ margin: "0px" }}>Cards</h4>
         <HorizontalBarChart data={tarjetasData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
-        <h4 style={{ margin: "0px" }}>Formaciones Fijas</h4>
+        <h4 style={{ margin: "0px" }}>Set pieces</h4>
         <HorizontalBarChart data={formacionesFijasData} />
       </div>
     </div>

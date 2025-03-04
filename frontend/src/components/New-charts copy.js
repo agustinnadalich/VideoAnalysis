@@ -93,7 +93,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     "ENCUADRE",
     "TIEMPO RUCK",
     "PUNTOS",
-    "PALOS",
+    "GOAL_KICK",
   ];
 
   const updateCharts = useCallback(

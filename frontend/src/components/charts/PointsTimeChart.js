@@ -23,7 +23,7 @@ const PointsTimeChart = ({ events, onChartClick }) => {
           label: "Puntos por tiempo de juego (Equipo)",
           data: timeGroups.map(group => {
             const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
-            const totalPoints = groupEvents.reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
+            const totalPoints = groupEvents.reduce((sum, event) => sum + event["POINTS(VALUE)"], 0);
             return totalPoints;
           }),
           backgroundColor: "rgba(75, 192, 192, 0.6)",
@@ -32,7 +32,7 @@ const PointsTimeChart = ({ events, onChartClick }) => {
           label: "Puntos por tiempo de juego (Opponent)",
           data: timeGroups.map(group => {
             const groupEvents = pointsEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
-            const totalPoints = groupEvents.reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
+            const totalPoints = groupEvents.reduce((sum, event) => sum + event["POINTS(VALUE)"], 0);
             return totalPoints;
           }),
           backgroundColor: "rgba(255, 99, 132, 0.6)",

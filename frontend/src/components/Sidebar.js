@@ -42,7 +42,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     "ID",
     "CATEGORY",
     "TEAM",
-    "PUNTOS (VALOR)",
+    "POINTS(VALUE)",
     "SECOND",
     "TIME(VIDEO)",
   ];
@@ -193,7 +193,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
       </div>
 
       <label>
-        CATEGORIAs:
+        CATEGORY:
         <Select
           isMulti
           options={categoryOptions}
@@ -240,7 +240,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
         />
       </label>
       <label>
-        Equipo:
+        Team:
         <Select
           options={teamOptions}
           value={selectedOption}
@@ -279,7 +279,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
         />
       </label>
       <label>
-        Descriptores:
+        Descriptors:
         <Select
           options={descriptorOptions}
           value={selectedDescriptor}
@@ -318,7 +318,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
         />
       </label>
       <label>
-        Valores:
+        Values:
         <Select
           options={valueOptions}
           value={selectedValue}
@@ -355,8 +355,8 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
           }}
         />
       </label>
-      <button onClick={handleApplyFilter}>Aplicar Filtro</button>
-      <button onClick={handleClearFilters}>Limpiar Filtros</button>
+      <button onClick={handleApplyFilter}>Apply filter</button>
+      <button onClick={handleClearFilters}>Clean filters</button>
       <div className="applied-filters">
         {selectedFilters.map((filter, index) => (
           <div key={index} className="filter-tag">
@@ -374,7 +374,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
           onPlayFilteredEvents(filteredEvents);
         }}
       >
-        Reproducir eventos filtrados
+        Play filtered events
       </button>
     </div>
   );

@@ -79,12 +79,12 @@ const HorizontalBarChart = ({ data }) => {
     <div style={{ position: 'relative', width: '100%', height: '30px' }}>
       <Bar data={chartData} options={options} />
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px' }}>
-        {labels[0] === 'POSESIÓN DEL BALÓN' ? (
+        {labels[0] === 'BALL POSSESSION' ? (
           <>
             <span>{Math.round(datasets[0].data[0])}%</span>
             <span>{Math.round(datasets[1].data[0])}%</span>
           </>
-        ) : labels[0] === 'GOAL-KICK' || labels[0] === 'FORMACIONES FIJAS' ? (
+        ) : labels[0] === 'GOAL-KICK' || labels[0] === 'SET PIECES' ? (
           <>
             <span>{datasets[0].label}</span>
             <span>{datasets[1].label}</span>

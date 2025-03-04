@@ -36,12 +36,12 @@ const Header = () => {
   const formattedDate = DATE ? formatDate(DATE) : null;
 
   const clima = [];
-  if (RAIN === 'SI') clima.push('RAIN');
-  if (MUDDY === 'SI') clima.push('Barro');
-  if (WIND_1P === 'F') clima.push('Viento a favor el primer tiempo');
-  if (WIND_1P === 'C') clima.push('Viento en contra el primer tiempo');
-  if (WIND_2P === 'F') clima.push('Viento a favor el second tiempo');
-  if (WIND_2P === 'C') clima.push('Viento en contra el second tiempo');
+  if (RAIN === 'SI') clima.push('Rain');
+  if (MUDDY === 'SI') clima.push('Muddy');
+  if (WIND_1P === 'F') clima.push('Wind in favor the first half');
+  if (WIND_1P === 'C') clima.push('Wind against the first half');
+  if (WIND_2P === 'F') clima.push('Wind in favor the second half');
+  if (WIND_2P === 'C') clima.push('Wind against the second half');
   if (WIND_1P === '0' && WIND_2P === '0') {
     // No agregar nada acerca del viento
   }
@@ -72,7 +72,7 @@ const Header = () => {
         {COMPETITION && COMPETITION !== '-' && <div>Tournament: {COMPETITION}</div>}
         {ROUND && <div>Round: {ROUND}</div>}
         {GAME && <div>Game: {GAME}</div>}
-        {FIELD && FIELD !== '-' && <div>Cancha: {FIELD}</div>}
+        {FIELD && FIELD !== '-' && <div>Field: {FIELD}</div>}
         {clima.length > 0 && <div>Weather: {clima.join(', ')}</div>}
         {REFEREEE && REFEREEE !== '-' && <div>Referee: {REFEREEE}</div>}
       </div>

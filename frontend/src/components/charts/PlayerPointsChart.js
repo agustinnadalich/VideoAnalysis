@@ -21,7 +21,7 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
           data: playerLabels.map((player) => {
             const totalPoints = pointsEvents
               .filter((event) => event.PLAYER === player && event.TEAM !== "OPPONENT")
-              .reduce((sum, event) => sum + event["PUNTOS (VALOR)"], 0);
+              .reduce((sum, event) => sum + event["POINTS(VALUE)"], 0);
             return totalPoints;
           }),
           backgroundColor: "rgba(75, 192, 192, 0.6)",
