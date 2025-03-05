@@ -60,6 +60,32 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
 
   return (
     <Tabs activeTab={activeTab} setActiveTab={setActiveTab}>
+      {hasPenalties ? (
+        <div label="Penalties" id="penalties-tab" className="tab-content">
+          <div className="chart-container">
+            <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <PenaltiesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <PenaltiesCausePieChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          </div>
+        </div>
+      ) : null}
+      {hasTurnovers ? (
+          <div label="Turnovers" id="turnovers-tab" className="tab-content">
+          <div className="chart-container">
+            <TurnoversPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <TurnoversTypePieChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <TurnoversTimeChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+        </div>
+      ) : null}
       {hasTackles || hasMissedTackles ? (
         <div label="Tackles" id="tackles-tab" className="tab-content">
           {hasTeamTackles && (
@@ -105,32 +131,6 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
               />
             </div>
           )}
-        </div>
-      ) : null}
-      {hasPenalties ? (
-        <div label="Penalties" id="penalties-tab" className="tab-content">
-          <div className="chart-container">
-            <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} />
-          </div>
-          <div className="chart-container">
-            <PenaltiesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
-          </div>
-          <div className="chart-container">
-            <PenaltiesCausePieChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} />
-          </div>
-        </div>
-      ) : null}
-      {hasTurnovers ? (
-        <div label="Turnovers" id="turnovers-tab" className="tab-content">
-          <div className="chart-container">
-            <TurnoversPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
-          </div>
-          <div className="chart-container">
-            <TurnoversTypePieChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
-          </div>
-          <div className="chart-container">
-            <TurnoversTimeChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
-          </div>
         </div>
       ) : null}
     </Tabs>

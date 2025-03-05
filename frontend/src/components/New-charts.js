@@ -216,6 +216,12 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           (event) => event.TURNOVER_TYPE === clickedLabel
         );
         newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
+      } else if (chartType === "penalty_cause") {
+        const clickedLabel = chart.data.labels[index].split(' (')[0]; // Obtener solo la causa sin el sufijo
+        clickedEvents = filteredEvents.filter(
+          (event) => event.INFRACTION_TYPE === clickedLabel
+        );
+        newFilter = { descriptor: "INFRACTION_TYPE", value: clickedLabel };
       }
   
       if (clickedEvents.length > 0) {
