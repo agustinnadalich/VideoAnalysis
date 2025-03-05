@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
 import AdvancePieChart from './charts/AdvancePieChart';
@@ -7,11 +7,13 @@ import TacklesTimeChart from './charts/TacklesTimeChart';
 import PenaltiesPlayerBarChart from './charts/PenaltiesPlayerBarChart';
 import PenaltiesTimeChart from './charts/PenaltiesTimeChart';
 import PenaltiesCausePieChart from './charts/PenaltiesCausePieChart';
+import TurnoversPlayerBarChart from './charts/TurnoversPlayerBarChart';
+import TurnoversTypePieChart from './charts/TurnoversTypePieChart';
+import TurnoversTimeChart from './charts/TurnoversTimeChart';
 import FilterContext from '../context/FilterContext';
 import './Carousel.css';
 
-const Tabs = ({ children }) => {
-  const [activeTab, setActiveTab] = useState(0);
+const Tabs = ({ children, activeTab, setActiveTab }) => {
   const childrenArray = React.Children.toArray(children);
 
   return (
@@ -34,6 +36,7 @@ const Tabs = ({ children }) => {
 
 const Carousel = ({ filteredEvents, handleChartClick }) => {
   const { selectedTeam } = useContext(FilterContext);
+  const [activeTab, setActiveTab] = useState(0);
 
   const hasTackles = filteredEvents.some((event) => event.CATEGORY === "TACKLE");
   const hasMissedTackles = filteredEvents.some((event) => event.CATEGORY === "MISSED-TACKLE");
@@ -43,11 +46,22 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
   const hasRivalMissedTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
 
   const hasPenalties = filteredEvents.some((event) => event.CATEGORY === "PENALTY");
+  const hasTurnovers = filteredEvents.some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-");
+
+  useEffect(() => {
+    if (hasTackles || hasMissedTackles) {
+      setActiveTab(0);
+    } else if (hasPenalties) {
+      setActiveTab(1);
+    } else if (hasTurnovers) {
+      setActiveTab(2);
+    }
+  }, [hasTackles, hasMissedTackles, hasPenalties, hasTurnovers]);
 
   return (
-    <Tabs>
+    <Tabs activeTab={activeTab} setActiveTab={setActiveTab}>
       {hasTackles || hasMissedTackles ? (
-        <div label="Tackles" className="tab-content">
+        <div label="Tackles" id="tackles-tab" className="tab-content">
           {hasTeamTackles && (
             <div className="chart-container">
               <TacklesBarChart
@@ -94,7 +108,7 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
         </div>
       ) : null}
       {hasPenalties ? (
-        <div label="Penalties" className="tab-content">
+        <div label="Penalties" id="penalties-tab" className="tab-content">
           <div className="chart-container">
             <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} />
           </div>
@@ -106,7 +120,19 @@ const Carousel = ({ filteredEvents, handleChartClick }) => {
           </div>
         </div>
       ) : null}
-      {/* Agrega más tabs según sea necesario */}
+      {hasTurnovers ? (
+        <div label="Turnovers" id="turnovers-tab" className="tab-content">
+          <div className="chart-container">
+            <TurnoversPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <TurnoversTypePieChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+          <div className="chart-container">
+            <TurnoversTimeChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          </div>
+        </div>
+      ) : null}
     </Tabs>
   );
 };

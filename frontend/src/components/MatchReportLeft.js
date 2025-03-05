@@ -14,12 +14,6 @@ const MatchReportLeft = ({ data }) => {
       ? data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT' && event['POINTS(VALUE)'] === value).length
       : data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').reduce((sum, event) => sum + (event['POINTS(VALUE)'] || 0), 0);
 
-    console.log(`Category: ${category}, Our Team: ${ourTeamData}, Opponent Team: ${rivalTeamData}`);  // Verifica los datos procesados
-    console.log('Filtered data for category:', category, data.filter(event => event.CATEGORY === category));
-    console.log('Filtered data for our team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO'));
-    console.log('Filtered data for opponent team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT'));
-    console.log('Values for opponent team:', data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT').map(event => event['POINTS(VALUE)']));
-
     return {
       labels: [category],
       datasets: [
@@ -44,11 +38,6 @@ const MatchReportLeft = ({ data }) => {
     const ourTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO').length;
     const rivalTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT' && event.GOAL_KICK === 'SUCCESS').length;
     const rivalTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT').length;
-
-    console.log(`Pali - Our Team: ${ourTeamConverted}/${ourTeamTotal}, Opponent Team: ${rivalTeamConverted}/${rivalTeamTotal}`);  // Verifica los datos procesados
-    console.log('Filtered data for GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK'));
-    console.log('Filtered data for our team GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO'));
-    console.log('Filtered data for opponent team GOAL-KICK:', data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT'));
 
     return {
       labels: ['GOAL-KICK'],

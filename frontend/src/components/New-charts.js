@@ -43,7 +43,7 @@ Chart.register(
   ChartDataLabels
 );
 
-const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'LOST_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK'];
+const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK'];
 
 const columnsToInclude = [
   "ID",
@@ -119,6 +119,14 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
 
       setFilteredEvents(filtered);
 
+      if (categories.length > 0) {
+        const categoryTabId = `${categories[0].toLowerCase()}-tab`;
+        const categoryTab = document.getElementById(categoryTabId);
+        if (categoryTab) {
+          categoryTab.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+
       console.log("Filtered en updateCharts:", filtered);
     },
     [setFilteredEvents]
@@ -174,7 +182,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
-
+  
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
@@ -192,38 +200,42 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         }
       } else if (chartType === "player") {
         const clickedLabel = chart.data.labels[index];
-        clickedEvents = events.filter(
+        clickedEvents = filteredEvents.filter(
           (event) => event.PLAYER === clickedLabel
         );
         newFilter = { descriptor: "PLAYER", value: clickedLabel };
       } else if (chartType === "time") {
         const clickedLabel = chart.data.labels[index];
-        console.log("Clicked label:", clickedLabel);
-
-        clickedEvents = events.filter(
+        clickedEvents = filteredEvents.filter(
           (event) => event.Time_Group === clickedLabel
         );
         newFilter = { descriptor: "Time_Group", value: clickedLabel };
+      } else if (chartType === "turnover_type") {
+        const clickedLabel = chart.data.labels[index];
+        clickedEvents = filteredEvents.filter(
+          (event) => event.TURNOVER_TYPE === clickedLabel
+        );
+        newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
       }
-
+  
       if (clickedEvents.length > 0) {
         // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
-
+  
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
         updateCharts(updatedEvents, filterCategory, filterDescriptors);
-
+  
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
-
+  
         // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected && clickedEvents.length === 1) {
           onEventClick(clickedEvents[0]);
         }
-
+  
         // Actualizar los filtros en el contexto
         if (newFilter || additionalFilters.length > 0) {
           const filtersToAdd = newFilter
@@ -255,7 +267,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       }
     }
   };
-
   const handleTimelineClick = (eventData) => {
     onEventClick(eventData);
   };
