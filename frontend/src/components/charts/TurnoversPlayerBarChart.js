@@ -13,14 +13,19 @@ const TurnoversPlayerBarChart = ({ events, onChartClick }) => {
   const recoversByPlayer = uniquePlayersPlus.map(player => events.filter(event => event.PLAYER === player && event.CATEGORY === 'TURNOVER+').length);
   const lostByPlayer = uniquePlayersMinus.map(player => events.filter(event => event.PLAYER === player && event.CATEGORY === 'TURNOVER-').length);
 
-  const handleClick = (event, elements, chartType) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const player = chartType === 'plus' ? uniquePlayersPlus[index] : uniquePlayersMinus[index];
-      setSelectedPlayer(player);
-      onChartClick(event, elements, "player", [{ descriptor: "PLAYER", value: player }]);
-    }
+  // const handleClick = (event, elements, chartType) => {
+  //   if (elements.length > 0) {
+  //     const index = elements[0].index;
+  //     const player = chartType === 'plus' ? uniquePlayersPlus[index] : uniquePlayersMinus[index];
+  //     // setSelectedPlayer(player);
+  //     onChartClick(event, elements, "player", [{ descriptor: "PLAYER", value: player }]);
+  //   }
+  // };
+
+  const handleClick = (event, elements) => {
+    onChartClick(event, elements, "player");
   };
+  
 
   const dataPlus = {
     labels: uniquePlayersPlus,

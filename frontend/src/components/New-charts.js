@@ -113,12 +113,12 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           filters.length === 0 ||
           filters.every((filter) => event[filter.descriptor] === filter.value);
         const teamMatch = !team || event.TEAM === team;
-
+  
         return categoryMatch && filterMatch && teamMatch;
       });
-
+  
       setFilteredEvents(filtered);
-
+  
       if (categories.length > 0) {
         const categoryTabId = `${categories[0].toLowerCase()}-tab`;
         const categoryTab = document.getElementById(categoryTabId);
@@ -126,10 +126,11 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           categoryTab.scrollIntoView({ behavior: 'smooth' });
         }
       }
-
+  
       console.log("Filtered en updateCharts:", filtered);
+      setFilterCategory(categories); // Actualizar filterCategory aquí
     },
-    [setFilteredEvents]
+    [setFilteredEvents, setFilterCategory]
   );
 
   const fetchData = useCallback(async () => {
@@ -191,13 +192,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         const newFilterCategory = additionalFilters.find(
           (filter) => filter.descriptor === "CATEGORY"
         ).value;
-        if (filterCategory.includes(newFilterCategory)) {
-          setFilterCategory(
-            filterCategory.filter((category) => category !== newFilterCategory)
-          );
-        } else {
-          setFilterCategory([...filterCategory, newFilterCategory]);
-        }
+        // No manejar filterCategory aquí
       } else if (chartType === "player") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
@@ -211,11 +206,15 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         );
         newFilter = { descriptor: "Time_Group", value: clickedLabel };
       } else if (chartType === "turnover_type") {
-        const clickedLabel = chart.data.labels[index];
+        const clickedLabel = chart.data.labels[index].split(' (')[0]; // Obtener solo la causa sin el sufijo
+        const clickedCategory = chart.data.labels[index].includes('TURNOVER+') ? 'TURNOVER+' : 'TURNOVER-';
+        console.log("ClickedCategory: " + clickedCategory);
+        
         clickedEvents = filteredEvents.filter(
-          (event) => event.TURNOVER_TYPE === clickedLabel
+          (event) => event.TURNOVER_TYPE === clickedLabel && event.CATEGORY === clickedCategory
         );
         newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
+        additionalFilters.push({ descriptor: "CATEGORY", value: clickedCategory });
       } else if (chartType === "penalty_cause") {
         const clickedLabel = chart.data.labels[index].split(' (')[0]; // Obtener solo la causa sin el sufijo
         clickedEvents = filteredEvents.filter(
@@ -232,7 +231,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
   
         // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
-        updateCharts(updatedEvents, filterCategory, filterDescriptors);
+        updateCharts(updatedEvents, filterCategory, filterDescriptors, selectedTeam);
   
         // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
@@ -273,6 +272,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       }
     }
   };
+
   const handleTimelineClick = (eventData) => {
     onEventClick(eventData);
   };

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pie } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 const TurnoversTypePieChart = ({ events, onChartClick }) => {
   const recoveries = events.filter(event => event.CATEGORY === 'TURNOVER+');
@@ -11,78 +12,123 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
   const turnoversByRecoveryType = recoveryTypes.map(type => recoveries.filter(event => event.TURNOVER_TYPE === type).length);
   const turnoversByLossType = lossTypes.map(type => losses.filter(event => event.TURNOVER_TYPE === type).length);
 
-  const dataRecoveries = {
-    labels: recoveryTypes,
+  // Filtrar tipos con al menos un evento
+  const filteredRecoveryTypes = recoveryTypes.filter((_, index) => turnoversByRecoveryType[index] > 0);
+  const filteredLossTypes = lossTypes.filter((_, index) => turnoversByLossType[index] > 0);
+  const filteredTurnoversByRecoveryType = turnoversByRecoveryType.filter(count => count > 0);
+  const filteredTurnoversByLossType = turnoversByLossType.filter(count => count > 0);
+
+  const totalRecoveries = filteredTurnoversByRecoveryType.reduce((a, b) => a + b, 0);
+  const totalLosses = filteredTurnoversByLossType.reduce((a, b) => a + b, 0);
+
+  // Crear datos y colores combinados asegurando que los datos y colores estén alineados correctamente
+  const combinedData = [...filteredTurnoversByRecoveryType, ...filteredTurnoversByLossType];
+  const combinedColors = [
+    ...filteredTurnoversByRecoveryType.map((_, index) => `rgba(30, ${144 + index * 10}, 255, 0.8)`),
+    ...filteredTurnoversByLossType.map((_, index) => `rgba(255, ${69 + index * 20}, 0, 0.8)`)
+  ];
+
+  const data = {
+    labels: [...filteredRecoveryTypes.map(type => type + ' (TURNOVER+)'), ...filteredLossTypes.map(type => type + ' (TURNOVER-)')],
     datasets: [
-        {
-            data: turnoversByRecoveryType,
-            backgroundColor: ['#1E90FF', '#00BFFF', '#87CEFA', '#4682B4', '#5F9EA0'],
-            hoverBackgroundColor: ['#1E90FF', '#00BFFF', '#87CEFA', '#4682B4', '#5F9EA0'],
-        },
+      {
+        data: combinedData,
+        backgroundColor: combinedColors,
+        hoverBackgroundColor: combinedColors,
+      },
     ],
   };
 
-  const dataLosses = {
-    labels: lossTypes,
-    datasets: [
-        {
-            data: turnoversByLossType,
-            backgroundColor: ['#FF4500', '#FF6347', '#FF7F50', '#FF8C00', '#FFA07A'],
-            hoverBackgroundColor: ['#FF4500', '#FF6347', '#FF7F50', '#FF8C00', '#FFA07A'],
-        },
-    ],
-  };
+  // const handleChartClick = (event, elements) => {
+  //   if (elements.length > 0) {
+  //     const index = elements[0].index;
+  //     const typeIndex = Math.floor(index / 2);
+  //     const type = index < filteredTurnoversByRecoveryType.length ? filteredRecoveryTypes[typeIndex] : filteredLossTypes[typeIndex - filteredTurnoversByRecoveryType.length];
+  //     const category = index < filteredTurnoversByRecoveryType.length ? 'TURNOVER+' : 'TURNOVER-';
+  //     onChartClick(event, elements, "turnover_type", [{ descriptor: "TURNOVER_TYPE", value: type }, { descriptor: "CATEGORY", value: category }]);
+  //   }
+  // };
 
-  const handleChartClick = (event, elements, chartType) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const type = chartType === 'recoveries' ? recoveryTypes[index] : lossTypes[index];
-      onChartClick(event, elements, "turnover_type", [{ descriptor: "TURNOVER_TYPE", value: type }]);
-    }
+  const handleChartClick = (event, elements) => {
+    onChartClick(event, elements, "turnover_type");
   };
 
   const pieChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    cutout: '50%', // Agrandar el anillo
     plugins: {
-        legend: {
-            position: 'top',
+      legend: {
+        display: true,
+        position: 'top',
+        onClick: (e, legendItem, legend) => {
+          const index = legendItem.index;
+          const chart = legend.chart;
+          const meta = chart.getDatasetMeta(0);
+          const start = index === 0 ? 0 : filteredTurnoversByRecoveryType.length;
+          const end = index === 0 ? filteredTurnoversByRecoveryType.length : meta.data.length;
+          for (let i = start; i < end; i++) {
+            meta.data[i].hidden = !meta.data[i].hidden;
+          }
+          chart.update();
         },
-        title: {
-            display: true,
-            text: (context) => context.chart.config.type === 'recoveries' ? 'Recoveries by Type' : 'Losses by Type',
+        labels: {
+          generateLabels: (chart) => {
+            return [
+              {
+                text: 'Recovered',
+                fillStyle: 'rgba(30, 144, 255, 1)',
+                hidden: false,
+                index: 0,
+              },
+              {
+                text: 'Lost',
+                fillStyle: 'rgba(255, 69, 0, 1)',
+                hidden: false,
+                index: 1,
+              },
+            ];
+          },
         },
-        tooltip: {
-            callbacks: {
-                label: (context) => {
-                    const label = context.label;
-                    const value = context.raw;
-                    return `${label}: ${value}`;
-                },
-            },
+      },
+      title: {
+        display: true,
+        text: 'Turnovers by Type',
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.label;
+            const value = context.raw;
+            return `${label}: ${value}`;
+          },
         },
-        datalabels: {
-            display: false,
+      },
+      datalabels: {
+        color: 'grey',
+        formatter: (value, context) => {
+          const meta = context.chart.getDatasetMeta(context.datasetIndex);
+          const hidden = meta.data[context.dataIndex].hidden;
+          return hidden ? '' : value;
         },
+        font: {
+          weight: 'bold',
+        },
+        // anchor: 'end',
+        // align: 'end',
+      },
     },
+    onClick: handleChartClick,
   };
 
   return (
-    <div>
-        {recoveryTypes.length > 0 && (
-            <>
-                <div style={{ height: '300px' }}>
-                    <Pie data={dataRecoveries} options={{ ...pieChartOptions, onClick: (event, elements) => handleChartClick(event, elements, 'recoveries') }} />
-                </div>
-            </>
-        )}
-        {lossTypes.length > 0 && (
-            <>
-                <div style={{ height: '300px' }}>
-                    <Pie data={dataLosses} options={{ ...pieChartOptions, onClick: (event, elements) => handleChartClick(event, elements, 'losses') }} />
-                </div>
-            </>
-        )}
+    <div style={{ position: 'relative', minHeight: '500px' }}>
+      <Doughnut data={data} options={pieChartOptions} plugins={[ChartDataLabels]} />
+      <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+        <span style={{ color: 'rgba(30, 144, 255, 1)', fontSize: '1.5em' }}>{totalRecoveries}</span>
+        <span style={{ fontSize: '1.5em' }}> / </span>
+        <span style={{ color: 'rgba(255, 69, 0, 1)', fontSize: '1.5em' }}>{totalLosses}</span> 
+      </div>
     </div>
   );
 };

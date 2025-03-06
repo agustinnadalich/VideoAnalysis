@@ -99,12 +99,11 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
       if (yScale) {
         const yValue = yScale.getValueForPixel(event.y);
         const category = yScale.getLabelForValue(yValue);
-
+  
         if (category) {
           // Verificar si ya estamos filtrando por esta CATEGORY
-          const isAlreadyFiltered =
-            filterCategory.includes(category);
-
+          const isAlreadyFiltered = filterCategory.includes(category);
+  
           if (isAlreadyFiltered) {
             // Si ya estamos filtrando por esta CATEGORY, desfiltrar y mostrar todos los eventos
             const newFilterCategory = filterCategory.filter(cat => cat !== category);
@@ -116,17 +115,22 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
             const filtered = events.filter(
               (event) => event.CATEGORY === category
             );
-
+  
             if (filtered.length > 0) {
               // Usar updateCharts para actualizar los gráficos con los eventos filtrados
               const newFilterCategory = [...filterCategory, category];
               setFilterCategory(newFilterCategory);
-              updateCharts(
-                filtered,
-                newFilterCategory,
-                filterDescriptors,
-              );
-
+              console.log("Filtering by category:", newFilterCategory);
+                
+              // Llamar a updateCharts después de actualizar filterCategory
+              setTimeout(() => {
+                updateCharts(
+                  filtered,
+                  newFilterCategory,
+                  filterDescriptors,
+                );
+              }, 0);
+  
               // Actualizar el estado de los eventos filtrados
               setFilteredEvents(filtered);
             } else {

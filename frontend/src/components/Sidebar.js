@@ -3,7 +3,6 @@ import Select from "react-select";
 import FilterContext from "../context/FilterContext";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-
 const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const {
     filterCategory,
@@ -33,7 +32,10 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     setSelectedFilters(filterDescriptors);
   }, [filterDescriptors]);
 
-  // console.log("Entrando a sidebar: ", filteredEvents);
+  useEffect(() => {
+    console.log("FilterCategory changed:", filterCategory);
+    setSelectedOption(filterCategory.map(category => ({ value: category, label: category })));
+  }, [filterCategory]);
 
   const excludeKeys = [
     "COORDINATE_X",
@@ -128,8 +130,14 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
         descriptor: selectedDescriptor.value,
         value: selectedValue.value,
       };
-      setSelectedFilters([...selectedFilters, newFilter]);
-      setFilterDescriptors([...filterDescriptors, newFilter]);
+      setSelectedFilters((prevFilters) => {
+        const updatedFilters = [...prevFilters, newFilter];
+        return [...new Set(updatedFilters.map(filter => JSON.stringify(filter)))].map(filter => JSON.parse(filter));
+      });
+      setFilterDescriptors((prevFilters) => {
+        const updatedFilters = [...prevFilters, newFilter];
+        return [...new Set(updatedFilters.map(filter => JSON.stringify(filter)))].map(filter => JSON.parse(filter));
+      });
       setSelectedDescriptor(null);
       setSelectedValue(null);
     }
@@ -157,8 +165,6 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     }
 
     setFilteredEvents(filteredEvents);
-    // console.log("Filtered events count AQUI:", filteredEvents.length);
-
     updateDescriptorOptions(filteredEvents);
   };
 
@@ -243,7 +249,7 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
         Team:
         <Select
           options={teamOptions}
-          value={selectedOption}
+          value={teamOptions.find(option => option.value === selectedTeam)}
           onChange={handleTeamChange}
           isClearable
           styles={{
@@ -367,10 +373,6 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
       </div>
       <button
         onClick={() => {
-          // console.log(
-          //   "Filtered events count en Sidebar:",
-          //   filteredEvents.length
-          // );
           onPlayFilteredEvents(filteredEvents);
         }}
       >

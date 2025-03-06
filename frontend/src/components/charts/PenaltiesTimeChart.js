@@ -67,7 +67,15 @@ const PenaltiesTimeChart = ({ events, onChartClick }) => {
         },
       },
       datalabels: {
-        display: false,
+        color: 'grey',
+        formatter: (value, context) => {
+          const meta = context.chart.getDatasetMeta(context.datasetIndex);
+          const hidden = meta.data[context.dataIndex].hidden;
+          return hidden || value === 0 ? '' : value;
+        },
+        font: {
+          weight: 'bold',
+        },
       },
     },
     scales: {

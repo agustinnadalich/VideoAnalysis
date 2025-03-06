@@ -3,9 +3,7 @@ import { Doughnut } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 const PenaltiesCausePieChart = ({ events, onChartClick }) => {
-  const causes = [...new Set(events.map(event => event.INFRACTION_TYPE))];
-  console.log(causes);
-  
+  const causes = [...new Set(events.map(event => event.INFRACTION_TYPE))];  
   
   const teamPenaltiesByCause = causes.map(cause => events.filter(event => event.INFRACTION_TYPE === cause && event.TEAM !== 'OPPONENT').length);
   const rivalPenaltiesByCause = causes.map(cause => events.filter(event => event.INFRACTION_TYPE === cause && event.TEAM === 'OPPONENT').length);
@@ -36,14 +34,18 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
     ],
   };
 
+  // const handleChartClick = (event, elements) => {
+  //   if (elements.length > 0) {
+  //     const index = elements[0].index;
+  //     const causeIndex = index % filteredCauses.length;
+  //     const cause = filteredCauses[causeIndex];
+  //     const team = index < filteredCauses.length ? 'Our Team' : 'Opponent';
+  //     onChartClick(event, elements, "penalty_cause", [{ descriptor: "INFRACTION_TYPE", value: cause }]);
+  //   }
+  // };
+
   const handleChartClick = (event, elements) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const causeIndex = index % filteredCauses.length;
-      const cause = filteredCauses[causeIndex];
-      const team = index < filteredCauses.length ? 'Our Team' : 'Opponent';
-      onChartClick(event, elements, "penalty_cause", [{ descriptor: "INFRACTION_TYPE", value: cause }]);
-    }
+    onChartClick(event, elements, "penalty_cause");
   };
 
   const pieChartOptions = {
@@ -54,6 +56,17 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
       legend: {
         display: true,
         position: 'top',
+        onClick: (e, legendItem, legend) => {
+          const index = legendItem.index;
+          const chart = legend.chart;
+          const meta = chart.getDatasetMeta(0);
+          const start = index === 0 ? 0 : filteredTeamPenaltiesByCause.length;
+          const end = index === 0 ? filteredTeamPenaltiesByCause.length : meta.data.length;
+          for (let i = start; i < end; i++) {
+            meta.data[i].hidden = !meta.data[i].hidden;
+          }
+          chart.update();
+        },
         labels: {
           generateLabels: (chart) => {
             return [
@@ -88,7 +101,11 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
       },
       datalabels: {
         color: 'grey',
-        formatter: (value) => value > 0 ? value : '',
+        formatter: (value, context) => {
+          const meta = context.chart.getDatasetMeta(context.datasetIndex);
+          const hidden = meta.data[context.dataIndex].hidden;
+          return hidden || value === 0 ? '' : value;
+        },
         font: {
           weight: 'bold',
         },
