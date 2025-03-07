@@ -20,7 +20,7 @@ const PenaltiesTimeChart = ({ events, onChartClick }) => {
       labels: timeGroups,
       datasets: [
         {
-          label: "Penalties by Game Time (Our Team)",
+          label: "Our Team",
           data: timeGroups.map(group => {
             const groupEvents = penaltiesEvents.filter(event => event.Time_Group === group && event.TEAM !== "OPPONENT");
             const totalPenalties = groupEvents.length;
@@ -29,7 +29,7 @@ const PenaltiesTimeChart = ({ events, onChartClick }) => {
           backgroundColor: "rgba(75, 192, 192, 0.6)",
         },
         {
-          label: "Penalties by Game Time (Opponent)",
+          label: "Opponent",
           data: timeGroups.map(group => {
             const groupEvents = penaltiesEvents.filter(event => event.Time_Group === group && event.TEAM === "OPPONENT");
             const totalPenalties = groupEvents.length;

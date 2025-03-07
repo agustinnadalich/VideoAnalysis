@@ -42,15 +42,7 @@ const PenaltiesPlayerBarChart = ({ events, onChartClick }) => {
         },
       },
       datalabels: {
-        color: 'grey',
-        formatter: (value, context) => {
-          const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
-          return hidden || value === 0 ? '' : value;
-        },
-        font: {
-          weight: 'bold',
-        },
+        display: true,
       },
     },
     scales: {
@@ -69,3 +61,5 @@ const PenaltiesPlayerBarChart = ({ events, onChartClick }) => {
 };
 
 export default PenaltiesPlayerBarChart;
+
+

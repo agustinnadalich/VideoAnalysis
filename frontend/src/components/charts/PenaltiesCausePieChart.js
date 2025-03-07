@@ -17,14 +17,20 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
   const totalRivalPenalties = filteredRivalPenaltiesByCause.reduce((a, b) => a + b, 0);
 
   // Crear datos y colores combinados asegurando que los datos y colores estén alineados correctamente
-  const combinedData = [...filteredTeamPenaltiesByCause, ...filteredRivalPenaltiesByCause];
+  const combinedData = [
+    ...filteredTeamPenaltiesByCause.map((count, index) => count > 0 ? count : null).filter(count => count !== null),
+    ...filteredRivalPenaltiesByCause.map((count, index) => count > 0 ? count : null).filter(count => count !== null)
+  ];
   const combinedColors = [
-    ...filteredTeamPenaltiesByCause.map((_, index) => `rgba(255, ${100 + index * 30}, ${100 + index * 30}, 0.8)`),
-    ...filteredRivalPenaltiesByCause.map((_, index) => `rgba(${30 + index * 30}, ${144 + index * 10}, 255, 0.8)`)
+    ...filteredTeamPenaltiesByCause.map((count, index) => count > 0 ? `rgba(255, ${100 + index * 30}, ${100 + index * 30}, 0.8)` : null).filter(color => color !== null),
+    ...filteredRivalPenaltiesByCause.map((count, index) => count > 0 ? `rgba(${30 + index * 30}, ${144 + index * 10}, 255, 0.8)` : null).filter(color => color !== null)
   ];
 
   const data = {
-    labels: [...filteredCauses.map(cause => cause + ' (Our Team)'), ...filteredCauses.map(cause => cause + ' (Opponent)')],
+    labels: [
+      ...filteredCauses.map((cause, index) => filteredTeamPenaltiesByCause[index] > 0 ? cause + ' (Our Team)' : null).filter(label => label !== null),
+      ...filteredCauses.map((cause, index) => filteredRivalPenaltiesByCause[index] > 0 ? cause + ' (Opponent)' : null).filter(label => label !== null)
+    ],
     datasets: [
       {
         data: combinedData,
@@ -103,7 +109,8 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
         color: 'grey',
         formatter: (value, context) => {
           const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
+          const element = meta.data[context.dataIndex];
+          const hidden = element ? element.hidden : false;
           return hidden || value === 0 ? '' : value;
         },
         font: {
