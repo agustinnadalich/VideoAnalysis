@@ -49,7 +49,8 @@ const TacklesBarChart = ({ events, onChartClick }) => {
   };
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "player");
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "player", "tackles-tab"); 
   };
 
   const barChartOptions = {
@@ -75,7 +76,8 @@ const TacklesBarChart = ({ events, onChartClick }) => {
         color: 'grey',
         formatter: (value, context) => {
           const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
+          const dataElement = meta.data[context.dataIndex];
+          const hidden = dataElement ? dataElement.hidden : false;
           return hidden || value === 0 ? '' : value;
         },
         font: {

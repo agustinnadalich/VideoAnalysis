@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
 import {
   Chart,
   registerables,
@@ -78,6 +78,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const carouselRef = useRef(null);
 
   const uniqueCategories = useMemo(() => [
     ...new Set(events.map((event) => event.CATEGORY)),
@@ -175,24 +177,28 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const handleChartClick = (
     event,
     elements,
+    chart,
     chartType,
+    tabId,
     additionalFilters = []
   ) => {
+
+    if (!tabId) {
+      console.warn("tabId es undefined, manteniendo la pestaña activa.");
+      return;
+    }
+
     if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
+      console.log("tabId: ", tabId);
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
           (event) => event.ADVANCE === clickedLabel
         );
-        const newFilterCategory = additionalFilters.find(
-          (filter) => filter.descriptor === "CATEGORY"
-        ).value;
-        // No manejar filterCategory aquí
       } else if (chartType === "player") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
@@ -206,17 +212,18 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         );
         newFilter = { descriptor: "Time_Group", value: clickedLabel };
       } else if (chartType === "turnover_type") {
-        const clickedLabel = chart.data.labels[index].split(' (')[0]; // Obtener solo la causa sin el sufijo
-        const clickedCategory = chart.data.labels[index].includes('TURNOVER+') ? 'TURNOVER+' : 'TURNOVER-';
-        console.log("ClickedCategory: " + clickedCategory);
-        
+        const clickedLabel = chart.data.labels[index].split(' (')[0];
+        // const clickedCategory = chart.data.labels[index].includes('TURNOVER+') ? 'TURNOVER+' : 'TURNOVER-';
+        // console.log("ClickedCategory: " + clickedCategory);
+  
         clickedEvents = filteredEvents.filter(
-          (event) => event.TURNOVER_TYPE === clickedLabel && event.CATEGORY === clickedCategory
+          (event) => event.TURNOVER_TYPE === clickedLabel
+          // (event) => event.TURNOVER_TYPE === clickedLabel && event.CATEGORY === clickedCategory
         );
         newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
-        additionalFilters.push({ descriptor: "CATEGORY", value: clickedCategory });
+        // additionalFilters.push({ descriptor: "CATEGORY", value: clickedCategory });
       } else if (chartType === "penalty_cause") {
-        const clickedLabel = chart.data.labels[index].split(' (')[0]; // Obtener solo la causa sin el sufijo
+        const clickedLabel = chart.data.labels[index].split(' (')[0];
         clickedEvents = filteredEvents.filter(
           (event) => event.INFRACTION_TYPE === clickedLabel
         );
@@ -224,24 +231,18 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       }
   
       if (clickedEvents.length > 0) {
-        // Alternar el filtrado de eventos
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID
         );
         const updatedEvents = isAlreadySelected ? events : clickedEvents;
   
-        // Usar updateCharts para actualizar los gráficos con los eventos seleccionados
         updateCharts(updatedEvents, filterCategory, filterDescriptors, selectedTeam);
-  
-        // Actualizar el estado de los eventos seleccionados
         setSelectedEvents(isAlreadySelected ? [] : clickedEvents);
   
-        // Iniciar la reproducción del video del evento seleccionado solo si no es un grupo de eventos
         if (!isAlreadySelected && clickedEvents.length === 1) {
           onEventClick(clickedEvents[0]);
         }
   
-        // Actualizar los filtros en el contexto
         if (newFilter || additionalFilters.length > 0) {
           const filtersToAdd = newFilter
             ? [
@@ -267,6 +268,27 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             return updatedFilters;
           });
         }
+        
+        console.log("TabId:", tabId);
+        // console.log("Tabindex", tabIndex);
+        
+        
+        // Mantener la pestaña activa al desfiltrar
+        if (carouselRef.current) {
+          // Buscar la pestaña basada en su `id`, no en su índice dinámico
+          const tabButton = document.querySelector(`.tab-button[aria-controls="${tabId}"]`);
+        
+          if (tabButton) {
+            const tabIndex = Array.from(document.querySelectorAll(".tab-button")).indexOf(tabButton);
+            console.log("Seteando tab activa:", tabIndex);
+            carouselRef.current.setActiveTab(tabIndex);
+            setActiveTab(tabIndex); // Mantener la pestaña activa correctamente
+          } else {
+            console.error("No se encontró la pestaña, manteniendo la actual.");
+          }
+        }
+        
+        
       } else {
         console.error("No events found for the selected category and advance.");
       }
@@ -317,7 +339,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             />
           </div>
         </div>
-        <Carousel filteredEvents={filteredEvents} handleChartClick={handleChartClick} />
+        <Carousel ref={carouselRef} filteredEvents={filteredEvents} handleChartClick={handleChartClick} activeTab={activeTab} setActiveTab={setActiveTab} />
         {filteredEvents.some((event) => event["COORDINATE_X"] !== null) && (
           <div style={{ width: "90%", marginBottom: "20px" }}>
             <ScatterChart

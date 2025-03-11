@@ -34,7 +34,8 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
   }, [events]);
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "player");
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "player", "points-tab"); 
   };
 
 

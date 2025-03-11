@@ -61,8 +61,14 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
   //   }
   // };
 
+  // const handleChartClick = (event, elements) => {
+  //   onChartClick(event, elements, "time");
+  // };
+
+
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "time");
+      const chart = elements[0].element.$context.chart;
+      onChartClick(event, elements, chart, "time", "tackles-tab"); 
   };
 
   const tacklesTimeChartOptions = {

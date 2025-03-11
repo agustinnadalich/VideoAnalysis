@@ -12,7 +12,6 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
   const turnoversByRecoveryType = recoveryTypes.map(type => recoveries.filter(event => event.TURNOVER_TYPE === type).length);
   const turnoversByLossType = lossTypes.map(type => losses.filter(event => event.TURNOVER_TYPE === type).length);
 
-  // Filtrar tipos con al menos un evento
   const filteredRecoveryTypes = recoveryTypes.filter((_, index) => turnoversByRecoveryType[index] > 0);
   const filteredLossTypes = lossTypes.filter((_, index) => turnoversByLossType[index] > 0);
   const filteredTurnoversByRecoveryType = turnoversByRecoveryType.filter(count => count > 0);
@@ -21,7 +20,6 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
   const totalRecoveries = filteredTurnoversByRecoveryType.reduce((a, b) => a + b, 0);
   const totalLosses = filteredTurnoversByLossType.reduce((a, b) => a + b, 0);
 
-  // Crear datos y colores combinados asegurando que los datos y colores estén alineados correctamente
   const combinedData = [...filteredTurnoversByRecoveryType, ...filteredTurnoversByLossType];
   const combinedColors = [
     ...filteredTurnoversByRecoveryType.map((_, index) => `rgba(30, ${144 + index * 10}, 255, 0.8)`),
@@ -39,24 +37,17 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
     ],
   };
 
-  // const handleChartClick = (event, elements) => {
-  //   if (elements.length > 0) {
-  //     const index = elements[0].index;
-  //     const typeIndex = Math.floor(index / 2);
-  //     const type = index < filteredTurnoversByRecoveryType.length ? filteredRecoveryTypes[typeIndex] : filteredLossTypes[typeIndex - filteredTurnoversByRecoveryType.length];
-  //     const category = index < filteredTurnoversByRecoveryType.length ? 'TURNOVER+' : 'TURNOVER-';
-  //     onChartClick(event, elements, "turnover_type", [{ descriptor: "TURNOVER_TYPE", value: type }, { descriptor: "CATEGORY", value: category }]);
-  //   }
-  // };
-
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "turnover_type");
+    if (elements.length > 0) {
+      const chart = elements[0].element.$context.chart;
+      onChartClick(event, elements, chart, "turnover_type", "turnovers-tab");
+    }
   };
 
   const pieChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '50%', // Agrandar el anillo
+    cutout: '50%',
     plugins: {
       legend: {
         display: true,
@@ -108,14 +99,16 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
         color: 'grey',
         formatter: (value, context) => {
           const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
+          
+          if (!meta || !meta.data || !meta.data[context.dataIndex]) {
+            return ''; // Si no hay datos, evita el error
+          }      
+          const hidden = meta.data[context.dataIndex]?.hidden;
           return hidden ? '' : value;
-        },
+        },        
         font: {
           weight: 'bold',
         },
-        // anchor: 'end',
-        // align: 'end',
       },
     },
     onClick: handleChartClick,

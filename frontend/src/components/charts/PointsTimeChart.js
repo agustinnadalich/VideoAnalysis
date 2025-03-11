@@ -62,9 +62,9 @@ const PointsTimeChart = ({ events, onChartClick }) => {
   // };
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "time");
-  };
-
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "time", "points-tab"); 
+};
   const pointsTimeChartOptions = {
     responsive: true,
     plugins: {

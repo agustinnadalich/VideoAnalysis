@@ -51,7 +51,8 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
   // };
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "penalty_cause");
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "penalty_cause", "penalties-tab"); 
   };
 
   const pieChartOptions = {

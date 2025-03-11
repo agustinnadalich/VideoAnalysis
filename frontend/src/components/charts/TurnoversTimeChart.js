@@ -46,15 +46,17 @@ const TurnoversTimeChart = ({ events, onChartClick }) => {
   const handleChartClick = (event, elements) => {
     if (elements.length > 0) {
       const index = elements[0].index;
+      const chart = elements[0].element.$context.chart;
       const timeGroup = [
         "0'- 20'",
         "20' - 40'",
         "40' - 60'",
         "60' - 80'"
       ][index];
-      onChartClick(event, elements, "time", [{ descriptor: "Time_Group", value: timeGroup }]);
+      onChartClick(event, elements, chart, "time", "turnovers-tab", [{ descriptor: "Time_Group", value: timeGroup }]);
     }
   };
+
 
   const turnoversTimeChartOptions = {
     responsive: true,

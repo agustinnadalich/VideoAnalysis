@@ -23,7 +23,9 @@ const TurnoversPlayerBarChart = ({ events, onChartClick }) => {
   // };
 
   const handleClick = (event, elements) => {
-    onChartClick(event, elements, "player");
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "player", "turnovers-tab");
+
   };
   
 

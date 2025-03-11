@@ -44,12 +44,13 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
       const clickedLabel = chart.data.labels[index];
 
       // Pass filter data to the onChartClick function in New-charts.js
-      onChartClick(event, elements, "advance-chart", [
+      onChartClick(event, elements,chart, "advance-chart", "tackles-tab", [
         { descriptor: "CATEGORY", value: category },
         { descriptor: "ADVANCE", value: clickedLabel }
       ]);
     }
   };
+
 
   const pieChartOptions = {
     responsive: true,
@@ -74,7 +75,8 @@ const AdvancePieChart = ({ events, onChartClick, category }) => {
         color: 'grey',
         formatter: (value, context) => {
           const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
+          const dataElement = meta.data[context.dataIndex];
+          const hidden = dataElement ? dataElement.hidden : false;
           return hidden || value === 0 ? '' : value;
         },
         font: {

@@ -44,7 +44,8 @@ const PenaltiesTimeChart = ({ events, onChartClick }) => {
   }, [events]);
 
   const handleChartClick = (event, elements) => {
-    onChartClick(event, elements, "time");
+    const chart = elements[0].element.$context.chart;
+    onChartClick(event, elements, chart, "time", "penalties-tab"); 
   };
 
   const penaltiesTimeChartOptions = {
