@@ -54,8 +54,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
             label: `${event.CATEGORY}`,
             data: [
               {
-                x: Number(event["COORDINATE_Y"]),
-                y: Number(event["COORDINATE_X"]),
+                x: -Number(event["COORDINATE_Y"]),
+                y: -Number(event["COORDINATE_X"]),
                 category: event.CATEGORY,
                 id: event.ID,
                 descriptor: descriptor,
@@ -137,8 +137,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
       x: {
         type: "linear",
         position: "bottom",
-        min: -3,
-        max: 100,
+        min: 3,
+        max: -100,
         title: {
           display: false,
         },
@@ -151,8 +151,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
       },
       y: {
         type: "linear",
-        min: 0,
-        max: 70,
+        min: -70,
+        max: 0,
         title: {
           display: false,
         },
