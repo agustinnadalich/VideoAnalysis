@@ -71,26 +71,15 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
 
   return (
     <Tabs activeTab={activeTab} setActiveTab={setActiveTab} ref={ref}>
-      <div label="Penalties" id="penalties-tab" className='tab-content' style={{ display: hasPenalties ? 'flex' : 'none' }}>
+      <div label="Points" id="points-tab" className='tab-content'  style={{ display: hasPoints ? 'flex' : 'none' }}>
         <div className="chart-container">
-          <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          <PlayerPointsChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
         </div>
         <div className="chart-container">
-          <PenaltiesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+          <PointsTimeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
         </div>
         <div className="chart-container">
-          <PenaltiesCausePieChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
-        </div>
-      </div>
-      <div label="Turnovers" id="turnovers-tab" className='tab-content'  style={{ display: hasTurnovers ? 'flex' : 'none' }}>
-        <div className="chart-container">
-          <TurnoversPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
-        </div>
-        <div className="chart-container">
-          <TurnoversTypePieChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
-        </div>
-        <div className="chart-container">
-          <TurnoversTimeChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+          <PointsTypeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
         </div>
       </div>
       <div label="Tackles" id="tackles-tab" className='tab-content'  style={{ display: hasTackles || hasMissedTackles ? 'flex' : 'none' }}>
@@ -138,15 +127,26 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
           </div>
         )}
       </div>
-      <div label="Points" id="points-tab" className='tab-content'  style={{ display: hasPoints ? 'flex' : 'none' }}>
+      <div label="Penalties" id="penalties-tab" className='tab-content' style={{ display: hasPenalties ? 'flex' : 'none' }}>
         <div className="chart-container">
-          <PlayerPointsChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+          <PenaltiesPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
         </div>
         <div className="chart-container">
-          <PointsTimeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+          <PenaltiesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
         </div>
         <div className="chart-container">
-          <PointsTypeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+          <PenaltiesCausePieChart events={filteredEvents.filter(event => event.CATEGORY === "PENALTY")} onChartClick={handleChartClick} />
+        </div>
+      </div>
+      <div label="Turnovers" id="turnovers-tab" className='tab-content'  style={{ display: hasTurnovers ? 'flex' : 'none' }}>
+        <div className="chart-container">
+          <TurnoversPlayerBarChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+        </div>
+        <div className="chart-container">
+          <TurnoversTypePieChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
+        </div>
+        <div className="chart-container">
+          <TurnoversTimeChart events={filteredEvents.filter(event => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-")} onChartClick={handleChartClick} />
         </div>
       </div>
     </Tabs>
