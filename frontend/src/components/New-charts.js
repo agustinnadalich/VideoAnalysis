@@ -185,11 +185,14 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
     if (!tabId) {
       return;
     }
-
+    
+    
     if (elements.length > 0) {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
+      
+      console.log("lenghtß", elements.length);
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
@@ -214,21 +217,27 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           (event) => event.TURNOVER_TYPE === clickedLabel
         );
         newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
-      } else if (chartType === "penalty_cause") {
+      } else if (chartType === "points_type") {                     
+        const clickedLabel = chart.data.labels[index].split(' (')[0];
+        clickedEvents = filteredEvents.filter(
+          (event) => event.POINTS === clickedLabel
+        );
+        newFilter = { descriptor: "POINTS", value: clickedLabel };
+      }
+       else if (chartType === "penalty_cause") {
         const clickedLabel = chart.data.labels[index].split(' (')[0];
         clickedEvents = filteredEvents.filter(
           (event) => event.INFRACTION_TYPE === clickedLabel
         );
         newFilter = { descriptor: "INFRACTION_TYPE", value: clickedLabel };
-      }  else if (chartType === "TACKLE" || "MISSED_TACKLE") {
+      } else if (chartType === "TACKLE" || "MISSED_TACKLE") {
         const categoryFilter = additionalFilters.find(filter => filter.descriptor === "CATEGORY");
         const category = categoryFilter ? categoryFilter.value : chartType;
         clickedEvents = filteredEvents.filter(
           (event) => event.CATEGORY === category
         );
         newFilter = { descriptor: "CATEGORY", value: category };
-      }
-  
+      } 
       if (clickedEvents.length > 0) {
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID
