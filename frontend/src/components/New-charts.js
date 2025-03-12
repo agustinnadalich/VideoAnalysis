@@ -129,7 +129,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         }
       }
   
-      console.log("Filtered en updateCharts:", filtered);
       setFilterCategory(categories); // Actualizar filterCategory aquí
     },
     [setFilteredEvents, setFilterCategory]
@@ -184,7 +183,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   ) => {
 
     if (!tabId) {
-      console.warn("tabId es undefined, manteniendo la pestaña activa.");
       return;
     }
 
@@ -192,7 +190,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
-      console.log("tabId: ", tabId);
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
@@ -213,21 +210,23 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         newFilter = { descriptor: "Time_Group", value: clickedLabel };
       } else if (chartType === "turnover_type") {
         const clickedLabel = chart.data.labels[index].split(' (')[0];
-        // const clickedCategory = chart.data.labels[index].includes('TURNOVER+') ? 'TURNOVER+' : 'TURNOVER-';
-        // console.log("ClickedCategory: " + clickedCategory);
-  
         clickedEvents = filteredEvents.filter(
           (event) => event.TURNOVER_TYPE === clickedLabel
-          // (event) => event.TURNOVER_TYPE === clickedLabel && event.CATEGORY === clickedCategory
         );
         newFilter = { descriptor: "TURNOVER_TYPE", value: clickedLabel };
-        // additionalFilters.push({ descriptor: "CATEGORY", value: clickedCategory });
       } else if (chartType === "penalty_cause") {
         const clickedLabel = chart.data.labels[index].split(' (')[0];
         clickedEvents = filteredEvents.filter(
           (event) => event.INFRACTION_TYPE === clickedLabel
         );
         newFilter = { descriptor: "INFRACTION_TYPE", value: clickedLabel };
+      }  else if (chartType === "TACKLE" || "MISSED_TACKLE") {
+        const categoryFilter = additionalFilters.find(filter => filter.descriptor === "CATEGORY");
+        const category = categoryFilter ? categoryFilter.value : chartType;
+        clickedEvents = filteredEvents.filter(
+          (event) => event.CATEGORY === category
+        );
+        newFilter = { descriptor: "CATEGORY", value: category };
       }
   
       if (clickedEvents.length > 0) {
@@ -269,10 +268,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           });
         }
         
-        console.log("TabId:", tabId);
-        // console.log("Tabindex", tabIndex);
-        
-        
         // Mantener la pestaña activa al desfiltrar
         if (carouselRef.current) {
           // Buscar la pestaña basada en su `id`, no en su índice dinámico
@@ -280,7 +275,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         
           if (tabButton) {
             const tabIndex = Array.from(document.querySelectorAll(".tab-button")).indexOf(tabButton);
-            console.log("Seteando tab activa:", tabIndex);
             carouselRef.current.setActiveTab(tabIndex);
             setActiveTab(tabIndex); // Mantener la pestaña activa correctamente
           } else {

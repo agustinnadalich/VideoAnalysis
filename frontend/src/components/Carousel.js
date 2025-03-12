@@ -16,7 +16,6 @@ import './Carousel.css';
 const Tabs = forwardRef(({ children, activeTab, setActiveTab }, ref) => {
   useImperativeHandle(ref, () => ({
     setActiveTab: (index) => {
-      console.log("Cambiando tab en Tabs:", index);
       setActiveTab(index);
     },
   }));
@@ -43,7 +42,6 @@ const Tabs = forwardRef(({ children, activeTab, setActiveTab }, ref) => {
 const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setActiveTab }, ref) => {
   useImperativeHandle(ref, () => ({
     setActiveTab: (tabId) => {
-      console.log("Cambiando tab en Carousel:", tabId);
       setActiveTab(tabId);
     },
   }));
@@ -119,12 +117,12 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
         )}
         {hasTeamTackles || hasTeamMissedTackles ? (
           <div className="chart-container">
-            <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} />
+            <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} onChartClick={handleChartClick} style={{ maxHeight: "400px" }} />
           </div>
         ) : null}
         {hasRivalTackles || hasRivalMissedTackles ? (
           <div className="chart-container">
-            <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" />
+            <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" onChartClick={handleChartClick} style={{ maxHeight: "400px" }} />
           </div>
         ) : null}
         {hasTackles && (

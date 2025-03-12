@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
 
-const TacklesEffectivityChart = ({ events, team }) => {
+const TacklesEffectivityChart = ({ events, team, onChartClick }) => {
   const teamEvents = team === "OPPONENT" 
     ? events.filter(event => event.TEAM === "OPPONENT")
     : events.filter(event => event.TEAM !== "OPPONENT");
@@ -22,10 +22,44 @@ const TacklesEffectivityChart = ({ events, team }) => {
     ],
   };
 
+  const handleChartClick = (event, elements) => {
+    if (elements.length > 0) {
+      const chart = elements[0].element.$context.chart;
+      const label = chart.data.labels[elements[0].index];
+      const category = label === 'Successful Tackles' ? 'TACKLE' : 'MISSED-TACKLE';
+      onChartClick(event, elements, chart, category, "tackles-tab", [{ descriptor: "CATEGORY", value: category }]);
+    }
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: `${team} Tackles Effectivity`,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.label;
+            const value = context.raw;
+            return `${label}: ${value}`;
+          },
+        },
+      },
+    },
+    onClick: handleChartClick,
+  };
+
   return (
     <div>
       <h3>{team} Tackles Effectivity: {effectiveness.toFixed(2)}%</h3>
-      <Pie data={data} />
+      <Pie data={data} options={pieChartOptions} style={{ maxHeight: '600px' }}/>
     </div>
   );
 };
