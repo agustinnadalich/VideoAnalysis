@@ -14,6 +14,9 @@ import FilterContext from '../context/FilterContext';
 import PlayerPointsChart from './charts/PlayerPointsChart';
 import PointsTimeChart from './charts/PointsTimeChart';
 import PointsTypeChart from './charts/PointsTypeChart';
+import TriesPlayerChart from './charts/TriesPlayerChart';
+import TriesTimeChart from './charts/TriesTimeChart';
+import TriesOriginChart from './charts/TriesOriginChart';
 import './Carousel.css';
 
 const Tabs = forwardRef(({ children, activeTab, setActiveTab }, ref) => {
@@ -67,6 +70,7 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
 
   const hasPenalties = filteredEvents.some((event) => event.CATEGORY === "PENALTY");
   const hasPoints = filteredEvents.some((event) => event.CATEGORY === "POINTS");
+  const hasTries = filteredEvents.some((event) => event.CATEGORY === "POINTS" && event.POINTS === "TRY");
   const hasTurnovers = filteredEvents.some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-");
 
   return (
@@ -126,6 +130,17 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
             />
           </div>
         )}
+      </div>
+      <div label="Tries" id="tries-tab" className='tab-content' style={{ display: hasTries ? 'flex' : 'none' }}>
+        <div className="chart-container">
+          <TriesPlayerChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+        </div>
+        <div className="chart-container">
+          <TriesTimeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+        </div>
+        <div className="chart-container">
+          <TriesOriginChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
+        </div>
       </div>
       <div label="Penalties" id="penalties-tab" className='tab-content' style={{ display: hasPenalties ? 'flex' : 'none' }}>
         <div className="chart-container">

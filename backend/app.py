@@ -45,6 +45,24 @@ except Exception as e:
     print(f"Error al leer el archivo: {e}")
     df_partidos = pd.DataFrame()  # Crea un DataFrame vacío en caso de otros errores
 
+# Función para calcular el origen de los tries
+def calcular_origen_tries(df):
+    origin_categories = ["TURNOVER+", "SCRUM", "LINEOUT", "KICKOFF"]
+    tries_events = df[df['POINTS'] == "TRY"]
+
+    def get_origin_event(try_event):
+        try_time = try_event['SECOND']
+        relevant_events = df[(df['CATEGORY'].isin(origin_categories)) & (df['SECOND'] < try_time)]
+        return relevant_events.iloc[-1]['CATEGORY'] if not relevant_events.empty else None
+
+    df['TRY_ORIGIN'] = df.apply(lambda event: get_origin_event(event) if event['POINTS'] == "TRY" else None, axis=1)
+    return df
+
+df = calcular_origen_tries(df)
+
+# Asegura que todos los eventos tengan la columna 'TRY_ORIGIN'
+# if 'TRY_ORIGIN' not in df.columns:
+#     df['TRY_ORIGIN'] = None
 
 @app.route('/events', methods=['GET'])
 def get_events():
@@ -52,13 +70,13 @@ def get_events():
         return jsonify({"error": "Archivo Excel no encontrado"}), 404
 
     df = pd.read_excel(file_path, sheet_name='MATRIZ')
+    df = calcular_origen_tries(df)  # Asegúrate de calcular el origen de los tries después de leer el archivo
+
     if df.empty:
         return jsonify({"error": "No data available"}), 404
 
     # Selecciona todas las columnas necesarias
-    columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK']
-
-
+    columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
 
     filtered_df = df[columns_to_include]
 

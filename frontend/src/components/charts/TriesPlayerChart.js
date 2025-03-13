@@ -1,43 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 
-const PlayerPointsChart = ({ events, onChartClick }) => {
-  const [playerPointsChartData, setPlayerPointsChartData] = useState(null);
+const TriesPlayerChart = ({ events, onChartClick }) => {
+  const [triesPlayerChartData, setTriesPlayerChartData] = useState(null);
 
   useEffect(() => {
-    const pointsEvents = events.filter(
-      (event) => event.CATEGORY === "POINTS"
-    );    
+    const triesEvents = events.filter(
+      (event) => event.POINTS === "TRY"
+    );
 
     const playerLabels = [
-      ...new Set(pointsEvents.map((event) => event.PLAYER).filter(player => player !== null && player !== "None")),
+      ...new Set(triesEvents.map((event) => event.PLAYER).filter(player => player && player !== 'none')),
     ].sort((a, b) => a - b);
 
     const data = {
       labels: playerLabels,
       datasets: [
-        {
-          label: "Puntos por jugador",
-          data: playerLabels.map((player) => {
-            const totalPoints = pointsEvents
-              .filter((event) => event.PLAYER === player && event.TEAM !== "OPPONENT")
-              .reduce((sum, event) => sum + event["POINTS(VALUE)"], 0);
-            return totalPoints;
-          }),
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-        },
+      {
+      label: "Tries por jugador",
+      data: playerLabels.map((player) => {
+      const totalTries = triesEvents
+        .filter((event) => event.PLAYER === player && event.TEAM !== "OPPONENT")
+        .length;
+      return totalTries;
+      }),
+      backgroundColor: "rgba(75, 192, 192, 0.6)",
+      },
       ],
     };
 
-    setPlayerPointsChartData(data);
+    setTriesPlayerChartData(data);
   }, [events]);
 
   const handleChartClick = (event, elements) => {
     const chart = elements[0].element.$context.chart;
-    onChartClick(event, elements, chart, "player", "points-tab"); 
+    onChartClick(event, elements, chart, "player", "tries-tab"); 
   };
 
-  const playerPointsChartOptions = {
+  const triesPlayerChartOptions = {
     responsive: true,
     plugins: {
       legend: {
@@ -45,7 +45,7 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Puntos por Jugador',
+        text: 'Tries por Jugador',
       },
       tooltip: {
         callbacks: {
@@ -60,8 +60,7 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
         color: 'grey',
         formatter: (value, context) => {
           const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const element = meta.data[context.dataIndex];
-          const hidden = element ? element.hidden : false;
+          const hidden = meta.data[context.dataIndex].hidden;
           return hidden || value === 0 ? '' : value;
         },
         font: {
@@ -81,9 +80,9 @@ const PlayerPointsChart = ({ events, onChartClick }) => {
     onClick: handleChartClick,
   };
 
-  return playerPointsChartData ? (
-    <Bar data={playerPointsChartData} options={playerPointsChartOptions} />
+  return triesPlayerChartData ? (
+    <Bar data={triesPlayerChartData} options={triesPlayerChartOptions} style={{minHeight: '300px' }} />
   ) : null;
 };
 
-export default PlayerPointsChart;
+export default TriesPlayerChart;

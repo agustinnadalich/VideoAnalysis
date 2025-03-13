@@ -43,7 +43,7 @@ Chart.register(
   ChartDataLabels
 );
 
-const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK'];
+const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
 
 const columnsToInclude = [
   "ID",
@@ -191,8 +191,6 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
-      
-      console.log("lenghtß", elements.length);
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
