@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from "react";
 import Select from "react-select";
 import FilterContext from "../context/FilterContext";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import './Sidebar.css'; // Asegúrate de importar el archivo CSS
+
 
 const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
   const {
@@ -361,23 +363,25 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
           }}
         />
       </label>
-      <button onClick={handleApplyFilter}>Apply filter</button>
-      <button onClick={handleClearFilters}>Clean filters</button>
-      <div className="applied-filters">
-        {selectedFilters.map((filter, index) => (
-          <div key={index} className="filter-tag">
-            {filter.descriptor}: {filter.value}
-            <button onClick={() => handleRemoveFilter(filter)}>x</button>
-          </div>
-        ))}
+      <div className="filter-buttons">
+        <button onClick={handleApplyFilter}>Apply filter</button>
+        <div className="applied-filters">
+          {selectedFilters.map((filter, index) => (
+            <div key={index} className="filter-tag">
+              {filter.descriptor}: {filter.value}
+              <button onClick={() => handleRemoveFilter(filter)} className="tag-button">x</button>
+            </div>
+          ))}
+        </div>
+        <button onClick={handleClearFilters}>Clean filters</button>
+        <button
+          onClick={() => {
+            onPlayFilteredEvents(filteredEvents);
+          }}
+        >
+          Play filtered events
+        </button>
       </div>
-      <button
-        onClick={() => {
-          onPlayFilteredEvents(filteredEvents);
-        }}
-      >
-        Play filtered events
-      </button>
     </div>
   );
 };

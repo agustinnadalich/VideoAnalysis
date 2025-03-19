@@ -53,8 +53,10 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
         onStateChange={onStateChange}
         className={`youtube-video ${isPiP ? '' : ''}`} 
         opts={{ 
-          width: isPiP ? '320' : '640', 
-          height: isPiP ? '180' : '360' 
+          // width: isPiP ? '320' : '640', 
+          // height: isPiP ? '180' : '360' 
+          width: '100%', 
+          height: '100%' 
         }} 
       />
       <div className="button-bar">

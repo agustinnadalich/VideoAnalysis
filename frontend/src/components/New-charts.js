@@ -47,16 +47,16 @@ const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RES
 
 const columnsToInclude = [
   "ID",
-  "SQUARE",
+  // "SQUARE",
   "GAME",
   "OPPONENT",
   "TEAM",
   "CATEGORY",
   "PLAYER",
-  "SECTOR",
-  "COORDINATE_X",
-  "COORDINATE_Y",
-  "ADVANCE",
+  // "SECTOR",
+  // "COORDINATE_X",
+  // "COORDINATE_Y",
+  // "ADVANCE",
 ];
 
 // Define initialResponse antes de usarlo
@@ -318,7 +318,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       >
         {error && <div>Error: {error.message}</div>}
 
-        <div style={{ width: "100%", overflowX: "auto", marginBottom: "20px" }}>
+        <div style={{ width: "100%", marginBottom: "20px" }}>
           <div
             style={{
               width: "1500px",
@@ -356,7 +356,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             />
           </div>
         )}
-        <h1>Eventos</h1>
+      <h1>Eventos</h1>
+      <div className="table-container">
         <table className="styled-table">
           <thead>
             <tr>
@@ -375,12 +376,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             ))}
           </tbody>
         </table>
-        <style jsx="true">{`
+      </div>
+        {/* <style jsx="true">{`
           .styled-table {
             border-collapse: collapse;
             margin: 25px 0;
             font-size: 0.9em;
-            font-family: "Arial", sans-serif;
+            font-family: 'Arial', sans-serif;
             min-width: 400px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
           }
@@ -406,7 +408,13 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
             font-weight: bold;
             color: #009879;
           }
-        `}</style>
+          .table-container {
+            overflow-x: auto;
+            width: 95%;
+            display: flex;
+            justify-content: center;
+          }
+        `}</style> */}
       </div>
     </FilterProvider>
   );

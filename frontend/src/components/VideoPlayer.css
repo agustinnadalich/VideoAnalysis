@@ -5,7 +5,7 @@
   margin-top: 20px;
   position: relative;
   width: 100%;
-  max-width: 600px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -22,11 +22,9 @@
 }
 
 .youtube-video {
-  /* max-width: 100%; */
-  height: auto;
-}
-.ytp-pause-overlay-container, .ytp-pause-overlay {
-  display: none !important;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16 / 9;
 }
 
 .youtube-video.pip {

@@ -19,7 +19,7 @@ const Header = () => {
     MUDDY,
     WIND_1P,
     WIND_2P,
-    REFEREEE,
+    REFEREE,
     RESULT,
   } = matchInfo;
 
@@ -74,7 +74,7 @@ const Header = () => {
         {GAME && <div>Game: {GAME}</div>}
         {FIELD && FIELD !== '-' && <div>Field: {FIELD}</div>}
         {clima.length > 0 && <div>Weather: {clima.join(', ')}</div>}
-        {REFEREEE && REFEREEE !== '-' && <div>Referee: {REFEREEE}</div>}
+        {REFEREE && REFEREE !== '-' && <div>Referee: {REFEREE}</div>}
       </div>
     </div>
   );

@@ -9,14 +9,12 @@ import MatchReportRight from "./components/MatchReportRight";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
-import TimelineChart from './components/charts/TimelineChart';
-
+import './App.css';
 
 library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter);
 
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
-  // const [videoSrc] = useState("/SBvsLIONS.mp4");
   const [videoSrc] = useState("8ZRkzy6mXDs");
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
@@ -25,9 +23,9 @@ const App = () => {
   const [isPlayingFilteredEvents, setIsPlayingFilteredEvents] = useState(false);
   const [isUserInteracted, setIsUserInteracted] = useState(false);
   const videoRef = useRef(null);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -35,17 +33,13 @@ const App = () => {
 
   const handleEventClick = (event) => {
     console.log("Event data1:", event.SECOND, event.DURATION);
-    setTempTime(null); // Resetea el tiempo temporal
+    setTempTime(null);
     setTimeout(() => {
-      console.log(
-        "Setting tempTime and duration1:",
-        event.SECOND,
-        event.DURATION
-      );
+      console.log("Setting tempTime and duration1:", event.SECOND, event.DURATION);
       setTempTime(event.SECOND || 0);
-      setDuration(event.DURATION || 5); // Ajusta la duración a 5 segundos
-      setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
-    }, 10); // Espera un breve momento antes de establecer el tiempo correcto
+      setDuration(event.DURATION || 5);
+      setIsPlayingFilteredEvents(true);
+    }, 10);
   };
 
   const handlePlayFilteredEvents = (events) => {
@@ -61,17 +55,13 @@ const App = () => {
     if (index < events.length) {
       const event = events[index];
       console.log("Playing next event3:", event);
-      setTempTime(null); // Resetea el tiempo temporal
+      setTempTime(null);
       setTimeout(() => {
-        console.log(
-          "Setting tempTime and duration for next event:",
-          event.SECOND,
-          5
-        );
+        console.log("Setting tempTime and duration for next event:", event.SECOND, 5);
         setTempTime(event.SECOND || 0);
-        setDuration(event.DURATION || 5); // Ajusta la duración a 5 segundos
-        setIsPlayingFilteredEvents(true); // Asegúrate de que el video se reproduzca
-      }, 10); // Espera un breve momento antes de establecer el tiempo correcto
+        setDuration(event.DURATION || 5);
+        setIsPlayingFilteredEvents(true);
+      }, 10);
     } else {
       setIsPlayingFilteredEvents(false);
     }
@@ -92,7 +82,6 @@ const App = () => {
     setCurrentTime(time);
   };
 
-
   const handlePrevious = () => {
     if (currentEventIndex > 0) {
       playNextEvent(filteredEvents, currentEventIndex - 1);
@@ -108,7 +97,7 @@ const App = () => {
       try {
         const response = await fetch(url);
         const data = await response.json();
-        console.log("Data: ", data); // Verifica los datos en la consola del cliente
+        console.log("Data: ", data);
         setData(data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -130,7 +119,7 @@ const App = () => {
           }
           return nextIndex;
         });
-      }, (duration + 1) * 1000); // Espera la duración del video más un second adicional
+      }, (duration + 1) * 1000);
 
       return () => clearTimeout(timer);
     }
@@ -143,73 +132,36 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <FilterProvider initialResponse={data}>
-      <div style={{ display: "flex", overflow: "hidden" }}>
-        {isSidebarVisible && (
-          <div
-            style={{
-              width: "8%",
-              padding: "15px",
-              borderRight: "1px solid #ccc",
-              overflowY: "auto",
-              position: "fixed",
-              top: 0,
-              height: "100vh",
-            }}
+      <div className="app-container">
+        <Header />
+          <button
+            className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
+            onClick={toggleSidebar}
+            style={{ width: '100px', margin: '5px', padding: '5px' , alignSelf: 'end' }}
           >
+            <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
+          </button>
+        <div className="content-container">
+          <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
             <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
           </div>
-        )}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            marginLeft: isSidebarVisible ? "10%" : "0",
-          }}
-        >
-          <Header />
-          {!isSidebarVisible && (
-            <button
-              onClick={toggleSidebar}
-              style={{ alignSelf: "flex-start", marginLeft: "10px" }}
-            >
-              <FontAwesomeIcon icon="fa-solid fa-filter" />
-            </button>
-          )}
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                paddingLeft: "20px",
-                paddingRight: "20px",
-                flex: 1,
-                boxSizing: "border-box",
-              }}
-            >
-              <div style={{ width: "25%", overflowY: "auto" }}>
+          <div className="main-content">
+            <div className="stats-container">
+              <div className="left">
                 <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
-                {/* <MatchReportLeft data={data.events} /> */}
               </div>
-              <div
-                style={{
-                  width: "50%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  overflow: "hidden",
-                }}
-              >
+              <div className="video">
                 <VideoPlayer
                   ref={videoRef}
                   src={videoSrc}
@@ -235,11 +187,11 @@ const App = () => {
                   onPrevious={handlePrevious}
                 />
               </div>
-              <div style={{ width: "25%", overflowY: "auto" }}>
+              <div className="right">
                 <MatchReportRight data={data.events} />
               </div>
             </div>
-            <div style={{ overflowX: "auto" }}>
+            <div className="charts-container">
               <Charts
                 onEventClick={handleEventClick}
                 onPlayFilteredEvents={handlePlayFilteredEvents}

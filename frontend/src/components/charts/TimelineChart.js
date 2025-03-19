@@ -195,7 +195,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
         type: "category",
         labels: filteredCategories, // Usar las CATEGORIAs filtradas
         title: {
-          display: true,
+          display: false,
           text: "CATEGORY",
         },
         ticks: {
@@ -203,6 +203,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
           callback: function (value, index, values) {
             return filteredCategories[value]; // Mostrar las CATEGORIAs originales
           },
+          align: "start", // Alinear las etiquetas al principio de las barras
         },
         stacked: true, // Asegura que las barras se apilen correctamente
       },
