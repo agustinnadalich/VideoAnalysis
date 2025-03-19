@@ -32,12 +32,12 @@ const App = () => {
   };
 
   const handleEventClick = (event) => {
-    console.log("Event data1:", event.SECOND, event.DURATION);
+    console.log("Event data1:", event.SECOND-3, event.DURATION+3);
     setTempTime(null);
     setTimeout(() => {
-      console.log("Setting tempTime and duration1:", event.SECOND, event.DURATION);
-      setTempTime(event.SECOND || 0);
-      setDuration(event.DURATION || 5);
+      console.log("Setting tempTime and duration1:", event.SECOND-3, event.DURATION+5);
+      setTempTime(event.SECOND-3 || 0);
+      setDuration(event.DURATION+5 || 5);
       setIsPlayingFilteredEvents(true);
     }, 10);
   };
@@ -57,9 +57,9 @@ const App = () => {
       console.log("Playing next event3:", event);
       setTempTime(null);
       setTimeout(() => {
-        console.log("Setting tempTime and duration for next event:", event.SECOND, 5);
-        setTempTime(event.SECOND || 0);
-        setDuration(event.DURATION || 5);
+        console.log("Setting tempTime and duration for next event:", event.SECOND-3, event.DURATION+5);
+        setTempTime(event.SECOND-3 || 0);
+        setDuration(event.DURATION+5 || 5);
         setIsPlayingFilteredEvents(true);
       }, 10);
     } else {
@@ -148,7 +148,7 @@ const App = () => {
           <button
             className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
             onClick={toggleSidebar}
-            style={{ width: '100px', margin: '5px', padding: '5px' , alignSelf: 'end' }}
+            style={{ width: '100px', margin: '5px', padding: '5px' }}
           >
             <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
           </button>
