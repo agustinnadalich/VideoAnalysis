@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useCallback } from 'react';
+import React, { useContext, useMemo, useCallback, useEffect, useState } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -24,6 +24,18 @@ Chart.register(backgroundImagePlugin);
 
 const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
   const { filterDescriptors, setFilterDescriptors } = useContext(FilterContext);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const scatterChartData = useMemo(() => {
     if (!events || events.length === 0 || !columnsToTooltip) {
@@ -54,8 +66,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
             label: `${event.CATEGORY}`,
             data: [
               {
-                x: -Number(event["COORDINATE_Y"]),
-                y: -Number(event["COORDINATE_X"]),
+                x: isMobile ? Number(event["COORDINATE_X"]) : -Number(event["COORDINATE_Y"]),
+                y: isMobile ? -Number(event["COORDINATE_Y"]) : -Number(event["COORDINATE_X"]),
                 category: event.CATEGORY,
                 id: event.ID,
                 descriptor: descriptor,
@@ -137,8 +149,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
       x: {
         type: "linear",
         position: "bottom",
-        min: 3,
-        max: -100,
+        min: isMobile ? 0 : 4, // Ajusta los valores mínimos y máximos según sea necesario
+        max: isMobile ? 70 : -100,
         title: {
           display: false,
         },
@@ -151,8 +163,8 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
       },
       y: {
         type: "linear",
-        min: -70,
-        max: 0,
+        min: isMobile ? 4 : -70, // Ajusta los valores mínimos y máximos según sea necesario
+        max: isMobile ? -100 : 0,
         title: {
           display: false,
         },
@@ -165,14 +177,14 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
       },
     },
     maintainAspectRatio: false,
-    backgroundImage: "/CANCHA-CORTADA.jpg",
+    backgroundImage: isMobile ? "/CANCHA-CORTADA-VERT.jpg" : "/CANCHA-CORTADA.jpg",
     elements: {
       point: {
         radius: 5,
         hoverRadius: 10,
       },
     },
-  }), [handleScatterClick, columnsToTooltip]);
+  }), [handleScatterClick, columnsToTooltip, isMobile]);
 
   if (!events || events.length === 0 || !columnsToTooltip) {
     return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío

@@ -125,7 +125,7 @@
   .stats-container {
     display: flex;
     flex-direction: row;
-    align-items: flex-center;
+    align-items: center;
   }
 
   .left, .right {
