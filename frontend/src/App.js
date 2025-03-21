@@ -168,6 +168,8 @@ const App = () => {
                   tempTime={tempTime}
                   duration={duration}
                   isPlayingFilteredEvents={isPlayingFilteredEvents}
+                  onPlayFilteredEvents={handlePlayFilteredEvents}
+                  filteredEvents={filteredEvents} // Asegúrate de pasar filteredEvents aquí
                   onTimeUpdate={handleTimeUpdate}
                   onEnd={() => {
                     if (isPlayingFilteredEvents) {
