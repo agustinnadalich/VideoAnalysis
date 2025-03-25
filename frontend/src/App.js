@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faExternalLinkAlt, faStepBackward, faStepForward, faChevronLeft, faFilter} from '@fortawesome/free-solid-svg-icons';
+import { faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faExternalLinkAlt, faStepBackward, faStepForward, faChevronLeft, faFilter, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import VideoPlayer from "./components/VideoPlayer";
 import Charts from "./components/New-charts.js";
@@ -11,11 +11,14 @@ import Sidebar from "./components/Sidebar";
 import FilterProvider from "./context/FilterProvider";
 import './App.css';
 
-library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter);
+library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter, faSpinner);
 
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
-  const [videoSrc] = useState("8ZRkzy6mXDs");
+  // const [videoSrc] = useState("8ZRkzy6mXDs");
+  // const [videoSrc] = useState("/SBvsLIONS.mp4");
+  const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
+
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -26,6 +29,7 @@ const App = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [isLoading, setIsLoading] = useState(true); // Estado de carga
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -99,8 +103,10 @@ const App = () => {
         const data = await response.json();
         console.log("Data: ", data);
         setData(data);
+        setIsLoading(false); // Datos cargados, detener la animación de carga
       } catch (error) {
         console.error("Error fetching data:", error);
+        setIsLoading(false); // En caso de error, detener la animación de carga
       }
     };
 
@@ -153,54 +159,63 @@ const App = () => {
             <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
           </button>
         <div className="content-container">
-          <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
-            <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
-          </div>
-          <div className="main-content">
-            <div className="stats-container">
-              <div className="left">
-                <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
+          {isLoading ? (
+            <div className="loading-container">
+              <FontAwesomeIcon icon="spinner" spin size="3x" />
+              <p>Loading match events...</p>
+            </div>
+          ) : (
+            <>
+              <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
+                <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
               </div>
-              <div className="video">
-                <VideoPlayer
-                  ref={videoRef}
-                  src={videoSrc}
-                  tempTime={tempTime}
-                  duration={duration}
-                  isPlayingFilteredEvents={isPlayingFilteredEvents}
-                  onPlayFilteredEvents={handlePlayFilteredEvents}
-                  filteredEvents={filteredEvents} // Asegúrate de pasar filteredEvents aquí
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnd={() => {
-                    if (isPlayingFilteredEvents) {
-                      setCurrentEventIndex((prevIndex) => {
-                        const nextIndex = prevIndex + 1;
-                        if (nextIndex < filteredEvents.length) {
-                          playNextEvent(filteredEvents, nextIndex);
-                        } else {
-                          setIsPlayingFilteredEvents(false);
+              <div className="main-content">
+                <div className="stats-container">
+                  <div className="left">
+                    <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
+                  </div>
+                  <div className="video">
+                    <VideoPlayer
+                      ref={videoRef}
+                      src={videoSrc}
+                      tempTime={tempTime}
+                      duration={duration}
+                      isPlayingFilteredEvents={isPlayingFilteredEvents}
+                      onPlayFilteredEvents={handlePlayFilteredEvents}
+                      filteredEvents={filteredEvents} // Asegúrate de pasar filteredEvents aquí
+                      onTimeUpdate={handleTimeUpdate}
+                      onEnd={() => {
+                        if (isPlayingFilteredEvents) {
+                          setCurrentEventIndex((prevIndex) => {
+                            const nextIndex = prevIndex + 1;
+                            if (nextIndex < filteredEvents.length) {
+                              playNextEvent(filteredEvents, nextIndex);
+                            } else {
+                              setIsPlayingFilteredEvents(false);
+                            }
+                            return nextIndex;
+                          });
                         }
-                        return nextIndex;
-                      });
-                    }
-                  }}
-                  onStop={handleStop}
-                  onNext={handleNext}
-                  onPrevious={handlePrevious}
-                />
+                      }}
+                      onStop={handleStop}
+                      onNext={handleNext}
+                      onPrevious={handlePrevious}
+                    />
+                  </div>
+                  <div className="right">
+                    <MatchReportRight data={data.events} />
+                  </div>
+                </div>
+                <div className="charts-container">
+                  <Charts
+                    onEventClick={handleEventClick}
+                    onPlayFilteredEvents={handlePlayFilteredEvents}
+                    currentTime={currentTime}
+                  />
+                </div>
               </div>
-              <div className="right">
-                <MatchReportRight data={data.events} />
-              </div>
-            </div>
-            <div className="charts-container">
-              <Charts
-                onEventClick={handleEventClick}
-                onPlayFilteredEvents={handlePlayFilteredEvents}
-                currentTime={currentTime}
-              />
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </FilterProvider>
