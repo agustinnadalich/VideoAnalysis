@@ -3,7 +3,11 @@ from flask_cors import CORS
 import os
 import pandas as pd
 import json
+import openai
 
+# Configura tu clave de API de OpenAI
+# client = openai.OpenAI(api_key="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")
+openai.api_key = "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"
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://videoanalysis-front.onrender.com"]}})  # Permitir solicitudes desde localhost:3000 y videoanalysis-front.onrender.com
 
@@ -204,6 +208,76 @@ def convert_excel_to_json():
             f.write(df_partidos_json)
 
         return jsonify({"message": "Conversion successful"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/analyze_events', methods=['GET'])
+def analyze_events():
+    try:
+        # Cargar el archivo matriz_semplyfied.json
+        matriz_semplyfied_path = os.path.join(UPLOAD_FOLDER, 'matriz_semplyfied.json')
+        if not os.path.exists(matriz_semplyfied_path):
+            return jsonify({"error": "Archivo JSON no encontrado"}), 404
+
+        with open(matriz_semplyfied_path, 'r') as f:
+            events = json.load(f)
+
+        if not events:
+            return jsonify({"error": "No events provided"}), 400
+
+        # Configuración de mensajes para la solicitud a la API
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Eres un experto en análisis de datos deportivos, especializado en rugby. "
+                    "Tu tarea es interpretar datos de eventos de un partido proporcionados en formato JSON, "
+                    "identificando patrones, estadísticas y recomendaciones tácticas para mejorar el rendimiento "
+                    "del equipo San Benedetto. El reporte debe ser lo más completo posible, dividido por aspectos del juego "
+                    "donde se hayan encontrado patrones interesantes. Escribe el reporte de manera clara y fácil de interpretar "
+                    "para un entrenador, evitando formatos técnicos como JSON.\n\n"
+                    "Si encuentras datos que son difíciles de interpretar o necesitas más información para sacar conclusiones, "
+                    "inclúyelos al final del reporte con una explicación de por qué son necesarios y cómo podrían mejorar el análisis "
+                    "en futuros partidos.\n\n"
+                    "Reporte de Análisis del Partido – San Benedetto vs. Lundax Lions Amaranto\n"
+                    "Este reporte se basa en el análisis del JSON de eventos del partido y se han derivado distintos indicadores y métricas que ayudan a interpretar el desarrollo del juego. "
+                    "Se han considerado también reglas específicas para interpretar los turnovers, break y penalizaciones, de acuerdo a las siguientes aclaraciones:\n\n"
+                    "Equipo: Nuestro equipo es San Benedetto.\n\n"
+                    "Turnover+: Indica recuperación de posesión.\n"
+                    "Turnover–: Indica pérdida de posesión.\n"
+                    "– Por ejemplo, si se inicia un ataque y se produce un “Turnover–”, significa que perdimos la pelota.\n\n"
+                    "Defensa y Break:\n"
+                    "– Si en defensa se produce un “BREAK”, significa que el rival ha quebrado nuestra línea defensiva.\n"
+                    "– Si luego se produce un “Turnover+”, se entiende que hemos recuperado la posesión.\n\n"
+                    "Penal:\n"
+                    "– Si se registra un evento “PENALTY” con el equipo San Benedetto, indica que hemos cometido una infracción.\n\n"
+                    "1. Análisis de Fases y Quiebres\n"
+                    "Fase del Quiebre: La fase de un quiebre se calcula contando la cantidad de rucks (eventos “RUCK”) que se han dado desde el inicio de la secuencia ofensiva (o defensiva) hasta que se produce el quiebre (evento “BREAK”).\n"
+                    "...\n"  # Incluye el resto del contenido aquí
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Aquí tienes un conjunto de eventos en formato JSON. Cada evento tiene varias propiedades como "
+                    "'ID', 'OPPONENT', 'SECOND', 'CATEGORY', 'TEAM', etc. Por favor, analiza estos eventos y "
+                    "genera un reporte detallado dividido por aspectos del juego donde hayas encontrado patrones interesantes. "
+                    "Escribe el reporte de manera clara y fácil de interpretar para un entrenador. Si necesitas más información "
+                    "para sacar conclusiones, inclúyelo al final del reporte.\n\n"
+                    "JSON:\n{}".format(json.dumps(events, indent=2))
+                )
+            }
+        ]
+
+        # Llamada a la API de OpenAI
+        response = openai.ChatCompletion.create(
+            model="o3-mini",
+            messages=messages
+        )
+
+        text = response['choices'][0]['message']['content']
+        return jsonify({"analysis": text})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

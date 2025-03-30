@@ -8,6 +8,9 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Instala el paquete openai
+RUN pip install openai
+
 # Copia el resto del código de la aplicación al contenedor
 COPY . .
 
