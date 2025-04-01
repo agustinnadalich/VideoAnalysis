@@ -38,11 +38,13 @@ const App = () => {
   };
 
   const handleEventClick = (event) => {
-    console.log("Event data:", event.SECOND-3, event.DURATION+3);
+    console.log("Event data:", event.SECOND, event.DURATION+3);
     setTempTime(null);
     setTimeout(() => {
-      console.log("Setting tempTime and duration:", event.SECOND-3, event.DURATION+5);
-      setTempTime(event.SECOND-3 || 0);
+      const minutes = Math.floor(event.SECOND / 60);
+      const seconds = event.SECOND % 60;
+      console.log(`Setting tempTime and duration: ${minutes}:${seconds}, ${event.DURATION + 5}`);
+      setTempTime(event.SECOND || 0);
       setDuration(event.DURATION+5 || 5);
       setIsPlayingFilteredEvents(true);
     }, 10);
@@ -63,8 +65,8 @@ const App = () => {
       console.log("Playing next event:", event);
       setTempTime(null);
       setTimeout(() => {
-        console.log("Setting tempTime and duration for next event:", event.SECOND-3, event.DURATION+5);
-        setTempTime(event.SECOND-3 || 0);
+        console.log("Setting tempTime and duration for next event:", event.SECOND, event.DURATION+5);
+        setTempTime(event.SECOND || 0);
         setDuration(event.DURATION+5 || 5);
         setIsPlayingFilteredEvents(true);
       }, 10);

@@ -72,7 +72,6 @@ const MatchReportLeft = ({ data }) => {
     const ourTeamAttackTime = data
       .filter(event => event.CATEGORY === 'ATTACK')
       .reduce((sum, event) => {
-        console.log("ATTACK Event:", event);
         return sum + (event.DURATION || 0);
       }, 0);
   
@@ -84,7 +83,6 @@ const MatchReportLeft = ({ data }) => {
       }, 0);
   
     const totalTime = ourTeamAttackTime + opponentDefenseTime;
-    console.log("Total Time:", totalTime);
   
     // Calcula los porcentajes
     const ourTeamPercentage = totalTime > 0 ? Math.round((ourTeamAttackTime / totalTime) * 100) : 0;

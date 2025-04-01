@@ -273,7 +273,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
                 }
               });
               return {
-                x: [event.SECOND, event.SECOND + event.DURATION], // Usar un array para representar el rango
+                x: [event.SECOND, event.SECOND + event.DURATION +5], // Usar un array para representar el rango
                 y: category,
                 id: event.ID,
                 descriptor: descriptor,
@@ -411,7 +411,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
     (event) => {
       // console.log("Event dataC:", event.SECOND);
       const startTime = event.SECOND;
-      const duration = event.DURATION; // 5 segundos de duración
+      const duration = event.DURATION +5; // 5 segundos de duración
       // console.log("Setting tempTime and durationC:", startTime, duration);
       onEventClick({
         ...event,

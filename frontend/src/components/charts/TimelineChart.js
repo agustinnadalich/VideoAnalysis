@@ -35,9 +35,9 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
     }
   }, [currentTime, chartInstance]);
 
-  useEffect(() => {
-    console.log("Chart instance set:", chartInstance);
-  }, [chartInstance]);
+  // useEffect(() => {
+  //   // console.log("Chart instance set:", chartInstance);
+  // }, [chartInstance]);
 
   if (!filteredEvents || filteredEvents.length === 0) {
     return null; // Manejar el caso donde filteredEvents es undefined o está vacío
@@ -45,7 +45,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
 
   const filteredCategories = [
     ...new Set(filteredEvents.map((event) => event.CATEGORY).filter(category => category !== 'END')),
-  ];
+  ].sort(); // Asegúrate de que las categorías estén ordenadas consistentemente
 
   const timelineData = {
     labels: filteredCategories,
@@ -69,7 +69,7 @@ const TimelineChart = ({ events, columnsToTooltip, colors, onEventClick, filtere
             }
           });
           return {
-            x: [event.SECOND, event.SECOND + event.DURATION], // Usar un array para representar el rango
+            x: [event.SECOND, event.SECOND + event.DURATION +5], // Usar un array para representar el rango
             y: category,
             id: event.ID,
             descriptor: descriptor,

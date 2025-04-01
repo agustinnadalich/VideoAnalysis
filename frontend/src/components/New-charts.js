@@ -165,7 +165,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const handleEventClick = useCallback(
     (event) => {
       const startTime = event.SECOND;
-      const duration = event.DURATION; // 5 segundos de duración
+      const duration = event.DURATION +5 ; // 5 segundos de duración
       onEventClick({
         ...event,
         startTime,

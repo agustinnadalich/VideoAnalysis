@@ -1,15 +1,12 @@
-import React, { useEffect, forwardRef, useImperativeHandle, useRef , useContext} from 'react';
+import React, { useEffect, forwardRef, useImperativeHandle, useRef, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import FilterContext from "../context/FilterContext";
-
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
 const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents }, ref) => {
   const videoRef = useRef(null);
-  const {
-    filteredEvents,
-  } = useContext(FilterContext);
+  const { filteredEvents } = useContext(FilterContext);
 
   useImperativeHandle(ref, () => ({
     get current() {
@@ -17,16 +14,19 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
     }
   }));
 
-
   useEffect(() => {
     const video = videoRef.current;
+
     if (video) {
       const handleLoadedMetadata = () => {
         video.currentTime = tempTime;
+      };
+
+      const handlePlaying = () => {
         if (isPlayingFilteredEvents) {
-          video.play().catch(error => console.error("Error playing video:", error));
-        } else {
-          video.pause();
+          setTimeout(() => {
+            video.play().catch(error => console.error("Error playing video:", error));
+          }, 0);
         }
       };
 
