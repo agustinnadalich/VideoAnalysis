@@ -42,6 +42,12 @@
   max-width: 600px;
   margin: 10px;
 }
+.chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 20px;
+}
 
 @media (min-width: 768px) {
   .chart-container {

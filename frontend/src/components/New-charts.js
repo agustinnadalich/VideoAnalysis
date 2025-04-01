@@ -189,6 +189,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
     tabId,
     additionalFilters = []
   ) => {
+    console.log("handleChartClick called:", { chartType, elements }); // Verifica si la función se llama
 
     if (!tabId) {
       return;
@@ -199,6 +200,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
+      console.log('chartType:', chartType);
+      
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
@@ -211,6 +214,38 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           (event) => event.PLAYER === clickedLabel
         );
         newFilter = { descriptor: "PLAYER", value: clickedLabel };
+      } else if (chartType === "SCRUM") {
+        console.log('chartType22:', chartType);
+
+        const clickedLabel = chart.data.labels[index];
+        const resultValue = clickedLabel === "Won" ? "WIN" : "LOST";
+        console.log("SCRUM block executed");
+        console.log("Clicked Label:", clickedLabel);
+        console.log("Result Value:", resultValue);
+      
+        // Filtrar eventos por categoría y resultado
+        clickedEvents = filteredEvents.filter(
+          (event) => event.CATEGORY === "SCRUM" && event.SCRUM_RESULT === resultValue
+        );
+      
+        console.log("Filtered Events:", clickedEvents);
+      
+        // Crear un nuevo filtro para el resultado
+        newFilter = { descriptor: "SCRUM_RESULT", value: resultValue };
+      } else if (chartType === "LINEOUT") {
+        const clickedLabel = chart.data.labels[index];
+        const resultValue = clickedLabel === "Won" ? "CLEAN" : "LOST L";
+        console.log("Clicked Label:", clickedLabel);
+        console.log("Result Value:", resultValue);
+        console.log("Filtered Events:", clickedEvents);
+      
+        // Filtrar eventos por categoría y resultado
+        clickedEvents = filteredEvents.filter(
+          (event) => event.CATEGORY === "LINEOUT" && event.LINE_RESULT === resultValue
+        );
+      
+        // Crear un nuevo filtro para el resultado
+        newFilter = { descriptor: "LINE_RESULT", value: resultValue };
       } else if (chartType === "time") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
@@ -244,6 +279,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         );
         newFilter = { descriptor: "CATEGORY", value: category };
       } 
+
+
+
       if (clickedEvents.length > 0) {
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID

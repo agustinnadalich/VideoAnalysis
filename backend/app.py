@@ -263,8 +263,11 @@ def convert_excel_to_json_2():
                 player = str(row.get('PLAYER', '')).strip() if row.get('PLAYER') else None
                 player_2 = str(row.get('PLAYER_2', '')).strip() if row.get('PLAYER_2') else None
 
-                players = [p for p in [player, player_2] if p]
-                row['PLAYER'] = players if players else None
+                # Filtra valores no válidos como None o 'nan'
+                players = [p for p in [player, player_2] if p and p.lower() != 'nan']
+
+                # Si hay un solo jugador, lo dejamos como un string; si no, como lista
+                row['PLAYER'] = players[0] if len(players) == 1 else (players if players else None)
                 row['Team_Tackle_Count'] = 1
             return row
 
