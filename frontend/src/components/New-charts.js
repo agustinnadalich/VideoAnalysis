@@ -43,7 +43,7 @@ Chart.register(
   ChartDataLabels
 );
 
-const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
+const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_RECEIVER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
 
 const columnsToInclude = [
   "ID",
@@ -113,7 +113,15 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           categories.length === 0 || categories.includes(event.CATEGORY);
         const filterMatch =
           filters.length === 0 ||
-          filters.every((filter) => event[filter.descriptor] === filter.value);
+          filters.every((filter) => {
+            const eventValue = event[filter.descriptor];
+            // Verifica si el valor es un array y si incluye el valor buscado
+            if (Array.isArray(eventValue)) {
+              return eventValue.includes(filter.value);
+            }
+            // Comparación normal para valores no array
+            return eventValue === filter.value;
+          });
         const teamMatch = !team || event.TEAM === team;
   
         return categoryMatch && filterMatch && teamMatch;

@@ -17,7 +17,8 @@ const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
   // const [videoSrc] = useState("8ZRkzy6mXDs");
   // const [videoSrc] = useState("/SBvsLIONS.mp4");
-  const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
+  const [videoSrc] = useState("/Siena_compressed.mp4");
+  // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
 
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
@@ -93,6 +94,14 @@ const App = () => {
     }
   };
 
+  const [clearFiltersTrigger, setClearFiltersTrigger] = useState(false);
+
+  const handleClearFilters = () => {
+    console.log("Filters cleared from App.js");
+    setFilteredEvents(data.events); // Restablece los eventos filtrados a todos los eventos
+    setClearFiltersTrigger((prev) => !prev); // Cambia el estado para notificar a Sidebar
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const url = process.env.NODE_ENV === 'development' 
@@ -158,6 +167,13 @@ const App = () => {
           >
             <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
           </button>
+          <button
+            className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
+            onClick={handleClearFilters} // Llama a la función directamente
+            style={{ width: '100px', margin: '5px', padding: '5px' }}
+          >
+Clear Filters
+          </button>
         <div className="content-container">
           {isLoading ? (
             <div className="loading-container">
@@ -167,7 +183,7 @@ const App = () => {
           ) : (
             <>
               <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
-                <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
+                <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar}   onClearFilters={handleClearFilters}   clearFiltersTrigger={clearFiltersTrigger}  />
               </div>
               <div className="main-content">
                 <div className="stats-container">
