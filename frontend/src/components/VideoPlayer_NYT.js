@@ -1,15 +1,12 @@
-import React, { useEffect, forwardRef, useImperativeHandle, useRef, useState, useContext } from 'react';
-import YouTube from 'react-youtube';
+import React, { useEffect, forwardRef, useImperativeHandle, useRef, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import FilterContext from "../context/FilterContext";
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
-const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents, filteredEvents }, ref) => {
+const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents }, ref) => {
   const videoRef = useRef(null);
-  const [isPiP, setIsPiP] = useState(false);
-  const {
-    filteredEvents,
-  } = useContext(FilterContext);
+  const { filteredEvents } = useContext(FilterContext);
 
   useImperativeHandle(ref, () => ({
     get current() {
@@ -19,49 +16,50 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
 
   useEffect(() => {
     const video = videoRef.current;
+
     if (video) {
-      video.seekTo(tempTime);
-      if (isPlayingFilteredEvents) {
-        video.playVideo();
+      const handleLoadedMetadata = () => {
+        video.currentTime = tempTime;
+      };
+
+      const handlePlaying = () => {
+        if (isPlayingFilteredEvents) {
+          setTimeout(() => {
+            video.play().catch(error => console.error("Error playing video:", error));
+          }, 0);
+        }
+      };
+
+      if (video.readyState >= 1) {
+        handleLoadedMetadata();
       } else {
-        video.pauseVideo();
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
       }
+
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      };
     }
   }, [tempTime, isPlayingFilteredEvents]);
 
-  const handlePiP = () => {
-    setIsPiP(!isPiP);
-  };
-
-  const onReady = (event) => {
-    videoRef.current = event.target;
-  };
-
-  const onStateChange = (event) => {
-    if (event.data === YouTube.PlayerState.PLAYING) {
-      const interval = setInterval(() => {
-        const currentTime = videoRef.current.getCurrentTime();
-        onTimeUpdate(currentTime);
-      }, 1000);
-      return () => clearInterval(interval);
+  const handlePiP = async () => {
+    const video = videoRef.current;
+    if (video) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
+        }
+      } catch (error) {
+        console.error('Error with Picture-in-Picture:', error);
+      }
     }
   };
-  
 
   return (
-    <div className={`video-container ${isPiP ? 'pip' : ''}`}>
-      <YouTube 
-        videoId={src} 
-        onReady={onReady} 
-        onStateChange={onStateChange}
-        className={`youtube-video ${isPiP ? '' : ''}`} 
-        opts={{ 
-          // width: isPiP ? '320' : '640', 
-          // height: isPiP ? '180' : '360' 
-          width: '100%', 
-          height: '100%' 
-        }} 
-      />
+    <div className="video-container">
+      <video ref={videoRef} src={src} controls width="100%" />
       <div className="button-bar">
         <button className="pip-button" style={{ padding: "5px", margin:"5px" }} onClick={handlePiP}>
           <FontAwesomeIcon icon="external-link-alt" /> {/* Icon for Picture-in-Picture */}
