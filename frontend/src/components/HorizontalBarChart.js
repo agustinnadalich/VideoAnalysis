@@ -89,6 +89,11 @@ const HorizontalBarChart = ({ data }) => {
             <span>{datasets[0].label}</span>
             <span>{datasets[1].label}</span>
           </>
+        ) : labels[0] === 'Yellow Cards' || labels[0] === 'Red Cards' ? (
+          <>
+            <span style={{ color: '#DAA520', fontWeight: 'bold', backgroundColor: 'white' }}>{datasets[0].data[0]}</span>
+            <span style={{ color: '#FF0000', fontWeight: 'bold', backgroundColor: 'white' }}>{datasets[1].data[1]}</span>
+          </>
         ) : (
           <>
             <span>{datasets[0].data[0]}</span>

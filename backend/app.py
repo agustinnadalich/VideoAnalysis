@@ -68,7 +68,7 @@ def get_events():
         if df.empty:
             return jsonify({"error": "No data available"}), 404
 
-        columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
+        columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN', 'YELLOW-CARD', 'RED-CARD']
 
         # Asegúrate de que todas las columnas existan en el DataFrame
         for column in columns_to_include:
@@ -223,6 +223,25 @@ def convert_excel_to_json_2():
         df = pd.read_excel(file_path, sheet_name='MATRIZ')
         df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
 
+                # Procesa los eventos PENALTY
+        def process_penalty_events(row):
+            if row['CATEGORY'] == 'PENALTY':
+                advance = str(row.get('ADVANCE', '')).strip()
+                player = str(row.get('PLAYER', '')).strip()
+
+                if advance == 'NEUTRAL':
+                    row['YELLOW-CARD'] = player
+                elif advance == 'NEGATIVE':
+                    row['RED-CARD'] = player
+                else:
+                    row['YELLOW-CARD'] = None
+                    row['RED-CARD'] = None
+            else:
+                # Asegúrate de que YELLOW-CARD y RED-CARD no existan en otras categorías
+                row['YELLOW-CARD'] = None
+                row['RED-CARD'] = None
+            return row
+
         # Procesa los eventos LINEOUT
         def process_lineout_events(row):
             if row['CATEGORY'] == 'LINEOUT':
@@ -289,6 +308,8 @@ def convert_excel_to_json_2():
                 row['END'] = end['CATEGORY'] if end is not None else None
                 row['PHASES'] = phases
             return row
+        
+
 
 
         # Limpia las filas eliminando claves con valores null, NaN, arrays vacíos o 'Undefined'
@@ -301,10 +322,13 @@ def convert_excel_to_json_2():
         # Inicializa las columnas LINE_THROWER y LINE_RECEIVER en el DataFrame
         df['LINE_THROWER'] = None
         df['LINE_RECEIVER'] = None
+        df['YELLOW-CARD'] = None
+        df['RED-CARD'] = None
 
         # Aplica las transformaciones a los eventos
         df = df.apply(process_lineout_events, axis=1)
         df = df.apply(process_tackle_events, axis=1)
+        df = df.apply(process_penalty_events, axis=1)  # Aplica la nueva función
         df = df.apply(lambda row: calculate_attack_defence(row, df), axis=1)
 
         # Aplica la limpieza
