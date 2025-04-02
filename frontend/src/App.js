@@ -16,9 +16,9 @@ library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faSt
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
   // const [videoSrc] = useState("8ZRkzy6mXDs");
-  const [videoSrc] = useState("NFanFDZIUFE");
+  // const [videoSrc] = useState("NFanFDZIUFE");
   // const [videoSrc] = useState("/SBvsLIONS.mp4");
-  // const [videoSrc] = useState("/Siena_compressed.mp4");
+  const [videoSrc] = useState("/Siena_compressed.mp4");
   // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/Siena_compressed.mp4");
   // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
 
@@ -195,32 +195,32 @@ Clear Filters
                     <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
                   </div>
                   <div className="video">
-                    <VideoPlayer
-                      ref={videoRef}
-                      src={videoSrc}
-                      tempTime={tempTime}
-                      duration={duration}
-                      isPlayingFilteredEvents={isPlayingFilteredEvents}
-                      onPlayFilteredEvents={handlePlayFilteredEvents}
-                      filteredEvents={filteredEvents} // Asegúrate de pasar filteredEvents aquí
-                      onTimeUpdate={handleTimeUpdate}
-                      onEnd={() => {
-                        if (isPlayingFilteredEvents) {
-                          setCurrentEventIndex((prevIndex) => {
-                            const nextIndex = prevIndex + 1;
-                            if (nextIndex < filteredEvents.length) {
-                              playNextEvent(filteredEvents, nextIndex);
-                            } else {
-                              setIsPlayingFilteredEvents(false);
-                            }
-                            return nextIndex;
-                          });
-                        }
-                      }}
-                      onStop={handleStop}
-                      onNext={handleNext}
-                      onPrevious={handlePrevious}
-                    />
+                  <VideoPlayer
+                    ref={videoRef}
+                    src={videoSrc} // Puede ser un ID de YouTube o una URL de video
+                    tempTime={tempTime}
+                    duration={duration}
+                    isPlayingFilteredEvents={isPlayingFilteredEvents}
+                    onPlayFilteredEvents={handlePlayFilteredEvents}
+                    filteredEvents={filteredEvents}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnd={() => {
+                      if (isPlayingFilteredEvents) {
+                        setCurrentEventIndex((prevIndex) => {
+                          const nextIndex = prevIndex + 1;
+                          if (nextIndex < filteredEvents.length) {
+                            playNextEvent(filteredEvents, nextIndex);
+                          } else {
+                            setIsPlayingFilteredEvents(false);
+                          }
+                          return nextIndex;
+                        });
+                      }
+                    }}
+                    onStop={handleStop}
+                    onNext={handleNext}
+                    onPrevious={handlePrevious}
+                  />
                   </div>
                   <div className="right">
                     <MatchReportRight data={data.events} />
