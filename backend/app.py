@@ -5,7 +5,7 @@ import pandas as pd
 import json
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://videoanalysis-front.onrender.com"]}})  # Permitir solicitudes desde localhost:3000 y videoanalysis-front.onrender.com
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Asegúrate de que el directorio de uploads exista
 UPLOAD_FOLDER = '/app/uploads/'

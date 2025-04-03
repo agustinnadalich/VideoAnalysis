@@ -109,7 +109,7 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       const url = process.env.NODE_ENV === 'development' 
-        ? "http://localhost:5001/events" 
+        ? "http://192.168.1.14:5001/events" 
         : "https://videoanalysis-back.onrender.com/events";
       try {
         const response = await fetch(url);
