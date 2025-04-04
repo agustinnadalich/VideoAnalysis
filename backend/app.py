@@ -9,7 +9,7 @@ import openai
 # client = openai.OpenAI(api_key="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")
 openai.api_key = "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"
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://videoanalysis-front.onrender.com"]}})  # Permitir solicitudes desde localhost:3000 y videoanalysis-front.onrender.com
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Asegúrate de que el directorio de uploads exista
 UPLOAD_FOLDER = '/app/uploads/'
@@ -17,8 +17,8 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Ruta del archivo JSON
-matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matriz.json')
-matches_json_path = os.path.join(UPLOAD_FOLDER, 'matches.json')
+matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
+matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
 
 # Lee los datos desde los archivos JSON
 try:
@@ -72,7 +72,12 @@ def get_events():
         if df.empty:
             return jsonify({"error": "No data available"}), 404
 
-        columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
+        columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN', 'YELLOW-CARD', 'RED-CARD']
+
+        # Asegúrate de que todas las columnas existan en el DataFrame
+        for column in columns_to_include:
+            if column not in df.columns:
+                df[column] = None
 
         filtered_df = df[columns_to_include]
 
@@ -205,6 +210,139 @@ def convert_excel_to_json():
         with open(os.path.join(UPLOAD_FOLDER, 'matriz.json'), 'w') as f:
             f.write(df_json)
         with open(os.path.join(UPLOAD_FOLDER, 'matches.json'), 'w') as f:
+            f.write(df_partidos_json)
+
+        return jsonify({"message": "Conversion successful"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    
+@app.route('/convert_excel_to_json_2', methods=['GET'])
+def convert_excel_to_json_2():
+    file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_SERIE_C_24-25_(ENG)2.xlsx')
+    if not os.path.exists(file_path):
+        return jsonify({"error": "Archivo Excel no encontrado"}), 404
+
+    try:
+        df = pd.read_excel(file_path, sheet_name='MATRIZ')
+        df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
+
+                # Procesa los eventos PENALTY
+        def process_penalty_events(row):
+            if row['CATEGORY'] == 'PENALTY':
+                advance = str(row.get('ADVANCE', '')).strip()
+                player = str(row.get('PLAYER', '')).strip()
+
+                if advance == 'NEUTRAL':
+                    row['YELLOW-CARD'] = player
+                elif advance == 'NEGATIVE':
+                    row['RED-CARD'] = player
+                else:
+                    row['YELLOW-CARD'] = None
+                    row['RED-CARD'] = None
+            else:
+                # Asegúrate de que YELLOW-CARD y RED-CARD no existan en otras categorías
+                row['YELLOW-CARD'] = None
+                row['RED-CARD'] = None
+            return row
+
+        # Procesa los eventos LINEOUT
+        def process_lineout_events(row):
+            if row['CATEGORY'] == 'LINEOUT':
+                player = str(row.get('PLAYER', '')).strip()
+                player_2 = str(row.get('PLAYER_2', '')).strip()
+
+                # Determina el LINE_THROWER y LINE_RECEIVER
+                if player.startswith('T-'):
+                    thrower = player[2:]  # Elimina el prefijo "T-"
+                    receiver = player_2
+                elif player_2.startswith('T-'):
+                    thrower = player_2[2:]  # Elimina el prefijo "T-"
+                    receiver = player
+                else:
+                    thrower = None
+                    receiver = None
+
+                # Asigna los valores al evento
+                row['LINE_THROWER'] = thrower
+                row['LINE_RECEIVER'] = receiver
+
+                # Coloca ambos jugadores en un array en PLAYER
+                players = [thrower, receiver]
+                players = [p for p in players if p and p.lower() != 'nan']  # Filtra valores no válidos
+                row['PLAYER'] = players if players else None  # Asigna None si está vacío
+
+                # Depuración
+                print(f"Processed LINEOUT event: PLAYER={row['PLAYER']}, LINE_THROWER={row['LINE_THROWER']}, LINE_RECEIVER={row['LINE_RECEIVER']}")
+            else:
+                # Asegúrate de que LINE_THROWER y LINE_RECEIVER no existan en otras categorías
+                row['LINE_THROWER'] = None
+                row['LINE_RECEIVER'] = None
+            return row
+
+            # Procesa los eventos TACKLE
+        def process_tackle_events(row):
+            if row['CATEGORY'] == 'TACKLE':
+                player = str(row.get('PLAYER', '')).strip() if row.get('PLAYER') else None
+                player_2 = str(row.get('PLAYER_2', '')).strip() if row.get('PLAYER_2') else None
+
+                # Filtra valores no válidos como None o 'nan'
+                players = [p for p in [player, player_2] if p and p.lower() != 'nan']
+
+                # Si hay un solo jugador, lo dejamos como un string; si no, como lista
+                row['PLAYER'] = players[0] if len(players) == 1 else (players if players else None)
+                row['Team_Tackle_Count'] = 1
+            return row
+
+        # Calcula el ORIGIN, END y fases para ATTACK y DEFENCE
+        def calculate_attack_defence(row, df):
+            if row['CATEGORY'] in ['ATTACK', 'DEFENCE']:
+                origin_events = ['KICK-OFF', 'TURNOVER+', 'SCRUM', 'LINEOUT', 'PENALTY', 'FREE-KICK']
+                relevant_origin = df[(df['CATEGORY'].isin(origin_events)) & (df['SECOND'] < row['SECOND'])]
+                origin = relevant_origin.iloc[-1] if not relevant_origin.empty else None
+
+                end_events = ['PENALTY', 'TURNOVER-', 'POINTS']
+                relevant_end = df[(df['CATEGORY'].isin(end_events)) & (df['SECOND'] > row['SECOND'])]
+                end = relevant_end.iloc[0] if not relevant_end.empty else None
+
+                ruck_events = df[(df['CATEGORY'] == 'RUCK') & (df['SECOND'] >= (origin['SECOND'] if origin is not None else 0)) & (df['SECOND'] <= (end['SECOND'] if end is not None else row['SECOND']))]
+                phases = len(ruck_events) + 1 if not ruck_events.empty else 1
+
+                row['ORIGIN'] = origin['CATEGORY'] if origin is not None else None
+                row['END'] = end['CATEGORY'] if end is not None else None
+                row['PHASES'] = phases
+            return row
+        
+
+
+
+        # Limpia las filas eliminando claves con valores null, NaN, arrays vacíos o 'Undefined'
+        def clean_row(row):
+            return {
+                k: v for k, v in row.items()
+                if v is not None and v != 'undefined' and (not isinstance(v, list) or len(v) > 0) and (not (isinstance(v, float) and pd.isna(v)))
+            }
+
+        # Inicializa las columnas LINE_THROWER y LINE_RECEIVER en el DataFrame
+        df['LINE_THROWER'] = None
+        df['LINE_RECEIVER'] = None
+        df['YELLOW-CARD'] = None
+        df['RED-CARD'] = None
+
+        # Aplica las transformaciones a los eventos
+        df = df.apply(process_lineout_events, axis=1)
+        df = df.apply(process_tackle_events, axis=1)
+        df = df.apply(process_penalty_events, axis=1)  # Aplica la nueva función
+        df = df.apply(lambda row: calculate_attack_defence(row, df), axis=1)
+
+        # Aplica la limpieza
+        df_json = df.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
+        df_partidos_json = df_partidos.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
+
+        # Guarda los JSON en archivos
+        with open(os.path.join(UPLOAD_FOLDER, 'matrizC2.json'), 'w') as f:
+            f.write(df_json)
+        with open(os.path.join(UPLOAD_FOLDER, 'matchesC2.json'), 'w') as f:
             f.write(df_partidos_json)
 
         return jsonify({"message": "Conversion successful"}), 200

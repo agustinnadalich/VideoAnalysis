@@ -17,6 +17,8 @@ import PointsTypeChart from './charts/PointsTypeChart';
 import TriesPlayerChart from './charts/TriesPlayerChart';
 import TriesTimeChart from './charts/TriesTimeChart';
 import TriesOriginChart from './charts/TriesOriginChart';
+import ScrumEffectivityChart from './charts/ScrumEffectivityChart';
+import LineoutEffectivityChart from './charts/LineoutEffectivityChart';
 import './Carousel.css';
 
 const Tabs = forwardRef(({ children, activeTab, setActiveTab }, ref) => {
@@ -61,6 +63,7 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
     }
   }, [filteredEvents]); // Se ejecuta cuando cambian los eventos filtrados
 
+  const hasSetPieces = filteredEvents.some(event => event.CATEGORY === "SCRUM" || event.CATEGORY === "LINEOUT");
   const hasTackles = filteredEvents.some((event) => event.CATEGORY === "TACKLE");
   const hasMissedTackles = filteredEvents.some((event) => event.CATEGORY === "MISSED-TACKLE");
   const hasTeamTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "TACKLE");
@@ -86,6 +89,47 @@ const Carousel = forwardRef(({ filteredEvents, handleChartClick, activeTab, setA
           <PointsTypeChart events={filteredEvents.filter(event => event.CATEGORY === "POINTS")} onChartClick={handleChartClick} />
         </div>
       </div>
+      <div label="Set Pieces" id="set-pieces-tab" className='tab-content' style={{ display: hasSetPieces ? 'flex' : 'none' }}>
+      {hasSetPieces && (
+        <div className="chart-row">
+          {/* Scrum Charts */}
+          {filteredEvents.some(event => event.CATEGORY === "SCRUM" && event.TEAM !== "OPPONENT") && (
+            <div className="chart-container">
+              <ScrumEffectivityChart
+                events={filteredEvents.filter(event => event.CATEGORY === "SCRUM" && event.TEAM !== "OPPONENT")}
+                title="Our Scrums"
+                onChartClick={handleChartClick}               />
+            </div>
+          )}
+          {filteredEvents.some(event => event.CATEGORY === "SCRUM" && event.TEAM === "OPPONENT") && (
+            <div className="chart-container">
+              <ScrumEffectivityChart
+                events={filteredEvents.filter(event => event.CATEGORY === "SCRUM" && event.TEAM === "OPPONENT")}
+                title="Opponent Scrums"
+                onChartClick={handleChartClick}                 />
+            </div>
+          )}
+
+          {/* Lineout Charts */}
+          {filteredEvents.some(event => event.CATEGORY === "LINEOUT" && event.TEAM !== "OPPONENT") && (
+            <div className="chart-container">
+              <LineoutEffectivityChart
+                events={filteredEvents.filter(event => event.CATEGORY === "LINEOUT" && event.TEAM !== "OPPONENT")}
+                title="Our Lineouts"
+                onChartClick={handleChartClick}                 />
+            </div>
+          )}
+          {filteredEvents.some(event => event.CATEGORY === "LINEOUT" && event.TEAM === "OPPONENT") && (
+            <div className="chart-container">
+              <LineoutEffectivityChart
+                events={filteredEvents.filter(event => event.CATEGORY === "LINEOUT" && event.TEAM === "OPPONENT")}
+                title="Opponent Lineouts"
+                onChartClick={handleChartClick}                 />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
       <div label="Tackles" id="tackles-tab" className='tab-content'  style={{ display: hasTackles || hasMissedTackles ? 'flex' : 'none' }}>
         {hasTeamTackles && (
           <div className="chart-container">

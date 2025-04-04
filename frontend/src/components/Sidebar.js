@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import './Sidebar.css'; // Asegúrate de importar el archivo CSS
 
 
-const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
+const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar, onClearFilters, clearFiltersTrigger }) => {
   const {
     filterCategory,
     setFilterCategory,
@@ -38,6 +38,18 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     console.log("FilterCategory changed:", filterCategory);
     setSelectedOption(filterCategory.map(category => ({ value: category, label: category })));
   }, [filterCategory]);
+
+  // Escucha el cambio en clearFiltersTrigger para limpiar los filtros
+  useEffect(() => {
+    setFilterCategory([]);
+    setFilterDescriptors([]);
+    setSelectedTeam(null);
+    setSelectedFilters([]);
+    setSelectedDescriptor(null);
+    setSelectedValue(null);
+    setFilteredEvents(events); // Restablece los eventos filtrados a todos los eventos
+    console.log("Filters cleared from Sidebar");
+  }, [clearFiltersTrigger, events, setFilterCategory, setFilterDescriptors, setSelectedTeam, setFilteredEvents]);
 
   const excludeKeys = [
     "COORDINATE_X",
@@ -190,6 +202,11 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar }) => {
     setSelectedOption(null); // Restablecer el select de Equipo
     setFilteredEvents(events);
     updateDescriptorOptions(events);
+
+    // Llama a la función pasada como prop para sincronizar con App.js
+    if (onClearFilters) {
+      onClearFilters();
+    }
   };
 
   return (

@@ -16,8 +16,11 @@ library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faSt
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
   // const [videoSrc] = useState("8ZRkzy6mXDs");
+  // const [videoSrc] = useState("NFanFDZIUFE");
   // const [videoSrc] = useState("/SBvsLIONS.mp4");
-  const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
+  // const [videoSrc] = useState("/Siena_compressed.mp4");
+  const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/Siena_compressed.mp4");
+  // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
 
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
@@ -36,11 +39,13 @@ const App = () => {
   };
 
   const handleEventClick = (event) => {
-    console.log("Event data:", event.SECOND-3, event.DURATION+3);
+    console.log("Event data:", event.SECOND, event.DURATION+3);
     setTempTime(null);
     setTimeout(() => {
-      console.log("Setting tempTime and duration:", event.SECOND-3, event.DURATION+5);
-      setTempTime(event.SECOND-3 || 0);
+      const minutes = Math.floor(event.SECOND / 60);
+      const seconds = event.SECOND % 60;
+      console.log(`Setting tempTime and duration: ${minutes}:${seconds}, ${event.DURATION + 5}`);
+      setTempTime(event.SECOND || 0);
       setDuration(event.DURATION+5 || 5);
       setIsPlayingFilteredEvents(true);
     }, 10);
@@ -61,8 +66,8 @@ const App = () => {
       console.log("Playing next event:", event);
       setTempTime(null);
       setTimeout(() => {
-        console.log("Setting tempTime and duration for next event:", event.SECOND-3, event.DURATION+5);
-        setTempTime(event.SECOND-3 || 0);
+        console.log("Setting tempTime and duration for next event:", event.SECOND, event.DURATION+5);
+        setTempTime(event.SECOND || 0);
         setDuration(event.DURATION+5 || 5);
         setIsPlayingFilteredEvents(true);
       }, 10);
@@ -93,10 +98,18 @@ const App = () => {
     }
   };
 
+  const [clearFiltersTrigger, setClearFiltersTrigger] = useState(false);
+
+  const handleClearFilters = () => {
+    console.log("Filters cleared from App.js");
+    setFilteredEvents(data.events); // Restablece los eventos filtrados a todos los eventos
+    setClearFiltersTrigger((prev) => !prev); // Cambia el estado para notificar a Sidebar
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const url = process.env.NODE_ENV === 'development' 
-        ? "http://localhost:5001/events" 
+        ? "http://192.168.1.14:5001/events" 
         : "https://videoanalysis-back.onrender.com/events";
       try {
         const response = await fetch(url);
@@ -158,6 +171,13 @@ const App = () => {
           >
             <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
           </button>
+          <button
+            className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
+            onClick={handleClearFilters} // Llama a la función directamente
+            style={{ width: '100px', margin: '5px', padding: '5px' }}
+          >
+Clear Filters
+          </button>
         <div className="content-container">
           {isLoading ? (
             <div className="loading-container">
@@ -167,7 +187,7 @@ const App = () => {
           ) : (
             <>
               <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
-                <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar} />
+                <Sidebar events={data.events} onPlayFilteredEvents={handlePlayFilteredEvents} toggleSidebar={toggleSidebar}   onClearFilters={handleClearFilters}   clearFiltersTrigger={clearFiltersTrigger}  />
               </div>
               <div className="main-content">
                 <div className="stats-container">
@@ -175,32 +195,32 @@ const App = () => {
                     <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
                   </div>
                   <div className="video">
-                    <VideoPlayer
-                      ref={videoRef}
-                      src={videoSrc}
-                      tempTime={tempTime}
-                      duration={duration}
-                      isPlayingFilteredEvents={isPlayingFilteredEvents}
-                      onPlayFilteredEvents={handlePlayFilteredEvents}
-                      filteredEvents={filteredEvents} // Asegúrate de pasar filteredEvents aquí
-                      onTimeUpdate={handleTimeUpdate}
-                      onEnd={() => {
-                        if (isPlayingFilteredEvents) {
-                          setCurrentEventIndex((prevIndex) => {
-                            const nextIndex = prevIndex + 1;
-                            if (nextIndex < filteredEvents.length) {
-                              playNextEvent(filteredEvents, nextIndex);
-                            } else {
-                              setIsPlayingFilteredEvents(false);
-                            }
-                            return nextIndex;
-                          });
-                        }
-                      }}
-                      onStop={handleStop}
-                      onNext={handleNext}
-                      onPrevious={handlePrevious}
-                    />
+                  <VideoPlayer
+                    ref={videoRef}
+                    src={videoSrc} // Puede ser un ID de YouTube o una URL de video
+                    tempTime={tempTime}
+                    duration={duration}
+                    isPlayingFilteredEvents={isPlayingFilteredEvents}
+                    onPlayFilteredEvents={handlePlayFilteredEvents}
+                    filteredEvents={filteredEvents}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnd={() => {
+                      if (isPlayingFilteredEvents) {
+                        setCurrentEventIndex((prevIndex) => {
+                          const nextIndex = prevIndex + 1;
+                          if (nextIndex < filteredEvents.length) {
+                            playNextEvent(filteredEvents, nextIndex);
+                          } else {
+                            setIsPlayingFilteredEvents(false);
+                          }
+                          return nextIndex;
+                        });
+                      }
+                    }}
+                    onStop={handleStop}
+                    onNext={handleNext}
+                    onPrevious={handlePrevious}
+                  />
                   </div>
                   <div className="right">
                     <MatchReportRight data={data.events} />

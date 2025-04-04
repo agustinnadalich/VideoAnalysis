@@ -7,8 +7,8 @@ const MatchReportLeft = ({ data }) => {
     if (!data || !data.length) return { labels: [category], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
     const ourTeamData = value !== null
-      ? data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO' && event['POINTS(VALUE)'] === value).length
-      : data.filter(event => event.CATEGORY === category && event.TEAM === 'SAN BENEDETTO').reduce((sum, event) => sum + (event['POINTS(VALUE)'] || 0), 0);
+      ? data.filter(event => event.CATEGORY === category && event.TEAM !== 'OPPONENT' && event['POINTS(VALUE)'] === value).length
+      : data.filter(event => event.CATEGORY === category && event.TEAM !== 'OPPONENT').reduce((sum, event) => sum + (event['POINTS(VALUE)'] || 0), 0);
 
     const rivalTeamData = value !== null
       ? data.filter(event => event.CATEGORY === category && event.TEAM === 'OPPONENT' && event['POINTS(VALUE)'] === value).length
@@ -34,8 +34,8 @@ const MatchReportLeft = ({ data }) => {
   const getDataForPali = () => {
     if (!data || !data.length) return { labels: ['GOAL-KICK'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
-    const ourTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO' && event.GOAL_KICK === 'SUCCESS').length;
-    const ourTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'SAN BENEDETTO').length;
+    const ourTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM !== 'OPPONENT' && event.GOAL_KICK === 'SUCCESS').length;
+    const ourTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM !== 'OPPONENT').length;
     const rivalTeamConverted = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT' && event.GOAL_KICK === 'SUCCESS').length;
     const rivalTeamTotal = data.filter(event => event.CATEGORY === 'GOAL-KICK' && event.TEAM === 'OPPONENT').length;
 
@@ -57,18 +57,37 @@ const MatchReportLeft = ({ data }) => {
   };
 
   const getDataForPosesion = () => {
-    if (!data || !data.length) return { labels: ['BALL POSSESSION'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
-
-    const ourTeamAttackTime = data.filter(event => event.CATEGORY === 'ATTACK').reduce((sum, event) => sum + (event.DURATION || 0), 0);
-    const rivalTeamDefenseTime = data.filter(event => event.CATEGORY === 'DEFENCE').reduce((sum, event) => sum + (event.DURATION || 0), 0);
-
-    const totalTime = ourTeamAttackTime + rivalTeamDefenseTime;
-
-    const ourTeamPercentage = Math.round((ourTeamAttackTime / totalTime) * 100);
-    const rivalTeamPercentage = Math.round((rivalTeamDefenseTime / totalTime) * 100);
-
-    // console.log(`Posesión - Our Team: ${ourTeamPercentage}%, Opponent Team: ${rivalTeamPercentage}%`);  // Verifica los datos procesados
-
+    if (!data || !data.length) {
+      console.log("No data available for possession calculation.");
+      return {
+        labels: ['BALL POSSESSION'],
+        datasets: [
+          { label: 'Our Team', data: [0], isRival: false },
+          { label: 'Opponent', data: [0], isRival: true },
+        ],
+      };
+    }
+  
+    // Suma los tiempos de ATTACK y DEFENSE
+    const ourTeamAttackTime = data
+      .filter(event => event.CATEGORY === 'ATTACK')
+      .reduce((sum, event) => {
+        return sum + (event.DURATION || 0);
+      }, 0);
+  
+    const opponentDefenseTime = data
+      .filter(event => event.CATEGORY === 'DEFENSE')
+      .reduce((sum, event) => {
+        // console.log("DEFENCE Event:", event);
+        return sum + (event.DURATION || 0);
+      }, 0);
+  
+    const totalTime = ourTeamAttackTime + opponentDefenseTime;
+  
+    // Calcula los porcentajes
+    const ourTeamPercentage = totalTime > 0 ? Math.round((ourTeamAttackTime / totalTime) * 100) : 0;
+    const opponentPercentage = totalTime > 0 ? Math.round((opponentDefenseTime / totalTime) * 100) : 0;
+  
     return {
       labels: ['BALL POSSESSION'],
       datasets: [
@@ -78,8 +97,8 @@ const MatchReportLeft = ({ data }) => {
           isRival: false,
         },
         {
-          label: `${rivalTeamPercentage}%`,
-          data: [rivalTeamPercentage],
+          label: `${opponentPercentage}%`,
+          data: [opponentPercentage],
           isRival: true,
         },
       ],
@@ -89,10 +108,8 @@ const MatchReportLeft = ({ data }) => {
   const getDataForTackles = () => {
     if (!data || !data.length) return { labels: ['TACKLE'], datasets: [{ label: 'Our Team', data: [0], isRival: false }, { label: 'Opponent', data: [0], isRival: true }] };
 
-    const ourTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'SAN BENEDETTO').length;
+    const ourTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM !== 'OPPONENT').length;
     const rivalTeamTackles = data.filter(event => event.CATEGORY === 'TACKLE' && event.TEAM === 'OPPONENT').length;
-
-    // console.log(`Tackles - Our Team: ${ourTeamTackles}, Opponent Team: ${rivalTeamTackles}`);  // Verifica los datos procesados
 
     return {
       labels: ['TACKLE'],

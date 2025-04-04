@@ -224,10 +224,61 @@ const MatchReportRight = ({ data }) => {
     };
   };
 
+  const getDataForCards = () => {
+    if (!data || !data.length)
+      return {
+        labels: ["Yellow Cards", "Red Cards"],
+        datasets: [
+          {
+            label: "Our Team",
+            data: [0, 0], // Datos vacíos
+            isRival: false,
+          },
+          {
+            label: "Opponent",
+            data: [0, 0], // Datos vacíos
+            isRival: true,
+          },
+        ],
+      };
+
+    const ourTeamYellowCards = data.filter(
+      (event) => event.CATEGORY === "PENALTY" && event.TEAM !== "OPPONENT" && event["YELLOW-CARD"]
+    ).length;
+
+    const ourTeamRedCards = data.filter(
+      (event) => event.CATEGORY === "PENALTY" && event.TEAM !== "OPPONENT" && event["RED-CARD"]
+    ).length;
+
+    const opponentYellowCards = data.filter(
+      (event) => event.CATEGORY === "PENALTY" && event.TEAM === "OPPONENT" && event["YELLOW-CARD"]
+    ).length;
+
+    const opponentRedCards = data.filter(
+      (event) => event.CATEGORY === "PENALTY" && event.TEAM === "OPPONENT" && event["RED-CARD"]
+    ).length;
+
+    return {
+      labels: ["Yellow Cards", "Red Cards"], // Etiquetas para las barras
+      datasets: [
+        {
+          label: "Our Team",
+          data: [ourTeamYellowCards, ourTeamRedCards], // Datos para nuestro equipo
+          isRival: false,
+        },
+        {
+          label: "Opponent",
+          data: [opponentYellowCards, opponentRedCards], // Datos para el equipo rival
+          isRival: true,
+        },
+      ],
+    };
+  };
+
   const penalesData = getDataForPenales();
   const turnoversData = getDataForTurnovers();
   const quiebresData = getDataForQuiebres();
-  const tarjetasData = getDataForCategory("TARJETA");
+  const cardsData = getDataForCards();
   const formacionesFijasData = getDataForFormacionesFijas();
 
   return (
@@ -264,7 +315,7 @@ const MatchReportRight = ({ data }) => {
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
         <h4 style={{ margin: "0px" }}>Cards</h4>
-        <HorizontalBarChart data={tarjetasData} />
+        <HorizontalBarChart data={cardsData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
         <h4 style={{ margin: "0px" }}>Set pieces</h4>

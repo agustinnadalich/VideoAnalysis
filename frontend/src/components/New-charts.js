@@ -43,7 +43,7 @@ Chart.register(
   ChartDataLabels
 );
 
-const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
+const columnsToTooltip = ['TEAM', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 'LINE_THROWER', 'LINE_RECEIVER', 'BREAK_TYPE', 'BREAK_CHANNEL', 'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN']
 
 const columnsToInclude = [
   "ID",
@@ -113,7 +113,15 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           categories.length === 0 || categories.includes(event.CATEGORY);
         const filterMatch =
           filters.length === 0 ||
-          filters.every((filter) => event[filter.descriptor] === filter.value);
+          filters.every((filter) => {
+            const eventValue = event[filter.descriptor];
+            // Verifica si el valor es un array y si incluye el valor buscado
+            if (Array.isArray(eventValue)) {
+              return eventValue.includes(filter.value);
+            }
+            // Comparación normal para valores no array
+            return eventValue === filter.value;
+          });
         const teamMatch = !team || event.TEAM === team;
   
         return categoryMatch && filterMatch && teamMatch;
@@ -157,7 +165,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   const handleEventClick = useCallback(
     (event) => {
       const startTime = event.SECOND;
-      const duration = event.DURATION; // 5 segundos de duración
+      const duration = event.DURATION +5 ; // 5 segundos de duración
       onEventClick({
         ...event,
         startTime,
@@ -181,6 +189,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
     tabId,
     additionalFilters = []
   ) => {
+    console.log("handleChartClick called:", { chartType, elements }); // Verifica si la función se llama
 
     if (!tabId) {
       return;
@@ -191,6 +200,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       const index = elements[0].index;
       let clickedEvents = [];
       let newFilter = null;
+      console.log('chartType:', chartType);
+      
   
       if (chartType === "advance-chart") {
         const clickedLabel = chart.data.labels[index];
@@ -203,6 +214,38 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           (event) => event.PLAYER === clickedLabel
         );
         newFilter = { descriptor: "PLAYER", value: clickedLabel };
+      } else if (chartType === "SCRUM") {
+        console.log('chartType22:', chartType);
+
+        const clickedLabel = chart.data.labels[index];
+        const resultValue = clickedLabel === "Won" ? "WIN" : "LOST";
+        console.log("SCRUM block executed");
+        console.log("Clicked Label:", clickedLabel);
+        console.log("Result Value:", resultValue);
+      
+        // Filtrar eventos por categoría y resultado
+        clickedEvents = filteredEvents.filter(
+          (event) => event.CATEGORY === "SCRUM" && event.SCRUM_RESULT === resultValue
+        );
+      
+        console.log("Filtered Events:", clickedEvents);
+      
+        // Crear un nuevo filtro para el resultado
+        newFilter = { descriptor: "SCRUM_RESULT", value: resultValue };
+      } else if (chartType === "LINEOUT") {
+        const clickedLabel = chart.data.labels[index];
+        const resultValue = clickedLabel === "Won" ? "CLEAN" : "LOST L";
+        console.log("Clicked Label:", clickedLabel);
+        console.log("Result Value:", resultValue);
+        console.log("Filtered Events:", clickedEvents);
+      
+        // Filtrar eventos por categoría y resultado
+        clickedEvents = filteredEvents.filter(
+          (event) => event.CATEGORY === "LINEOUT" && event.LINE_RESULT === resultValue
+        );
+      
+        // Crear un nuevo filtro para el resultado
+        newFilter = { descriptor: "LINE_RESULT", value: resultValue };
       } else if (chartType === "time") {
         const clickedLabel = chart.data.labels[index];
         clickedEvents = filteredEvents.filter(
@@ -236,6 +279,9 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
         );
         newFilter = { descriptor: "CATEGORY", value: category };
       } 
+
+
+
       if (clickedEvents.length > 0) {
         const isAlreadySelected = selectedEvents.some(
           (event) => event.ID === clickedEvents[0].ID

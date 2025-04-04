@@ -41,7 +41,15 @@
   width: 100%;
   max-width: 600px;
   margin: 10px;
+  min-height: 300px;
 }
+.chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 20px;
+}
+
 
 @media (min-width: 768px) {
   .chart-container {
@@ -52,5 +60,15 @@
 @media (min-width: 1024px) {
   .chart-container {
     width: 30%;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    touch-action: pan-y; /* Permite el scroll vertical */
+  }
+  
+  .chart-scroll {
+    touch-action: none; /* Deshabilita el scroll normal en móviles */
   }
 }

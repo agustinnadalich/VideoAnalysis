@@ -1,22 +1,26 @@
+
 services:
   frontend:
     build:
       context: ./frontend
     ports:
-      - "3000:3000"
+      - "3000:3000" # Mapea el puerto 3000 del contenedor al host
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app # Monta el código fuente del frontend
+    working_dir: /app
+    command: npm start # Inicia el servidor de desarrollo de React
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true # Opcional: para evitar problemas con hot reload en Docker
 
   backend:
     build:
       context: ./backend
     ports:
-      - "5001:5001"
+      - "5001:5001" # Mapea el puerto 5001 del contenedor al host
     volumes:
-      - ./backend:/app
-      - ./frontend/public:/app/public
+      - ./backend:/app # Monta el código fuente del backend
+    working_dir: /app
+    command: flask run --host=0.0.0.0 --port=5001 # Inicia el servidor Flask
     environment:
       - FLASK_ENV=development

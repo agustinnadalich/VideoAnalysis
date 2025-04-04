@@ -47,7 +47,16 @@ const Header = () => {
   }
 
   const getLogoPath = (teamName) => {
-    return `/Logos/${teamName}.jpg`;
+    const jpgPath = `/Logos/${teamName}.jpg`;
+    const pngPath = `/Logos/${teamName}.png`;
+
+    const image = new Image();
+    image.src = jpgPath;
+    image.onerror = () => {
+      image.src = pngPath;
+    };
+
+    return image.src;
   };
 
   return (
