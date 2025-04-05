@@ -335,7 +335,12 @@ def convert_excel_to_json_2():
         df_json = df.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
         df_partidos_json = df_partidos.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
 
-        # Guarda los JSON en archivos
+        # Guarda los JSON en archivos (ESTO SE HACE si no se comnenta la parte de arriba que hace la limpieza)
+        # # Convert DataFrames to JSON format
+        # df_json = df.to_json(orient='records')
+        # df_partidos_json = df_partidos.to_json(orient='records')
+
+        # Write JSON data to files
         with open(os.path.join(UPLOAD_FOLDER, 'matrizC2.json'), 'w') as f:
             f.write(df_json)
         with open(os.path.join(UPLOAD_FOLDER, 'matchesC2.json'), 'w') as f:
