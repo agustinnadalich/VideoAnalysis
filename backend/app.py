@@ -353,7 +353,7 @@ def convert_excel_to_json_2():
 def analyze_events():
     try:
         # Cargar el archivo matriz_semplyfied.json
-        matriz_semplyfied_path = os.path.join(UPLOAD_FOLDER, 'matriz_semplyfied.json')
+        matriz_semplyfied_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
         if not os.path.exists(matriz_semplyfied_path):
             return jsonify({"error": "Archivo JSON no encontrado"}), 404
 
@@ -400,6 +400,10 @@ def analyze_events():
                     "Aquí tienes un conjunto de eventos en formato JSON. Cada evento tiene varias propiedades como "
                     "'ID', 'OPPONENT', 'SECOND', 'CATEGORY', 'TEAM', etc. Por favor, analiza estos eventos y "
                     "genera un reporte detallado dividido por aspectos del juego donde hayas encontrado patrones interesantes. "
+                    "escribe apartados para cada aspecto del juego, como 'Defensa', 'Ataque', 'Penalizaciones', etc. "
+                    "incluye seccioens especiales para LINEOUT y SCRUM, y cualquier otro aspecto que consideres relevante. "
+                    "No incluyas estadistiacas, ya las tengo. Lo que me sirve son patrones y recomendaciones. "
+                    "No incluyas el JSON en el reporte, solo el análisis. "
                     "Escribe el reporte de manera clara y fácil de interpretar para un entrenador. Si necesitas más información "
                     "para sacar conclusiones, inclúyelo al final del reporte.\n\n"
                     "JSON:\n{}".format(json.dumps(events, indent=2))
@@ -414,7 +418,7 @@ def analyze_events():
         )
 
         text = response['choices'][0]['message']['content']
-        return jsonify({"analysis": text})
+        return jsonify({"analysis2": text})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
