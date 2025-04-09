@@ -225,50 +225,75 @@ const MatchReportRight = ({ data }) => {
   };
 
   const getDataForCards = () => {
+    console.log("Data received in getDataForCards:", data); // Verifica los datos que llegan
+  
     if (!data || !data.length)
       return {
         labels: ["Yellow Cards", "Red Cards"],
         datasets: [
           {
             label: "Our Team",
-            data: [0, 0], // Datos vacíos
+            data: [0, 0], // Yellow, Red
+            backgroundColor: ["#FFD700", "#FF4500"], // Yellow, Red
             isRival: false,
           },
           {
             label: "Opponent",
-            data: [0, 0], // Datos vacíos
+            data: [0, 0], // Yellow, Red
+            backgroundColor: ["#FFD700", "#FF4500"], // Yellow, Red
             isRival: true,
           },
         ],
       };
-
+  
     const ourTeamYellowCards = data.filter(
-      (event) => event.CATEGORY === "PENALTY" && event.TEAM !== "OPPONENT" && event["YELLOW-CARD"]
+      (event) =>
+        event.CATEGORY === "PENALTY" &&
+        event.TEAM !== "OPPONENT" &&
+        event["YELLOW-CARD"]?.includes("Player")
     ).length;
-
+  
     const ourTeamRedCards = data.filter(
-      (event) => event.CATEGORY === "PENALTY" && event.TEAM !== "OPPONENT" && event["RED-CARD"]
+      (event) =>
+        event.CATEGORY === "PENALTY" &&
+        event.TEAM !== "OPPONENT" &&
+        event["RED-CARD"]?.includes("Player")
     ).length;
-
+  
     const opponentYellowCards = data.filter(
-      (event) => event.CATEGORY === "PENALTY" && event.TEAM === "OPPONENT" && event["YELLOW-CARD"]
+      (event) =>
+        event.CATEGORY === "PENALTY" &&
+        event.TEAM === "OPPONENT" &&
+        event["YELLOW-CARD"]?.includes("Player")
     ).length;
-
+  
     const opponentRedCards = data.filter(
-      (event) => event.CATEGORY === "PENALTY" && event.TEAM === "OPPONENT" && event["RED-CARD"]
+      (event) =>
+        event.CATEGORY === "PENALTY" &&
+        event.TEAM === "OPPONENT" &&
+        event["RED-CARD"]?.includes("Player")
     ).length;
-
+  
+    console.log("Processed card data:", {
+      ourTeamYellowCards,
+      ourTeamRedCards,
+      opponentYellowCards,
+      opponentRedCards,
+    }); // Verifica los datos procesados
+  
     return {
-      labels: ["Yellow Cards", "Red Cards"], // Etiquetas para las barras
+      labels: ["Yellow Cards", "Red Cards"], // Separate labels for Yellow and Red cards
       datasets: [
         {
           label: "Our Team",
-          data: [ourTeamYellowCards, ourTeamRedCards], // Datos para nuestro equipo
+          data: [ourTeamYellowCards, ourTeamRedCards], // Yellow, Red
+          backgroundColor: ["#FFD700", "#FF4500"], // Yellow, Red
           isRival: false,
         },
         {
           label: "Opponent",
-          data: [opponentYellowCards, opponentRedCards], // Datos para el equipo rival
+          data: [opponentYellowCards, opponentRedCards], // Yellow, Red
+          backgroundColor: ["#FFD700", "#FF4500"], // Yellow, Red
           isRival: true,
         },
       ],
@@ -314,12 +339,21 @@ const MatchReportRight = ({ data }) => {
         <HorizontalBarChart data={quiebresData} />
       </div>
       <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
-        <h4 style={{ margin: "0px" }}>Cards</h4>
-        <HorizontalBarChart data={cardsData} />
-      </div>
-      <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
         <h4 style={{ margin: "0px" }}>Set pieces</h4>
         <HorizontalBarChart data={formacionesFijasData} />
+      </div>
+      <div style={{ width: "100%", marginBottom: "5px", textAlign: "center" }}>
+        <h4 style={{ margin: "0px" }}>Cards</h4>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "lightslategray"}}>
+          <div style={{ color: "#FFD700", fontWeight: "bold" }}>
+            {cardsData.datasets[0].data[0]} /{" "}
+            <span style={{ color: "#FF4500" }}>{cardsData.datasets[0].data[1]}</span>
+          </div>
+          <div style={{ color: "#FFD700", fontWeight: "bold" }}>
+            {cardsData.datasets[1].data[0]} /{" "}
+            <span style={{ color: "#FF4500" }}>{cardsData.datasets[1].data[1]}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

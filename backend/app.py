@@ -13,8 +13,8 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Ruta del archivo JSON
-matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
-matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
+matriz_json_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json')
+matches_json_path = os.path.join(UPLOAD_FOLDER, 'match-PRATO.json')
 
 # Lee los datos desde los archivos JSON
 try:
@@ -83,23 +83,35 @@ def get_events():
         fin_2 = filtered_df[(filtered_df['CATEGORY'] == 'END') & (filtered_df['PERIODS'] == 2)]['SECOND'].max()
 
         def calcular_tiempo_de_juego(second):
+            if kick_off_1 is None or fin_1 is None or kick_off_2 is None or fin_2 is None:
+                print(f"Valores inválidos detectados: kick_off_1={kick_off_1}, fin_1={fin_1}, kick_off_2={kick_off_2}, fin_2={fin_2}")
+                return None
+
+            if second is None:
+                print("El valor de 'second' es None")
+                return None
+
             if second <= fin_1:
                 return second - kick_off_1
             elif second >= kick_off_2:
                 return (fin_1 - kick_off_1) + (second - kick_off_2)
             return None
 
+        if None in [kick_off_1, fin_1, kick_off_2, fin_2]:
+            print(f"Valores inválidos para timeGroups: kick_off_1={kick_off_1}, fin_1={fin_1}, kick_off_2={kick_off_2}, fin_2={fin_2}")
+            return jsonify({"error": "Datos incompletos para calcular grupos de tiempo"}), 500
+
         timeGroups = [
             { "label": "0'- 20'", "start": 0, "end": 20 * 60 },
-            { "label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1) },
-            { "label": "40' - 60'", "start": calcular_tiempo_de_juego(kick_off_2), "end": calcular_tiempo_de_juego(kick_off_2) + 20 * 60 },
-            { "label": "60' - 80'", "start": calcular_tiempo_de_juego(kick_off_2) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2) }
+            { "label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1) or 0 },
+            { "label": "40' - 60'", "start": calcular_tiempo_de_juego(kick_off_2) or 0, "end": (calcular_tiempo_de_juego(kick_off_2) or 0) + 20 * 60 },
+            { "label": "60' - 80'", "start": (calcular_tiempo_de_juego(kick_off_2) or 0) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2) or 0 }
         ]
-        print(timeGroups)
 
         events = filtered_df.to_dict(orient='records')
         for event in events:
             if 'SECOND' in event and event['SECOND'] is not None:
+                print(f"Procesando evento: {event}")
                 minutes, seconds = divmod(int(event['SECOND']), 60)
                 event['TIME(VIDEO)'] = f"{minutes:02}:{seconds:02}"
                 tiempo_de_juego = calcular_tiempo_de_juego(event['SECOND'])
@@ -107,10 +119,15 @@ def get_events():
                     tiempo_de_juego_minutes, tiempo_de_juego_seconds = divmod(tiempo_de_juego, 60)
                     event['Game_Time'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
                     for group in timeGroups:
-                        if group["start"] <= tiempo_de_juego < group["end"]:
+                        if group["start"] is None or group["end"] is None:
+                            print(f"Grupo de tiempo inválido: {group}")
+                            continue  # Salta este grupo si es inválido
+
+                        if tiempo_de_juego is not None and group["start"] <= tiempo_de_juego < group["end"]:
                             event["Time_Group"] = group["label"]
                             break
                 else:
+                    print(f"Tiempo de juego no calculado para el evento: {event}")
                     event['Game_Time'] = None
                     event['Time_Group'] = None
 
@@ -215,7 +232,7 @@ def convert_excel_to_json():
     
 @app.route('/convert_excel_to_json_2', methods=['GET'])
 def convert_excel_to_json_2():
-    file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_SERIE_C_24-25_(ENG)2.xlsx')
+    file_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_match_2.xlsx')
     if not os.path.exists(file_path):
         return jsonify({"error": "Archivo Excel no encontrado"}), 404
 
@@ -227,7 +244,10 @@ def convert_excel_to_json_2():
         def process_penalty_events(row):
             if row['CATEGORY'] == 'PENALTY':
                 advance = str(row.get('ADVANCE', '')).strip()
-                player = str(row.get('PLAYER', '')).strip()
+                if row['TEAM'] == 'OPPONENT':
+                    player = "Player OPPONENT"
+                else:
+                    player = str(row.get('PLAYER', '')).strip()
 
                 if advance == 'NEUTRAL':
                     row['YELLOW-CARD'] = player
@@ -341,9 +361,9 @@ def convert_excel_to_json_2():
         # df_partidos_json = df_partidos.to_json(orient='records')
 
         # Write JSON data to files
-        with open(os.path.join(UPLOAD_FOLDER, 'matrizC2.json'), 'w') as f:
+        with open(os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json'), 'w') as f:
             f.write(df_json)
-        with open(os.path.join(UPLOAD_FOLDER, 'matchesC2.json'), 'w') as f:
+        with open(os.path.join(UPLOAD_FOLDER, 'match-PRATO.json'), 'w') as f:
             f.write(df_partidos_json)
 
         return jsonify({"message": "Conversion successful"}), 200

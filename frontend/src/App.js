@@ -17,9 +17,10 @@ const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
   // const [videoSrc] = useState("8ZRkzy6mXDs");
   // const [videoSrc] = useState("NFanFDZIUFE");
+  const [videoSrc] = useState("pq6mLh50fc8");
   // const [videoSrc] = useState("/SBvsLIONS.mp4");
   // const [videoSrc] = useState("/Siena_compressed.mp4");
-  const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/Siena_compressed.mp4");
+//   const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/Siena_compressed.mp4");
   // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
 
   const [duration, setDuration] = useState(0);
@@ -109,7 +110,7 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       const url = process.env.NODE_ENV === 'development' 
-        ? "http://192.168.5.8:5001/events" 
+        ? "http://localhost:5001/events" 
         : "https://videoanalysis-back.onrender.com/events";
       try {
         const response = await fetch(url);
