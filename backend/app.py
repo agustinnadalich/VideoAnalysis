@@ -13,8 +13,12 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Ruta del archivo JSON
-matriz_json_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json')
-matches_json_path = os.path.join(UPLOAD_FOLDER, 'match-PRATO.json')
+# matriz_json_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json')
+# matches_json_path = os.path.join(UPLOAD_FOLDER, 'match-PRATO.json')
+
+# Ruta del archivo JSON
+matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
+matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
 
 # Lee los datos desde los archivos JSON
 try:
