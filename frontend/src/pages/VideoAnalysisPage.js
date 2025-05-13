@@ -14,6 +14,7 @@ import './VideoAnalysisPage.css';
 
 library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter, faSpinner);
 
+
 const VideoAnalysisPage = () => {
   const { id } = useParams(); // Obtener el ID del partido desde la URL
   const [data, setData] = useState({ events: [], header: {} });
@@ -37,9 +38,11 @@ const VideoAnalysisPage = () => {
         const matchData = await response.json();
         setData(matchData);
         setVideoSrc(matchData.header.video_url); // Asumimos que el backend devuelve la URL del video
+        console.log("Video URL:", matchData.header.video_url);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching match data:", error);
+        setData({ events: [], header: {} }); // Manejo de errores
         setIsLoading(false);
       }
     };

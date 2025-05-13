@@ -88,7 +88,8 @@ def get_events():
             return jsonify({"error": "Match not found"}), 404
 
         # Leer el archivo JSON de eventos correspondiente
-        events_json_path = os.path.join(UPLOAD_FOLDER, f"{match['JSON']}.json")
+        events_json_path = os.path.join(UPLOAD_FOLDER, f"{match['JSON']}")
+        print(f"Buscando archivo en: {events_json_path}")
         if not os.path.exists(events_json_path):
             return jsonify({"error": f"Archivo JSON {match['JSON']} no encontrado"}), 404
 
@@ -154,6 +155,7 @@ def get_events():
             # Si no es una URL, asumimos que es un ID de YouTube
             video_url = f"https://www.youtube.com/watch?v={video_url}"
 
+        print(f"Video URL enviado al frontend: {video_url}")
         # Devolver los datos del partido y los eventos
         return jsonify({"header": {**match, "video_url": video_url}, "events": events}), 200
     except Exception as e:
