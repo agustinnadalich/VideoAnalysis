@@ -89,13 +89,15 @@ const Sidebar = ({ events, onPlayFilteredEvents, toggleSidebar, onClearFilters, 
     setTeamOptions(teams);
   };
 
-  const categoryOptions = [
-    ...new Set(
-      events
-        .map((event) => event.CATEGORY)
-        .filter((category) => category !== null)
-    ),
-  ].map((category) => ({ value: category, label: category }));
+  const categoryOptions = events && Array.isArray(events)
+  ? [
+      ...new Set(
+        events
+          .map((event) => event.CATEGORY)
+          .filter((category) => category !== null)
+      ),
+    ].map((category) => ({ value: category, label: category }))
+  : [];
 
   const handleCategoryChange = (selectedOptions) => {
     const selectedCategories = selectedOptions.map((option) => option.value);

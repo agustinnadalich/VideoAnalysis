@@ -11,7 +11,7 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
   const { filteredEvents } = useContext(FilterContext);
 
   // Determina si el video es de YouTube o un archivo local/URL
-  const isYouTubeVideo = typeof src === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(src);
+  const isYouTubeVideo = typeof src === 'string' && src.includes('youtube.com/watch?v=');
 
   useImperativeHandle(ref, () => ({
     get current() {
@@ -90,7 +90,7 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
     <div className={`video-container ${isPiP ? 'pip' : ''}`}>
       {isYouTubeVideo ? (
         <YouTube
-          videoId={src}
+          videoId={src.split('v=')[1]} // Extraer el ID del video de la URL
           onReady={handleYouTubeReady}
           onStateChange={handleYouTubeStateChange}
           className="youtube-video"

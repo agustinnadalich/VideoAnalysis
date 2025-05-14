@@ -21,6 +21,8 @@ const Header = () => {
     WIND_2P,
     REFEREE,
     RESULT,
+    VIDEO,
+    JSON
   } = matchInfo;
 
   const [puntosEquipo, puntosRival] = RESULT ? RESULT.split('-').map(Number) : [0, 0];
