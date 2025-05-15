@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom"; // Importar useParams para obtener el ID del partido
+import { useParams, useNavigate } from "react-router-dom"; // Cambia esta línea
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faExternalLinkAlt, faStepBackward, faStepForward, faChevronLeft, faFilter, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,7 +16,8 @@ library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faS
 
 
 const VideoAnalysisPage = () => {
-  const { id } = useParams(); // Obtener el ID del partido desde la URL
+  const { id } = useParams();
+  const navigate = useNavigate(); // Nuevo hook para navegación
   const [data, setData] = useState({ events: [], header: {} });
   const [videoSrc, setVideoSrc] = useState(""); // Video dinámico
   const [duration, setDuration] = useState(0);
@@ -151,6 +152,13 @@ const VideoAnalysisPage = () => {
     <FilterProvider initialResponse={data}>
       <div className="app-container">
         <Header />
+        <button
+          className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
+          onClick={() => navigate('/')} // Botón para volver a home/dashboard
+          style={{ width: '100px', margin: '5px', padding: '5px' }}
+        >
+          <FontAwesomeIcon icon="fa-chevron-left" /> Dashboard
+        </button>
         <button
           className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
           onClick={toggleSidebar}
