@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { getEvents } from "../services/api";
 import { Bar } from "react-chartjs-2";
 import Select from "react-select";
@@ -15,6 +15,7 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import HeatMap from "./HeatMap"; // Importa el componente HeatMap
+import FilterContext from "../context/FilterContext";
 
 ChartJS.register(
   CategoryScale,
@@ -47,8 +48,7 @@ const columnsToInclude = ['ID', 'FECHA', 'OPPONENT', 'TEAM', 'CATEGORY', 'PLAYER
 ChartJS.register(backgroundImagePlugin);
 
 const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
-  const [events, setEvents] = useState([]);
-  const [filteredEvents, setFilteredEvents] = useState([]);
+  const { filteredEvents, setFilteredEvents, events } = useContext(FilterContext);
   const [error, setError] = useState(null);
   const [filterType, setFilterType] = useState([]);
   const [filterDescriptors, setFilterDescriptors] = useState([]);
@@ -59,55 +59,42 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
 
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await getEvents();
-        if (Array.isArray(response.data)) {
-          setEvents(response.data);
-          setFilteredEvents(response.data);
+    if (Array.isArray(events)) {
+      // Filtra los eventos de tipo "TACKLE"
+      const tackles = events.filter(
+        (event) => event.CATEGORY === "TACKLE" && event.PLAYER
+      );
 
-          // Filtra los eventos de tipo "TACKLE"
-          const tackles = response.data.filter(
-            (event) => event.CATEGORY === "TACKLE" && event.PLAYER
-          );
-
-          // Agrupa los tackles por jugador
-          const tacklesPorJugador = tackles.reduce((acc, event) => {
-            const jugador = event.PLAYER;
-            if (!acc[jugador]) {
-              acc[jugador] = 0;
-            }
-            acc[jugador]++;
-            return acc;
-          }, {});
-
-          // Prepara los datos para el gráfico de barras
-          const labels = Object.keys(tacklesPorJugador);
-          const data = Object.values(tacklesPorJugador);
-
-          setBarData({
-            labels,
-            datasets: [
-              {
-                label: "tackles por Jugador",
-                data,
-                backgroundColor: "rgba(75, 192, 192, 0.2)",
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-              },
-            ],
-          });
-        } else {
-          setError(new Error("Invalid response format"));
+      // Agrupa los tackles por jugador
+      const tacklesPorJugador = tackles.reduce((acc, event) => {
+        const jugador = event.PLAYER;
+        if (!acc[jugador]) {
+          acc[jugador] = 0;
         }
-      } catch (error) {
-        console.error("Error fetching events:", error);
-        setError(error);
-      }
-    };
+        acc[jugador]++;
+        return acc;
+      }, {});
 
-    fetchEvents();
-  }, []);
+      // Prepara los datos para el gráfico de barras
+      const labels = Object.keys(tacklesPorJugador);
+      const data = Object.values(tacklesPorJugador);
+
+      setBarData({
+        labels,
+        datasets: [
+          {
+            label: "tackles por Jugador",
+            data,
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            borderColor: "rgba(75, 192, 192, 1)",
+            borderWidth: 1,
+          },
+        ],
+      });
+    } else {
+      setError(new Error("Invalid response format"));
+    }
+  }, [events]);
 
   const handleFilterChange = useCallback((selectedOptions, actionMeta) => {
     const { name } = actionMeta;
@@ -133,7 +120,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         (filterResult.length ? filterResult.includes(event.SECOND) : true)
     );
     setFilteredEvents(filtered);
-  }, [events, filterType, filterDescriptors, filterResult]);
+  }, [events, filterType, filterDescriptors, filterResult, setFilteredEvents]);
 
   const handleBarClick = useCallback(
     (elements) => {
@@ -159,7 +146,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents }) => {
         }
       }
     },
-    [barData, events, filteredJugador]
+    [barData, events, filteredJugador, setFilteredEvents]
   );
 
   const handleEventClick = useCallback(

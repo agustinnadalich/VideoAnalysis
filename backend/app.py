@@ -161,6 +161,35 @@ def get_events():
     except Exception as e:
         print(f"Error en get_events: {e}")
         return jsonify({"error": str(e)}), 500
+    
+
+
+@app.route('/events/multi', methods=['GET'])
+def get_events_multi():
+    match_ids = request.args.getlist('match_id', type=int)
+    all_events = []
+
+    # Convierte el DataFrame a lista de dicts
+    if isinstance(df_partidos, pd.DataFrame):
+        partidos_list = df_partidos.to_dict(orient='records')
+    else:
+        partidos_list = df_partidos  # Si ya es lista
+
+    for match_id in match_ids:
+        match = next((m for m in partidos_list if m['ID_MATCH'] == match_id), None)
+        if not match:
+            continue
+        json_path = os.path.join(UPLOAD_FOLDER, match['JSON'])
+        try:
+            with open(json_path, 'r') as f:
+                events = json.load(f)
+        except Exception:
+            events = []
+        for ev in events:
+            ev['ID_MATCH'] = match_id
+            ev['VIDEO'] = match['VIDEO']
+        all_events.extend(events)
+    return jsonify({"events": all_events})
 
 @app.route('/events/table', methods=['GET'])
 def events_table():
