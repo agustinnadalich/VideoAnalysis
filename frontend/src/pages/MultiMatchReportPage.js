@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import MultiMatchHeader from "../components/MultiMatchHeader";
-import Charts from "../components/Charts";
+import Charts from "../components/New-charts";
+import Carousel from "../components/Carousel";
+
 import VideoPlayer from "../components/VideoPlayer";
 import FilterContext from "../context/FilterContext";
 
@@ -13,6 +15,7 @@ const MultiMatchReportPage = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [videoSrc, setVideoSrc] = useState("");
   const [currentEvent, setCurrentEvent] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   // 1. Cargar todos los partidos
   useEffect(() => {
@@ -87,10 +90,11 @@ const MultiMatchReportPage = () => {
             />
           )}
         </div>
-        <Charts
-          onEventClick={handleEventClick}
-          onPlayFilteredEvents={() => {}}
-        />
+        <div className="charts-container">
+          <Charts
+            onEventClick={handleEventClick}
+          />
+        </div>
       </div>
     </FilterContext.Provider>
   );
