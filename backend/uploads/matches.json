@@ -33,6 +33,24 @@
         "RESULT": "50-21",
         "REFEREE": "--",
         "VIDEO": "https://www.youtube.com/watch?v=pq6mLh50fc8",
-        "JSON": "SERIE_C_Falconara.json"
+        "JSON": "SERIE_B_PRATO.json"
+    },
+    {
+        "ID_MATCH": 3,
+        "DATE": 1743984000000,
+        "COMPETITION": "Top 12",
+        "ROUND": "Ida",
+        "GAME": 2,
+        "TEAM": "San Luis",
+        "OPPONENT": "Alumni",
+        "FIELD": "Alumni",
+        "RAIN": "NO",
+        "MUDDY": "NO",
+        "WIND_1P": "+",
+        "WIND_2P": "-",
+        "RESULT": "0-0",
+        "REFEREE": "--",
+        "VIDEO": "https://www.youtube.com/watch?v=pq6mLh50fc8",
+        "JSON": "TEST-Alumni.json"
     }
 ]

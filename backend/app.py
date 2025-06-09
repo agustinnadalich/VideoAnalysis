@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import json
 import openai
+import math
 
 # Configura tu clave de API de OpenAI
 # client = openai.OpenAI(api_key="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")
@@ -112,10 +113,15 @@ def get_events():
                 df[column] = None
 
         # Calcular tiempos clave del partido
-        kick_off_1 = df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 1)]['SECOND'].min()
-        fin_1 = df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 1)]['SECOND'].max()
-        kick_off_2 = df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 2)]['SECOND'].min()
-        fin_2 = df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 2)]['SECOND'].max()
+        def safe_second(val):
+            if val is None or (isinstance(val, float) and math.isnan(val)):
+                return 0
+            return val
+
+        kick_off_1 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 1)]['SECOND'].min())
+        fin_1 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 1)]['SECOND'].max())
+        kick_off_2 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 2)]['SECOND'].min())
+        fin_2 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 2)]['SECOND'].max())
 
         def calcular_tiempo_de_juego(second):
             if second <= fin_1:
