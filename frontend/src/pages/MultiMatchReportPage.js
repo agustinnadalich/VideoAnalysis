@@ -67,7 +67,20 @@ const MultiMatchReportPage = () => {
   };
 
   return (
-    <FilterContext.Provider value={{ events: allEvents, filteredEvents, setFilteredEvents }}>
+    <FilterContext.Provider value={{
+      filterCategory: [],
+      setFilterCategory: () => {},
+      filterDescriptors: [],
+      setFilterDescriptors: () => {},
+      selectedTeam: null,
+      setSelectedTeam: () => {},
+      events: allEvents,
+      setEvents: () => {},
+      filteredEvents,
+      setFilteredEvents,
+      matchInfo: {},
+      setMatchInfo: () => {},
+    }}>
       <div>
         <MultiMatchHeader
           matches={matches}

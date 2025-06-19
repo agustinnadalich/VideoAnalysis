@@ -351,7 +351,8 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
       onEventClick(eventData);
     }
 
-    const updatedEvents = eventData ? [eventData] : events;
+    // Asegúrate de que events es un array
+    const updatedEvents = eventData ? [eventData] : (Array.isArray(events) ? events : []);
 
     updateCharts(updatedEvents, filterCategory, filterDescriptors);
   };
