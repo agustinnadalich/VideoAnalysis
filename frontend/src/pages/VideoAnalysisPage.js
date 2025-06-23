@@ -229,6 +229,11 @@ const VideoAnalysisPage = () => {
                 </div>
                 <div className="charts-container">
                   <Charts
+                    events={data.events}
+                    filteredEvents={filteredEvents.length > 0 ? filteredEvents : data.events}
+                    setFilteredEvents={setFilteredEvents}
+                    filterDescriptors={[]} // o el estado que uses para filtros en el individual
+                    setFilterDescriptors={() => {}} // o el setter real si lo usás
                     onEventClick={handleEventClick}
                     onPlayFilteredEvents={handlePlayFilteredEvents}
                     currentTime={currentTime}

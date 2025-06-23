@@ -1,14 +1,17 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, g
 from flask_cors import CORS
+from dotenv import load_dotenv
 import os
 import pandas as pd
 import json
 import openai
 import math
 
+# Carga las variables de entorno desde el archivo .env
+load_dotenv()
+
 # Configura tu clave de API de OpenAI
-# client = openai.OpenAI(api_key="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")
-openai.api_key = "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"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -17,23 +20,21 @@ matches_json_path = os.path.join(UPLOAD_FOLDER, 'matches.json')
 
 # Ruta del archivo JSON
 matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
-# matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
-# matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
 
-# Lee los datos desde los archivos JSON
-try:
-    with open(matriz_json_path, 'r') as f:
-        df = pd.DataFrame(json.load(f))
-    with open(matches_json_path, 'r') as f:
-        df_partidos = pd.DataFrame(json.load(f))
-except FileNotFoundError:
-    print(f"Archivo no encontrado: {matriz_json_path} o {matches_json_path}")
-    df = pd.DataFrame()
-    df_partidos = pd.DataFrame()
-except Exception as e:
-    print(f"Error al leer el archivo: {e}")
-    df = pd.DataFrame()
-    df_partidos = pd.DataFrame()
+# Funciones utilitarias para cargar los DataFrames bajo demanda
+def load_df():
+    try:
+        with open(matriz_json_path, 'r') as f:
+            return pd.DataFrame(json.load(f))
+    except Exception:
+        return pd.DataFrame()
+
+def load_df_partidos():
+    try:
+        with open(matches_json_path, 'r') as f:
+            return pd.DataFrame(json.load(f))
+    except Exception:
+        return pd.DataFrame()
 
 # Función para calcular el origen de los tries
 def calcular_origen_tries(df):
@@ -51,19 +52,9 @@ def calcular_origen_tries(df):
     df['TRY_ORIGIN'] = df.apply(lambda event: get_origin_event(event) if event['POINTS'] == "TRY" else None, axis=1)
     return df
 
-# Verifica si la columna 'POINTS' existe antes de llamar a la función
-if 'POINTS' in df.columns:
-    df = calcular_origen_tries(df)
-else:
-    print("La columna 'POINTS' no existe en el DataFrame")
-
-print(df.head())
-    
-
 @app.route('/matches', methods=['GET'])
 def get_matches():
     try:
-        # Leer los datos de matches.json
         with open(matches_json_path, 'r') as f:
             matches = json.load(f)
         return jsonify({"matches": matches}), 200
@@ -71,7 +62,6 @@ def get_matches():
         return jsonify({"error": "Archivo matches.json no encontrado"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
 
 @app.route('/events', methods=['GET'])
 def get_events():
@@ -83,14 +73,12 @@ def get_events():
         return jsonify({"error": "No match_id provided"}), 400
 
     try:
-        # Leer los datos de matches.json para obtener el archivo JSON correspondiente
         with open(matches_json_path, 'r') as f:
             matches = json.load(f)
         match = next((m for m in matches if m['ID_MATCH'] == int(match_id)), None)
         if not match:
             return jsonify({"error": "Match not found"}), 404
 
-        # Leer el archivo JSON de eventos correspondiente
         events_json_path = os.path.join(UPLOAD_FOLDER, f"{match['JSON']}")
         print(f"Buscando archivo en: {events_json_path}")
         if not os.path.exists(events_json_path):
@@ -99,22 +87,17 @@ def get_events():
         with open(events_json_path, 'r') as f:
             events = json.load(f)
 
-        # Procesar los eventos para agregar campos adicionales
         columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 
                               'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 
                               'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 
                               'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 
                               'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN', 'YELLOW-CARD', 'RED-CARD']
 
-        # Convertir los eventos a un DataFrame para procesarlos
         df = pd.DataFrame(events)
-
-        # Asegúrate de que todas las columnas existan en el DataFrame
         for column in columns_to_include:
             if column not in df.columns:
                 df[column] = None
 
-        # Calcular tiempos clave del partido
         def safe_second(val):
             if val is None or (isinstance(val, float) and math.isnan(val)):
                 return 0
@@ -132,7 +115,6 @@ def get_events():
                 return (fin_1 - kick_off_1) + (second - kick_off_2)
             return None
 
-        # Definir los grupos de tiempo
         timeGroups = [
             {"label": "0'- 20'", "start": 0, "end": 20 * 60},
             {"label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1)},
@@ -140,7 +122,6 @@ def get_events():
             {"label": "60' - 80'", "start": calcular_tiempo_de_juego(kick_off_2) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2)}
         ]
 
-        # Procesar cada evento
         for event in events:
             if 'SECOND' in event and event['SECOND'] is not None:
                 minutes, seconds = divmod(int(event['SECOND']), 60)
@@ -157,32 +138,24 @@ def get_events():
                     event['Game_Time'] = None
                     event['Time_Group'] = None
 
-        # Procesar el video (puede ser una URL o un ID de YouTube)
         video_url = match.get('VIDEO', '')
         if video_url and not video_url.startswith('http'):
-            # Si no es una URL, asumimos que es un ID de YouTube
             video_url = f"https://www.youtube.com/watch?v={video_url}"
 
         print(f"Video URL enviado al frontend: {video_url}")
-        # Devolver los datos del partido y los eventos
         return jsonify({"header": {**match, "video_url": video_url}, "events": events}), 200
 
     except Exception as e:
         print(f"Error en get_events: {e}")
         return jsonify({"error": str(e)}), 500
-    
-
 
 @app.route('/events/multi', methods=['GET'])
 def get_events_multi():
     match_ids = request.args.getlist('match_id', type=int)
     all_events = []
 
-    # Convierte el DataFrame a lista de dicts
-    if isinstance(df_partidos, pd.DataFrame):
-        partidos_list = df_partidos.to_dict(orient='records')
-    else:
-        partidos_list = df_partidos  # Si ya es lista
+    df_partidos = load_df_partidos()
+    partidos_list = df_partidos.to_dict(orient='records') if isinstance(df_partidos, pd.DataFrame) else df_partidos
 
     for match_id in match_ids:
         match = next((m for m in partidos_list if m['ID_MATCH'] == match_id), None)
@@ -202,15 +175,16 @@ def get_events_multi():
 
 @app.route('/events/table', methods=['GET'])
 def events_table():
+    df = load_df()
     if df.empty:
         return "<h1>No data available</h1>", 404
     
     # Obtiene los parámetros de filtro de la solicitud
     category = request.args.get('category')
     player = request.args.get('player')
-    
+
     filtered_df = df
-    
+
     if category:
         filtered_df = filtered_df[filtered_df['CATEGORY'] == category]
     if player:

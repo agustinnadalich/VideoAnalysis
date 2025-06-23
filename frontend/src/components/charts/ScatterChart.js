@@ -190,6 +190,19 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
     return null; // Manejar el caso donde events o columnsToTooltip es undefined o está vacío
   }
 
+  const validEvents = events.filter((event) => {
+    const x = parseFloat(event["COORDINATE_X"]);
+    const y = parseFloat(event["COORDINATE_Y"]);
+    return (
+      !isNaN(x) &&
+      !isNaN(y) &&
+      event.CATEGORY !== "DEFENCE" &&
+      event.CATEGORY !== "ATTACK" &&
+      event.CATEGORY !== "SHORT-MATCH"
+    );
+  });
+  console.log("Eventos válidos para scatter:", validEvents.length, validEvents);
+
   return <Scatter data={scatterChartData} options={scatterChartOptions} width={800} height={600} />;
 };
 

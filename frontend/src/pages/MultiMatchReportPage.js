@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import MultiMatchHeader from "../components/MultiMatchHeader";
 import Charts from "../components/New-charts";
 import Carousel from "../components/Carousel";
-
 import VideoPlayer from "../components/VideoPlayer";
-import FilterContext from "../context/FilterContext";
 
 const MultiMatchReportPage = () => {
   const location = useLocation();
@@ -13,6 +11,7 @@ const MultiMatchReportPage = () => {
   const [selectedMatchIds, setSelectedMatchIds] = useState([]);
   const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
+  const [filterDescriptors, setFilterDescriptors] = useState([]);
   const [videoSrc, setVideoSrc] = useState("");
   const [currentEvent, setCurrentEvent] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -38,8 +37,14 @@ const MultiMatchReportPage = () => {
       const params = selectedMatchIds.map(id => `match_id=${id}`).join('&');
       const res = await fetch(`http://localhost:5001/events/multi?${params}`);
       const data = await res.json();
-      setAllEvents(data.events);
-      setFilteredEvents(data.events);
+      const normalizedEvents = data.events.map(ev => ({
+        ...ev,
+        COORDINATE_X: ev.COORDINATE_X !== null && ev.COORDINATE_X !== undefined && ev.COORDINATE_X !== "" ? Number(ev.COORDINATE_X) : null,
+        COORDINATE_Y: ev.COORDINATE_Y !== null && ev.COORDINATE_Y !== undefined && ev.COORDINATE_Y !== "" ? Number(ev.COORDINATE_Y) : null,
+      }));
+      setAllEvents(normalizedEvents);
+      setFilteredEvents(normalizedEvents); // Inicialmente sin filtros
+      setFilterDescriptors([]); // Limpiar filtros al cambiar partidos
     };
     fetchAllEvents();
   }, [selectedMatchIds]);
@@ -62,54 +67,69 @@ const MultiMatchReportPage = () => {
 
   // 4. Handler para reproducir evento (elige el video correcto)
   const handleEventClick = (event) => {
-    setVideoSrc(event.VIDEO);
+    setVideoSrc(event?.VIDEO || "");
     setCurrentEvent(event);
   };
 
+  // 5. Aplica los filtros cada vez que cambian los filtros o los eventos base
+  useEffect(() => {
+    if (filterDescriptors.length === 0) {
+      setFilteredEvents(allEvents);
+      return;
+    }
+    let result = allEvents;
+    filterDescriptors.forEach(({ descriptor, value }) => {
+      result = result.filter(ev => ev[descriptor] === value);
+    });
+    setFilteredEvents(result);
+  }, [allEvents, filterDescriptors]);
+
+  // Handler para aplicar filtros desde los charts
+  const handleApplyFilter = useCallback((descriptor, value) => {
+    setFilterDescriptors((prev) => [...prev, { descriptor, value }]);
+  }, []);
+
+  // Handler para limpiar filtros (puedes llamarlo desde la UI si lo necesitas)
+  const handleClearFilters = useCallback(() => {
+    setFilterDescriptors([]);
+  }, []);
+
   return (
-    <FilterContext.Provider value={{
-      filterCategory: [],
-      setFilterCategory: () => {},
-      filterDescriptors: [],
-      setFilterDescriptors: () => {},
-      selectedTeam: null,
-      setSelectedTeam: () => {},
-      events: allEvents,
-      setEvents: () => {},
-      filteredEvents,
-      setFilteredEvents,
-      matchInfo: {},
-      setMatchInfo: () => {},
-    }}>
-      <div>
-        <MultiMatchHeader
-          matches={matches}
-          selectedMatchIds={selectedMatchIds}
-          onToggleMatch={handleToggleMatch}
-        />
-        <div style={{ margin: "20px 0" }}>
-          {currentEvent && (
-            <VideoPlayer
-              src={videoSrc}
-              tempTime={currentEvent.SECOND}
-              duration={currentEvent.DURATION}
-              isPlayingFilteredEvents={false}
-              onTimeUpdate={() => {}}
-              onEnd={() => {}}
-              onStop={() => setCurrentEvent(null)}
-              onNext={() => {}}
-              onPrevious={() => {}}
-              onPlayFilteredEvents={() => {}}
-            />
-          )}
-        </div>
-        <div className="charts-container">
-          <Charts
-            onEventClick={handleEventClick}
+    <div>
+      <MultiMatchHeader
+        matches={matches}
+        selectedMatchIds={selectedMatchIds}
+        onToggleMatch={handleToggleMatch}
+      />
+      <div style={{ margin: "20px 0" }}>
+        {currentEvent && (
+          <VideoPlayer
+            src={videoSrc}
+            tempTime={currentEvent.SECOND}
+            duration={currentEvent.DURATION}
+            isPlayingFilteredEvents={false}
+            onTimeUpdate={() => {}}
+            onEnd={() => {}}
+            onStop={() => setCurrentEvent(null)}
+            onNext={() => {}}
+            onPrevious={() => {}}
+            onPlayFilteredEvents={() => {}}
           />
-        </div>
+        )}
       </div>
-    </FilterContext.Provider>
+      <div className="charts-container">
+        <Charts
+          events={allEvents}
+          filteredEvents={filteredEvents}
+          setFilteredEvents={setFilteredEvents}
+          filterDescriptors={filterDescriptors}
+          setFilterDescriptors={setFilterDescriptors}
+          onEventClick={handleEventClick}
+          onApplyFilter={handleApplyFilter}
+          onClearFilters={handleClearFilters}
+        />
+      </div>
+    </div>
   );
 };
 

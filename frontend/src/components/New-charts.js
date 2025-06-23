@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Chart,
   registerables,
@@ -65,20 +65,21 @@ const initialResponse = {
   header: {}, // Aquí puedes agregar la información del partido inicial si la tienes
 };
 
-const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
-  const {
-    filterCategory,
-    setFilterCategory,
-    filterDescriptors,
-    selectedTeam,
-    events,
-    filteredEvents,
-    setFilteredEvents,
-    setFilterDescriptors,
-  } = useContext(FilterContext);
+const Charts = ({
+  events,
+  filteredEvents,
+  setFilteredEvents,
+  filterDescriptors,
+  setFilterDescriptors,
+  onEventClick,
+  onPlayFilteredEvents,
+  currentTime,
+}) => {
   const [error, setError] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [filterCategory, setFilterCategory] = useState([]); // <--- Agregado
+  const [selectedTeam, setSelectedTeam] = useState(null);   // <--- Agregado
   const carouselRef = useRef(null);
 
   const uniqueCategories = useMemo(() => [
@@ -358,7 +359,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
   };
 
   return (
-    <FilterProvider initialResponse={initialResponse}>
+    // <FilterProvider initialResponse={initialResponse}>
       <div
         className="charts"
         style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
@@ -463,7 +464,7 @@ const Charts = ({ onEventClick, onPlayFilteredEvents, currentTime }) => {
           }
         `}</style> */}
       </div>
-    </FilterProvider>
+    // </FilterProvider>
   );
 };
 

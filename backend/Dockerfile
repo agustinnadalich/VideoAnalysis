@@ -8,14 +8,16 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Instala el paquete openai
-RUN pip install openai
-
 # Copia el resto del código de la aplicación al contenedor
 COPY . .
 
 # Expone el puerto en el que la aplicación se ejecutará
 EXPOSE 5001
 
+# Variables de entorno para Flask
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_PORT=5001
+
 # Comando para ejecutar la aplicación
-CMD ["python", "app.py"]
+CMD ["flask", "run"]
