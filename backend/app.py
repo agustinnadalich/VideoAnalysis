@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string, g
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -6,6 +6,13 @@ import pandas as pd
 import json
 import openai
 import math
+from db import Base, engine, get_db, SessionLocal
+from models import Club, ImportProfile  # importa solo lo necesario
+from werkzeug.utils import secure_filename
+from importer import import_match_from_excel
+from normalizer import normalize_excel_to_json
+
+
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
@@ -13,7 +20,11 @@ load_dotenv()
 # Configura tu clave de API de OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
+Base.metadata.create_all(bind=engine)
+
 CORS(app, resources={r"/*": {"origins": "*"}})
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 UPLOAD_FOLDER = '/app/uploads/'
 matches_json_path = os.path.join(UPLOAD_FOLDER, 'matches.json')
@@ -35,6 +46,38 @@ def load_df_partidos():
             return pd.DataFrame(json.load(f))
     except Exception:
         return pd.DataFrame()
+    
+
+# @app.route('/import', methods=['POST'])
+# def import_file():
+#     if 'file' not in request.files:
+#         return {"error": "No file provided"}, 400
+
+#     file = request.files['file']
+#     if file.filename == '':
+#         return {"error": "Empty filename"}, 400
+
+#     filename = secure_filename(file.filename)
+#     save_path = os.path.join(UPLOAD_FOLDER, filename)
+#     file.save(save_path)
+
+#     # Perfil de importación por defecto (se podrá personalizar más adelante)
+#     profile = {
+#         "events_sheet": "MATRIZ",
+#         "meta_sheet": "MATCHES",
+#         "col_event_type": "CATEGORY",
+#         "col_player": "PLAYER",
+#         "col_time": "SECOND",
+#         "col_x": "COORDINATE_X",
+#         "col_y": "COORDINATE_Y"
+#     }
+
+#     try:
+#         import_match_from_excel(save_path, profile)
+#         return {"message": "Archivo importado correctamente"}, 200
+#     except Exception as e:
+#         return {"error": str(e)}, 500
+
 
 # Función para calcular el origen de los tries
 def calcular_origen_tries(df):
@@ -460,6 +503,165 @@ def analyze_events():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/clubs', methods=['GET', 'POST'])
+def manage_clubs():
+    db = next(get_db())
+
+    if request.method == 'POST':
+        data = request.get_json()
+        name = data.get("name")
+        if not name:
+            return jsonify({"error": "Nombre requerido"}), 400
+
+        existing = db.query(Club).filter_by(name=name).first()
+        if existing:
+            return jsonify({"message": "Ya existe"}), 200
+
+        new_club = Club(name=name)
+        db.add(new_club)
+        db.commit()
+        return jsonify({"message": "Club creado"}), 201
+
+    else:
+        clubs = db.query(Club).all()
+        return jsonify([{"id": c.id, "name": c.name} for c in clubs])
+    
+@app.route('/profiles', methods=['POST'])
+def create_profile():
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description', '')
+    settings = data.get('settings')
+
+    if not name or not settings:
+        return jsonify({"error": "Faltan 'name' o 'settings'"}), 400
+
+    db = SessionLocal()
+    try:
+        existing = db.query(ImportProfile).filter_by(name=name).first()
+        if existing:
+            return jsonify({"error": "Perfil ya existe"}), 409
+
+        profile = ImportProfile(name=name, description=description, settings=settings)
+        db.add(profile)
+        db.commit()
+        return jsonify({"message": "Perfil creado"}), 201
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/profiles', methods=['GET'])
+def list_profiles():
+    db = SessionLocal()
+    try:
+        profiles = db.query(ImportProfile).all()
+        return jsonify([
+            {
+                "name": p.name,
+                "description": p.description,
+                "settings": p.settings
+            } for p in profiles
+        ])
+    finally:
+        db.close()
+
+@app.route('/profiles/<name>', methods=['GET'])
+def get_profile(name):
+    db = SessionLocal()
+    try:
+        profile = db.query(ImportProfile).filter_by(name=name).first()
+        if not profile:
+            return jsonify({"error": "Perfil no encontrado"}), 404
+        return jsonify({
+            "name": profile.name,
+            "description": profile.description,
+            "settings": profile.settings
+        })
+    finally:
+        db.close()
+
+
+@app.route('/import', methods=['POST'])
+def import_file():
+    if 'file' not in request.files:
+        return {"error": "No file provided"}, 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return {"error": "Empty filename"}, 400
+
+    filename = secure_filename(file.filename)
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(save_path)
+
+    # Obtener perfil por nombre desde query param ?profile=nombre
+    profile_name = request.args.get("profile")
+    db = SessionLocal()
+    try:
+        if not profile_name:
+            return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
+
+        profile = db.query(ImportProfile).filter_by(name=profile_name).first()
+        if not profile:
+            return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
+
+        import_match_from_excel(save_path, profile.settings)
+        return {"message": f"Archivo importado usando perfil '{profile_name}'"}, 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+    finally:
+        db.close()
+
+
+
+@app.route('/preview', methods=['POST'])
+def preview_file():
+    if 'file' not in request.files:
+        return {"error": "No file provided"}, 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return {"error": "Empty filename"}, 400
+
+    filename = secure_filename(file.filename)
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(save_path)
+
+    profile_name = request.args.get("profile")
+    if not profile_name:
+        return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
+
+    db = SessionLocal()
+    try:
+        profile = db.query(ImportProfile).filter_by(name=profile_name).first()
+        if not profile:
+            return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
+
+        result = normalize_excel_to_json(save_path, profile.settings)
+        if not result or "match" not in result or "events" not in result:
+            return {"error": "Archivo inválido o sin datos"}, 400
+
+        match = result["match"]
+        events = result["events"]
+        event_types = sorted(set(str(ev.get("event_type", "Desconocido")) for ev in events))
+        players = sorted(set(str(ev.get("player")) for ev in events if ev.get("player")))
+
+        return jsonify({
+            "match_info": match,
+            "event_count": len(events),
+            "event_types": event_types,
+            "players": players
+        }), 200
+
+    except Exception as e:
+        return {"error": str(e)}, 500
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)

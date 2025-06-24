@@ -1,5 +1,5 @@
 # Usa una imagen base de Python
-FROM python:3.8
+FROM python:3.11
 
 # Establece el directorio de trabajo en el contenedor
 WORKDIR /app
@@ -20,4 +20,4 @@ ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5001
 
 # Comando para ejecutar la aplicación
-CMD ["flask", "run"]
+CMD ["python", "-m", "flask", "run"]
