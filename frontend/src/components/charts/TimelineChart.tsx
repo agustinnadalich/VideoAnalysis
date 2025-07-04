@@ -186,17 +186,25 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
       setFilterCategory([...filterCategory, category]);
     }
   };
-
+  
+  const dynamicHeight = Math.min(30, Math.max(16, 150 / categories.length));
+  console.log("Dynamic Height:", dynamicHeight);
+  const chartHeight = Math.min(400,Math.max(100, categories.length * dynamicHeight * 2)); // Altura mínima de 200px, ajustada por la cantidad de categorías
+  console.log("Chart Height:", chartHeight);
   return (
     <div className="w-full">
       <div
         ref={chartRef}
         className="overflow-x-auto"
-        style={{ height: `${Math.max(120, categories.length * 38)}px` }}
+        // style={{ height: `${Math.max(120, categories.length * 20)}px` }}
+        style={{
+          height: `${chartHeight}px`, // Altura dinámica del gráfico
+        }}
       >
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" />
+            {/* <CartesianGrid strokeDasharray="3 3" /> */}
+            <CartesianGrid />
             <XAxis
               dataKey="timestamp_sec"
               type="number"
@@ -206,6 +214,7 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
             <YAxis
               type="category"
               dataKey="category"
+              interval={0}
               tick={(props: any) => {
                 const { x, y, payload } = props;
                 const value = payload.value;
@@ -222,6 +231,8 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
                       fill="#333"
                       fontSize={10}
                       style={{
+                        margin: 0,
+                        padding: 0,
                         textDecoration: filterCategory.includes(value)
                           ? "underline"
                           : "none",
@@ -233,7 +244,7 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
                   </g>
                 );
               }}
-              width={120}
+              width={60}
               allowDuplicatedCategory={false}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -249,9 +260,9 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
                 return (
                   <rect
                     x={cx}
-                    y={cy - 10}
+                    y={cy - dynamicHeight / 2.1 }
                     width={Math.max(width, minWidth)}
-                    height={20}
+                    height={dynamicHeight}
                     fill={payload.color}
                     rx={1}
                     onClick={() => onEventClick(payload)}
@@ -276,9 +287,18 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
       <div className="px-4 py-2 flex items-center gap-4 flex-wrap">
         <label className="text-sm">Zoom:</label>
         <div className="controls">
-          <Button variant="secondary" onClick={() => handleZoomChange(true)}>+</Button>
-          <Button variant="secondary" onClick={() => handleZoomChange(false)}>-</Button>
-          <Button variant="secondary" onClick={() => setXDomain(initialXDomain)}>Restablecer Zoom</Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(true)}>
+            +
+          </Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(false)}>
+            -
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setXDomain(initialXDomain)}
+          >
+            Restablecer Zoom
+          </Button>
         </div>
         <span>{zoomFactor}x</span>
         <Button variant="secondary" onClick={() => handleScroll("left")}>
