@@ -12,10 +12,10 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-} from "chart.js";
+} from "chart.tsx";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import HeatMap from "./HeatMap"; // Importa el componente HeatMap
-import { Chart, registerables } from "chart.js";
+import { Chart, registerables } from "chart.tsx";
 import zoomPlugin from "chartjs-plugin-zoom";
 
 Chart.register(...registerables);

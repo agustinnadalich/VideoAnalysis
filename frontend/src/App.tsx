@@ -1,23 +1,23 @@
-import React from "react";
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-// import DashboardPage from "./pages/DashboardPage";
-import VideoAnalysisPage from "./pages/VideoAnalysisPage";
-import MultiMatchReportPage from "./pages/MultiMatchReportPage";
+import Home from "./pages/Home"; // si tenés
+import AnalysisPage from "./pages/AnalysisPage";
+import ImportMatch from "@/pages/ImportMatch"; // ajusta el path si es diferente
+import PreviewImport from "@/pages/PreviewImport"; // ajusta el path si es diferente
+import MatchesAdmin from "@/pages/MatchesAdmin"; // ajusta el path si es diferente
 
 
-const App = () => {
+function App() {
   return (
-    <Router>
       <Routes>
-        {/* <Route path="/" element={<DashboardPage />} /> */}
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/video-analysis/:id" element={<VideoAnalysisPage />} />
-        <Route path="/multi-match-report" element={<MultiMatchReportPage />} />
-
+        <Route path="/" element={<Home />} />
+        <Route path="/analysis/:matchId" element={<AnalysisPage />} />
+        <Route path="/match/:matchId" element={<AnalysisPage />} />
+        <Route path="/admin/matches" element={<MatchesAdmin />} />
+        <Route path="/import" element={<ImportMatch />} />
+        <Route path="/preview" element={<PreviewImport />} />
       </Routes>
-    </Router>
   );
-};
+}
 
 export default App;

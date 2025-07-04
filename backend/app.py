@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -7,10 +7,11 @@ import json
 import openai
 import math
 from db import Base, engine, get_db, SessionLocal
-from models import Club, ImportProfile  # importa solo lo necesario
+from models import Club, ImportProfile, Match  # importa solo lo necesario
 from werkzeug.utils import secure_filename
-from importer import import_match_from_excel
-from normalizer import normalize_excel_to_json
+from importer import import_match_from_excel, import_match_from_json
+from normalizer import normalize_excel_to_json, convert_json_safe
+from register_routes import register_routes
 
 
 
@@ -95,126 +96,143 @@ def calcular_origen_tries(df):
     df['TRY_ORIGIN'] = df.apply(lambda event: get_origin_event(event) if event['POINTS'] == "TRY" else None, axis=1)
     return df
 
-@app.route('/matches', methods=['GET'])
-def get_matches():
-    try:
-        with open(matches_json_path, 'r') as f:
-            matches = json.load(f)
-        return jsonify({"matches": matches}), 200
-    except FileNotFoundError:
-        return jsonify({"error": "Archivo matches.json no encontrado"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app.route('/api/matches/<int:id>', methods=['PUT'])
+def update_match(id):
+    session = SessionLocal()
+    match = session.query(Match).get(id)
+    if not match:
+        return jsonify({"error": "Match not found"}), 404
 
-@app.route('/events', methods=['GET'])
-def get_events():
-    match_id = request.args.get('match_id')
-    print(f"match_id recibido: {match_id}")
-
-    if not match_id:
-        print("No se proporcionó match_id")
-        return jsonify({"error": "No match_id provided"}), 400
-
-    try:
-        with open(matches_json_path, 'r') as f:
-            matches = json.load(f)
-        match = next((m for m in matches if m['ID_MATCH'] == int(match_id)), None)
-        if not match:
-            return jsonify({"error": "Match not found"}), 404
-
-        events_json_path = os.path.join(UPLOAD_FOLDER, f"{match['JSON']}")
-        print(f"Buscando archivo en: {events_json_path}")
-        if not os.path.exists(events_json_path):
-            return jsonify({"error": f"Archivo JSON {match['JSON']} no encontrado"}), 404
-
-        with open(events_json_path, 'r') as f:
-            events = json.load(f)
-
-        columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 
-                              'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 
-                              'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 
-                              'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 
-                              'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN', 'YELLOW-CARD', 'RED-CARD']
-
-        df = pd.DataFrame(events)
-        for column in columns_to_include:
-            if column not in df.columns:
-                df[column] = None
-
-        def safe_second(val):
-            if val is None or (isinstance(val, float) and math.isnan(val)):
-                return 0
-            return val
-
-        kick_off_1 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 1)]['SECOND'].min())
-        fin_1 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 1)]['SECOND'].max())
-        kick_off_2 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 2)]['SECOND'].min())
-        fin_2 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 2)]['SECOND'].max())
-
-        def calcular_tiempo_de_juego(second):
-            if second <= fin_1:
-                return second - kick_off_1
-            elif second >= kick_off_2:
-                return (fin_1 - kick_off_1) + (second - kick_off_2)
-            return None
-
-        timeGroups = [
-            {"label": "0'- 20'", "start": 0, "end": 20 * 60},
-            {"label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1)},
-            {"label": "40' - 60'", "start": calcular_tiempo_de_juego(kick_off_2), "end": calcular_tiempo_de_juego(kick_off_2) + 20 * 60},
-            {"label": "60' - 80'", "start": calcular_tiempo_de_juego(kick_off_2) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2)}
-        ]
-
-        for event in events:
-            if 'SECOND' in event and event['SECOND'] is not None:
-                minutes, seconds = divmod(int(event['SECOND']), 60)
-                event['TIME(VIDEO)'] = f"{minutes:02}:{seconds:02}"
-                tiempo_de_juego = calcular_tiempo_de_juego(event['SECOND'])
-                if tiempo_de_juego is not None:
-                    tiempo_de_juego_minutes, tiempo_de_juego_seconds = divmod(tiempo_de_juego, 60)
-                    event['Game_Time'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
-                    for group in timeGroups:
-                        if group["start"] <= tiempo_de_juego < group["end"]:
-                            event["Time_Group"] = group["label"]
-                            break
-                else:
-                    event['Game_Time'] = None
-                    event['Time_Group'] = None
-
-        video_url = match.get('VIDEO', '')
-        if video_url and not video_url.startswith('http'):
-            video_url = f"https://www.youtube.com/watch?v={video_url}"
-
-        print(f"Video URL enviado al frontend: {video_url}")
-        return jsonify({"header": {**match, "video_url": video_url}, "events": events}), 200
-
-    except Exception as e:
-        print(f"Error en get_events: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/events/multi', methods=['GET'])
-def get_events_multi():
-    match_ids = request.args.getlist('match_id', type=int)
-    all_events = []
-
-    df_partidos = load_df_partidos()
-    partidos_list = df_partidos.to_dict(orient='records') if isinstance(df_partidos, pd.DataFrame) else df_partidos
-
-    for match_id in match_ids:
-        match = next((m for m in partidos_list if m['ID_MATCH'] == match_id), None)
-        if not match:
+    data = request.json
+    for key, value in data.items():
+        if key == "id":
             continue
-        json_path = os.path.join(UPLOAD_FOLDER, match['JSON'])
-        try:
-            with open(json_path, 'r') as f:
-                events = json.load(f)
-        except Exception:
-            events = []
-        for ev in events:
-            ev['ID_MATCH'] = match_id
-            ev['VIDEO'] = match['VIDEO']
-        all_events.extend(events)
-    return jsonify({"events": all_events})
+        # Solo permite actualizar campos simples
+        if hasattr(match, key) and key != "team":
+            setattr(match, key, value)
+    session.commit()
+    return jsonify(match.to_dict())
+
+# @app.route('/matches', methods=['GET'])
+# def get_matches():
+#     try:
+#         with open(matches_json_path, 'r') as f:
+#             matches = json.load(f)
+#         return jsonify({"matches": matches}), 200
+#     except FileNotFoundError:
+#         return jsonify({"error": "Archivo matches.json no encontrado"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+# @app.route('/events', methods=['GET'])
+# def get_events():
+#     match_id = request.args.get('match_id')
+#     print(f"match_id recibido: {match_id}")
+
+#     if not match_id:
+#         print("No se proporcionó match_id")
+#         return jsonify({"error": "No match_id provided"}), 400
+
+#     try:
+#         with open(matches_json_path, 'r') as f:
+#             matches = json.load(f)
+#         match = next((m for m in matches if m['ID_MATCH'] == int(match_id)), None)
+#         if not match:
+#             return jsonify({"error": "Match not found"}), 404
+
+#         events_json_path = os.path.join(UPLOAD_FOLDER, f"{match['JSON']}")
+#         print(f"Buscando archivo en: {events_json_path}")
+#         if not os.path.exists(events_json_path):
+#             return jsonify({"error": f"Archivo JSON {match['JSON']} no encontrado"}), 404
+
+#         with open(events_json_path, 'r') as f:
+#             events = json.load(f)
+
+#         columns_to_include = ['ID', 'OPPONENT', 'SECOND', 'DURATION', 'CATEGORY', 'TEAM', 'COORDINATE_X', 'COORDINATE_Y', 
+#                               'SECTOR', 'PLAYER', 'SCRUM_RESULT', 'ADVANCE', 'LINE_RESULT', 'LINE_QUANTITY', 'LINE_POSITION', 
+#                               'LINE_THROWER', 'LINE_RECEIVER', 'LINE_PLAY', 'OPPONENT_JUMPER', 'BREAK_TYPE', 'BREAK_CHANNEL', 
+#                               'TURNOVER_TYPE', 'INFRACTION_TYPE', 'KICK_TYPE', 'SQUARE', 'RUCK_SPEED', 'POINTS', 
+#                               'POINTS(VALUE)', 'PERIODS', 'GOAL_KICK', 'TRY_ORIGIN', 'YELLOW-CARD', 'RED-CARD']
+
+#         df = pd.DataFrame(events)
+#         for column in columns_to_include:
+#             if column not in df.columns:
+#                 df[column] = None
+
+#         def safe_second(val):
+#             if val is None or (isinstance(val, float) and math.isnan(val)):
+#                 return 0
+#             return val
+
+#         kick_off_1 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 1)]['SECOND'].min())
+#         fin_1 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 1)]['SECOND'].max())
+#         kick_off_2 = safe_second(df[(df['CATEGORY'] == 'KICK OFF') & (df['PERIODS'] == 2)]['SECOND'].min())
+#         fin_2 = safe_second(df[(df['CATEGORY'] == 'END') & (df['PERIODS'] == 2)]['SECOND'].max())
+
+#         def calcular_tiempo_de_juego(second):
+#             if second <= fin_1:
+#                 return second - kick_off_1
+#             elif second >= kick_off_2:
+#                 return (fin_1 - kick_off_1) + (second - kick_off_2)
+#             return None
+
+#         timeGroups = [
+#             {"label": "0'- 20'", "start": 0, "end": 20 * 60},
+#             {"label": "20' - 40'", "start": 20 * 60, "end": calcular_tiempo_de_juego(fin_1)},
+#             {"label": "40' - 60'", "start": calcular_tiempo_de_juego(kick_off_2), "end": calcular_tiempo_de_juego(kick_off_2) + 20 * 60},
+#             {"label": "60' - 80'", "start": calcular_tiempo_de_juego(kick_off_2) + 20 * 60, "end": calcular_tiempo_de_juego(fin_2)}
+#         ]
+
+#         for event in events:
+#             if 'SECOND' in event and event['SECOND'] is not None:
+#                 minutes, seconds = divmod(int(event['SECOND']), 60)
+#                 event['TIME(VIDEO)'] = f"{minutes:02}:{seconds:02}"
+#                 tiempo_de_juego = calcular_tiempo_de_juego(event['SECOND'])
+#                 if tiempo_de_juego is not None:
+#                     tiempo_de_juego_minutes, tiempo_de_juego_seconds = divmod(tiempo_de_juego, 60)
+#                     event['Game_Time'] = f"{int(tiempo_de_juego_minutes):02}:{int(tiempo_de_juego_seconds):02}"
+#                     for group in timeGroups:
+#                         if group["start"] <= tiempo_de_juego < group["end"]:
+#                             event["Time_Group"] = group["label"]
+#                             break
+#                 else:
+#                     event['Game_Time'] = None
+#                     event['Time_Group'] = None
+
+#         video_url = match.get('VIDEO', '')
+#         if video_url and not video_url.startswith('http'):
+#             video_url = f"https://www.youtube.com/watch?v={video_url}"
+
+#         print(f"Video URL enviado al frontend: {video_url}")
+#         return jsonify({"header": {**match, "video_url": video_url}, "events": events}), 200
+
+#     except Exception as e:
+#         print(f"Error en get_events: {e}")
+#         return jsonify({"error": str(e)}), 500
+
+# @app.route('/events/multi', methods=['GET'])
+# def get_events_multi():
+#     match_ids = request.args.getlist('match_id', type=int)
+#     all_events = []
+
+#     df_partidos = load_df_partidos()
+#     partidos_list = df_partidos.to_dict(orient='records') if isinstance(df_partidos, pd.DataFrame) else df_partidos
+
+#     for match_id in match_ids:
+#         match = next((m for m in partidos_list if m['ID_MATCH'] == match_id), None)
+#         if not match:
+#             continue
+#         json_path = os.path.join(UPLOAD_FOLDER, match['JSON'])
+#         try:
+#             with open(json_path, 'r') as f:
+#                 events = json.load(f)
+#         except Exception:
+#             events = []
+#         for ev in events:
+#             ev['ID_MATCH'] = match_id
+#             ev['VIDEO'] = match['VIDEO']
+#         all_events.extend(events)
+#     return jsonify({"events": all_events})
 
 @app.route('/events/table', methods=['GET'])
 def events_table():
@@ -269,32 +287,6 @@ def events_table():
     """
     return render_template_string(html)
 
-@app.route('/convert_excel_to_json', methods=['GET'])
-def convert_excel_to_json():
-    # Aqui debajo se debe colocar el nombre del archivo Excel que se debe ubicar en backend/uploads 
-    # y luego entrar a la ruta http://localhost:5001/convert_excel_to_json para que se creen los archivos JSON
-    file_path = os.path.join(UPLOAD_FOLDER, 'Matriz_San_Benedetto_24-25_(ENG).xlsx')
-    if not os.path.exists(file_path):
-        return jsonify({"error": "Archivo Excel no encontrado"}), 404
-
-    try:
-        df = pd.read_excel(file_path, sheet_name='MATRIZ')
-        df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
-
-        # Convierte los DataFrames a JSON
-        df_json = df.to_json(orient='records')
-        df_partidos_json = df_partidos.to_json(orient='records')
-
-        # Guarda los JSON en archivos
-        with open(os.path.join(UPLOAD_FOLDER, 'matriz.json'), 'w') as f:
-            f.write(df_json)
-        with open(os.path.join(UPLOAD_FOLDER, 'matches.json'), 'w') as f:
-            f.write(df_partidos_json)
-
-        return jsonify({"message": "Conversion successful"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
     
 @app.route('/convert_excel_to_json_2', methods=['GET'])
 def convert_excel_to_json_2():
@@ -527,7 +519,7 @@ def manage_clubs():
         clubs = db.query(Club).all()
         return jsonify([{"id": c.id, "name": c.name} for c in clubs])
     
-@app.route('/profiles', methods=['POST'])
+@app.route('/api/import/profiles', methods=['POST'])
 def create_profile():
     data = request.get_json()
     name = data.get('name')
@@ -553,7 +545,7 @@ def create_profile():
     finally:
         db.close()
 
-@app.route('/profiles', methods=['GET'])
+@app.route('/api/import/profiles', methods=['GET'])
 def list_profiles():
     db = SessionLocal()
     try:
@@ -568,7 +560,7 @@ def list_profiles():
     finally:
         db.close()
 
-@app.route('/profiles/<name>', methods=['GET'])
+@app.route('/api/import/profiles/<name>', methods=['GET'])
 def get_profile(name):
     db = SessionLocal()
     try:
@@ -584,7 +576,7 @@ def get_profile(name):
         db.close()
 
 
-@app.route('/import', methods=['POST'])
+@app.route('/api/import', methods=['POST'])
 def import_file():
     if 'file' not in request.files:
         return {"error": "No file provided"}, 400
@@ -618,7 +610,7 @@ def import_file():
 
 
 
-@app.route('/preview', methods=['POST'])
+@app.route('/api/import/preview', methods=['POST'])
 def preview_file():
     if 'file' not in request.files:
         return {"error": "No file provided"}, 400
@@ -642,7 +634,10 @@ def preview_file():
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
 
         result = normalize_excel_to_json(save_path, profile.settings)
+        # print("📦 Resultado normalizer:", result)
+
         if not result or "match" not in result or "events" not in result:
+            # print("❌ Archivo inválido o sin datos:", result)
             return {"error": "Archivo inválido o sin datos"}, 400
 
         match = result["match"]
@@ -650,18 +645,41 @@ def preview_file():
         event_types = sorted(set(str(ev.get("event_type", "Desconocido")) for ev in events))
         players = sorted(set(str(ev.get("player")) for ev in events if ev.get("player")))
 
-        return jsonify({
+        # print("✔ Resultado del normalizador:", result)
+        # print("✔ Keys del resultado:", result.keys() if result else "Resultado vacío")
+
+        response_data = {
             "match_info": match,
+            "events": events,
             "event_count": len(events),
             "event_types": event_types,
             "players": players
-        }), 200
+        }
+        return Response(
+            json.dumps(convert_json_safe(response_data)),
+            mimetype='application/json'
+        ), 200
 
     except Exception as e:
         return {"error": str(e)}, 500
     finally:
         db.close()
 
+@app.route("/api/save_match", methods=["POST"])
+def save_match():
+    data = request.get_json()
+    if not data or "match" not in data or "events" not in data:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    try:
+        import_match_from_json(data)  # debes tener ya esta función
+        return jsonify({"message": "Importación exitosa"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+register_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)

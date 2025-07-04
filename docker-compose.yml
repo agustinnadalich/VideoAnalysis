@@ -4,13 +4,13 @@ services:
       context: ./frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-    working_dir: /app
-    command: npm start
+    # volumes:
+    #   - ./frontend:/app
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
+
+
 
   backend:
     build:

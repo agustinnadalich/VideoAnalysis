@@ -3,13 +3,13 @@ import { useParams, useNavigate } from "react-router-dom"; // Cambia esta línea
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faExternalLinkAlt, faStepBackward, faStepForward, faChevronLeft, faFilter, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import VideoPlayer from "../components/VideoPlayer.js";
-import Charts from "../components/New-charts.js";
-import MatchReportLeft from "../components/MatchReportLeft.js";
-import MatchReportRight from "../components/MatchReportRight.js";
-import Header from "../components/Header.js";
-import Sidebar from "../components/Sidebar.js";
-import FilterProvider from "../context/FilterProvider.js";
+import VideoPlayer from "../components/VideoPlayer.tsx";
+import Charts from "../components/Charts.tsx";
+import MatchReportLeft from "../components/MatchReportLeft.tsx";
+import MatchReportRight from "../components/MatchReportRight.tsx";
+import Header from "../components/Header.tsx";
+import Sidebar from "../components/Sidebar.tsx";
+import FilterProvider from "../context/FilterProvider.tsx";
 import './VideoAnalysisPage.css';
 
 library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter, faSpinner);

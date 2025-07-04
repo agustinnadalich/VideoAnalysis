@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float, Text, JSON
 from sqlalchemy.orm import relationship
 from db import Base
@@ -64,9 +63,32 @@ class Match(Base):
     date = Column(Date)
     location = Column(String(100))
     video_url = Column(Text)
+    competition = Column(String(100))
+    round = Column(String(50))
+    field = Column(String(100))
+    rain = Column(String(20))
+    muddy = Column(String(20))
+    wind_1p = Column(String(20))
+    wind_2p = Column(String(20))
+    referee = Column(String(100))
+    result = Column(String) 
 
     team = relationship("Team", back_populates="matches")
     events = relationship("Event", back_populates="match")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "team_id": self.team_id,
+            "opponent_name": self.opponent_name,
+            "date": self.date.isoformat() if self.date else None,
+            "location": self.location,
+            "competition": self.competition,
+            "round": self.round,
+            "result": self.result,
+            "video_url": self.video_url,
+            # ...otros campos simples...
+        }
 
 
 class Event(Base):
@@ -86,9 +108,11 @@ class Event(Base):
     notes = Column(Text)
     extra_data = Column(JSONB)  # <- esta es la línea clave
 
-
     match = relationship("Match", back_populates="events")
     player = relationship("Player", back_populates="events")
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 class EventType(Base):
@@ -113,6 +137,7 @@ class EventTypeTranslation(Base):
     synonyms = Column(Text)
 
     event_type = relationship("EventType", back_populates="translations")
+
 
 class ImportProfile(Base):
     __tablename__ = "import_profiles"

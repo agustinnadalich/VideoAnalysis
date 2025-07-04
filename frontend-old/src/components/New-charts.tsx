@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-} from "chart.js";
+} from "chart.tsx";
 import zoomPlugin from "chartjs-plugin-zoom";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import FilterContext from "../context/FilterContext";

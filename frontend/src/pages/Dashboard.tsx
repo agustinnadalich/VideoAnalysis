@@ -1,44 +1,89 @@
 // src/pages/Dashboard.tsx
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import Layout from '@/components/layout/Layout'
-import { useQuery } from '@tanstack/react-query'
-import { fetchEvents } from '@/lib/api'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Layout from '../components/layout/Layout'
+import { Button } from '../components/ui/OLDButton'
+import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+
+type Match = {
+  ID_MATCH: number
+  TEAM: string
+  OPPONENT: string
+  DATE: string
+  COMPETITION: string
+}
 
 export default function Dashboard() {
-  const matchId = 1;
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['events', matchId],
-    queryFn: () => fetchEvents(matchId)
-  });
+  const [matches, setMatches] = useState<Match[]>([])
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const navigate = useNavigate()
 
-  // Agrupa eventos por categoría y cuenta cuántos hay de cada una
-  const chartData = data
-    ? Object.entries(
-        data.events.reduce((acc, ev) => {
-          acc[ev.CATEGORY] = (acc[ev.CATEGORY] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-      ).map(([name, value]) => ({ name, value }))
-    : [];
+  useEffect(() => {
+    fetch('http://localhost:5001/matches')
+      .then(res => res.json())
+      .then(data => setMatches(data.matches || []))
+  }, [])
+
+  const toggleMatch = (id: number) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    )
+  }
+
+  const goToMultiMatch = () => {
+    const query = selectedIds.map(id => `match_id=${id}`).join('&')
+    navigate(`/multi-match-report?${query}`)
+  }
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-4">Gráfico de Fases</h1>
-      <div className="w-full h-64 bg-white rounded-xl shadow p-4">
-        {isLoading ? (
-          <div>Cargando...</div>
-        ) : error ? (
-          <div>Error al cargar datos</div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+      <h1 className="text-2xl font-bold mb-4">San Benedetto Video Analysis</h1>
+      <h2 className="mb-6 text-lg text-gray-700">Selecciona partidos para el reporte MultiMatch</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {matches.map(match => (
+            <Card key={match.ID_MATCH}>
+                <CardHeader>
+                <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+                    {match.TEAM} <span className="text-gray-500">vs</span> {match.OPPONENT}
+                </h2>
+                </CardHeader>
+                <CardContent>
+                <div className="text-sm text-gray-600 space-y-1">
+                    <p><span className="font-medium">Fecha:</span> {new Date(match.DATE).toLocaleDateString()}</p>
+                    <p><span className="font-medium">Competición:</span> {match.COMPETITION}</p>
+                </div>
+
+                <label className="mt-4 flex items-center gap-2 text-sm">
+                    <input
+                    type="checkbox"
+                    checked={selectedIds.includes(match.ID_MATCH)}
+                    onChange={() => toggleMatch(match.ID_MATCH)}
+                    className="accent-blue-600 w-4 h-4"
+                    />
+                    Seleccionar para MultiMatch
+                </label>
+                </CardContent>
+                <CardFooter>
+                <button
+                    className="w-full bg-blue-600 text-white font-medium rounded-xl px-4 py-2 hover:bg-blue-700 transition"
+                    onClick={() => navigate(`/video-analysis/${match.ID_MATCH}`, { state: { match } })}
+                >
+                    Ver análisis individual
+                </button>
+                </CardFooter>
+            </Card>
+        ))}
+
+      </div>
+
+      <div className="mt-6 text-center">
+        <Button
+          onClick={goToMultiMatch}
+          disabled={selectedIds.length === 0}
+        >
+          Ver Reporte MultiMatch
+        </Button>
       </div>
     </Layout>
   )

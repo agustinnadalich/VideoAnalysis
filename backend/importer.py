@@ -51,8 +51,18 @@ def import_match_from_excel(excel_path: str, profile: dict):
             opponent_name=match_info["opponent"],
             date=match_date,
             location=match_info.get("location", "Desconocido"),
-            video_url=""
+            video_url=match_info.get("video_url", ""),
+            competition=match_info.get("competition"),
+            round=match_info.get("round"),
+            field=match_info.get("field"),
+            rain=match_info.get("rain"),
+            muddy=match_info.get("muddy"),
+            wind_1p=match_info.get("wind_1p"),
+            wind_2p=match_info.get("wind_2p"),
+            referee=match_info.get("referee"),
+            result=match_info.get("result")
         )
+
         db.add(match)
         db.commit()
         print(f"✅ Partido creado: vs {match.opponent_name} en {match.location}")
@@ -105,6 +115,106 @@ def import_match_from_excel(excel_path: str, profile: dict):
     finally:
         db.close()
 
+
+def import_match_from_json(data: dict):
+    db = SessionLocal()
+    try:
+        match_data = data.get("match")
+        events_data = data.get("events")
+
+        if not match_data or not events_data:
+            raise ValueError("Faltan datos de partido o eventos")
+
+        team_name = match_data.get("team", "Equipo Desconocido")
+
+        # Crear o buscar club
+        club = db.query(Club).filter_by(name=team_name).first()
+        if not club:
+            club = Club(name=team_name)
+            db.add(club)
+            db.commit()
+
+        # Crear o buscar equipo
+        team = db.query(Team).filter_by(name=team_name, club_id=club.id).first()
+        if not team:
+            season = str(match_data.get("date", "")).split("-")[0]
+            team = Team(name=team_name, club_id=club.id, category="Senior", season=season)
+            db.add(team)
+            db.commit()
+
+        # Crear partido
+        match_date = match_data.get("date")
+        if isinstance(match_date, str):
+            match_date = datetime.strptime(match_date, "%Y-%m-%d").date()
+
+        match = Match(
+            team_id=team.id,
+            opponent_name=match_data.get("opponent"),
+            date=match_date,
+            location=match_data.get("location"),
+            competition=match_data.get("competition"),
+            round=match_data.get("round"),
+            field=match_data.get("field"),
+            rain=match_data.get("rain"),
+            muddy=match_data.get("muddy"),
+            wind_1p=match_data.get("wind_1p"),
+            wind_2p=match_data.get("wind_2p"),
+            referee=match_data.get("referee"),
+            video_url=match_data.get("video"),
+            result=match_data.get("result")
+        )
+        db.add(match)
+        db.commit()
+
+        player_cache = {}
+
+        for ev in events_data:
+            player_name = str(ev.get("player", "Desconocido")).strip()
+
+            if player_name not in player_cache:
+                player = db.query(Player).filter_by(full_name=player_name).first()
+                if not player:
+                    player = Player(full_name=player_name)
+                    db.add(player)
+                    db.commit()
+                player_cache[player_name] = player
+            else:
+                player = player_cache[player_name]
+
+            # Sanear valores
+            x = ev.get("x")
+            x = None if x is None or (isinstance(x, float) and math.isnan(x)) else x
+            y = ev.get("y")
+            y = None if y is None or (isinstance(y, float) and math.isnan(y)) else y
+            ts = ev.get("timestamp_sec")
+            ts = int(ts) if ts is not None and not math.isnan(ts) else 0
+
+            event = Event(
+                match_id=match.id,
+                player_id=player.id,
+                event_type=ev.get("event_type"),
+                timestamp_sec=ts,
+                x=x,
+                y=y,
+                extra_data=clean_extra_data(ev.get("extra_data", {})),
+                tag=ev.get("tag"),
+                phase=ev.get("phase"),
+                origin=ev.get("origin"),
+                outcome=ev.get("outcome"),
+                notes=ev.get("notes")
+            )
+            db.add(event)
+
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+
+
+
 # Ejemplo de uso directo
 if __name__ == "__main__":
     profile = {
@@ -117,7 +227,6 @@ if __name__ == "__main__":
         "col_y": "COORDINATE_Y",
         "team": "Pescara Rugby"
     }
-
     import_match_from_excel("uploads/SERIE_B_PRATO_match_2.xlsx", profile)
 
 
