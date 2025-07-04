@@ -59,7 +59,7 @@ const AnalysisPageContent = () => {
         >
           <FiX size={22} />
         </button>
-        <Sidebar />
+        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       </div>
 
       {/* Main content */}

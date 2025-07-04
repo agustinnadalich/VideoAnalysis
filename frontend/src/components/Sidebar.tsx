@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { useMatches } from "@/hooks/useMatches";
 import { useContext } from "react";
 import { usePlayback } from "@/context/PlaybackContext";
+import { FiX } from "react-icons/fi";
 
 
-const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
+
+const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSidebarOpen: (open: boolean) => void }) => {
   const {
     events,
     filterDescriptors,
@@ -113,6 +115,8 @@ const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
   // console.log("Selected Descriptor:", selectedDescriptor);
   const [availableValues, setAvailableValues] = useState<string[]>([]);
   const [selectedValue, setSelectedValue] = useState<string>("");
+
+
 
   useEffect(() => {
     if (selectedDescriptor) {
@@ -294,11 +298,9 @@ const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
         {/* Encabezado con botón de cerrar */}
         <div className="flex justify-between items-center">
           <h2 className="font-bold text-lg">Filtros</h2>
-          {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              ✕
-            </Button>
-          )}
+          <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+            <FiX size={22} />
+          </Button>
         </div>
 
         <div className="space-y-2">
@@ -338,7 +340,7 @@ const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
             </select>
           </div>
 
-         {selectedDescriptor && descriptorValues.length > 0 && (
+          {selectedDescriptor && descriptorValues.length > 0 && (
             <div className="mt-4">
               <label className="block text-sm font-medium mb-1">
                 {selectedDescriptor === "player_name" ? "Jugadores" : "Valores"}
@@ -346,11 +348,13 @@ const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
               <select
                 className="w-full border rounded px-2 py-1"
                 value={selectedValue}
-                onChange={e => setSelectedValue(e.target.value)}
+                onChange={(e) => setSelectedValue(e.target.value)}
               >
                 <option value="">Todos</option>
-                {descriptorValues.map(valor => (
-                  <option key={valor} value={valor}>{valor}</option>
+                {descriptorValues.map((valor) => (
+                  <option key={valor} value={valor}>
+                    {valor}
+                  </option>
                 ))}
               </select>
             </div>
@@ -448,7 +452,8 @@ const Sidebar = React.memo(({ onClose }: { onClose?: () => void }) => {
           </Button>
         </div>
         <div className="mb-2 text-sm text-gray-600">
-          {filteredEvents.length} evento{filteredEvents.length !== 1 ? "s" : ""} filtrado{filteredEvents.length !== 1 ? "s" : ""}
+          {filteredEvents.length} evento{filteredEvents.length !== 1 ? "s" : ""}{" "}
+          filtrado{filteredEvents.length !== 1 ? "s" : ""}
         </div>
       </div>
     </div>
