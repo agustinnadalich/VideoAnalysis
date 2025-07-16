@@ -1,5 +1,15 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from "recharts";
+import React from "react";
+import {
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceLine,
+} from "recharts";
 import { usePlayback } from "@/context/PlaybackContext";
 import { useFilterContext } from "../../context/FilterContext";
 import type { MatchEvent } from "@/types";
@@ -12,59 +22,40 @@ const secondsToGameClock = (sec: number): string => {
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-type TimelineChartProps = {
-  filteredEvents: MatchEvent[];
-  // colors: { [key: string]: string };
-  onEventClick: (event: MatchEvent) => void;
-  currentTime?: number;
-};
+const CurrentTimeLine = React.memo(({ currentTime, xDomain }: { currentTime: number; xDomain: [number, number] }) => {
+  if (typeof currentTime !== "number" || currentTime < xDomain[0] || currentTime > xDomain[1]) {
+    return null;
+  }
 
-// Paleta de colores (puedes ampliarla)
-const palette = [
-  "#3498db", "#e74c3c", "#2ecc71", "#f1c40f", "#9b59b6",
-  "#1abc9c", "#e67e22", "#34495e", "#fd79a8", "#00b894",
-  "#636e72", "#fdcb6e", "#6c5ce7", "#00cec9", "#d35400"
-];
+  return (
+    <ReferenceLine
+      x={currentTime}
+      stroke="#000"
+      strokeWidth={2}
+      strokeDasharray="4 2"
+    />
+  );
+});
 
-const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineChartProps) => {
+const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: MatchEvent[]; onEventClick: (event: MatchEvent) => void }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState<number>(600);
   const [xDomain, setXDomain] = useState<[number, number]>([0, 600]);
   const [zoomFactor, setZoomFactor] = useState<number>(1);
-  const [scrollPosition, setScrollPosition] = useState<number>(0);
   const { filterCategory, setFilterCategory } = useFilterContext();
-  const xScale = scaleLinear()
-    .domain(xDomain)
-    .range([0, chartWidth]);
-  const { setSelectedEvent, setCurrentTime } = usePlayback();
-  const { playEvent } = usePlayback();
+  const { setSelectedEvent, playEvent, currentTime } = usePlayback();
 
-  // Define initialXDomain based on filteredEvents
   const initialXDomain = useMemo(() => {
     if (filteredEvents.length > 0) {
       const padding = 60;
-      const start = Math.max(0, Math.min(...filteredEvents.map((e) => e.timestamp_sec ?? 0)) - padding);
-      const end = Math.max(...filteredEvents.map((e) => (e.timestamp_sec ?? 0) + (e.extra_data?.DURATION ?? 0))) + padding;
+      const start = Math.max(0, Math.min(...filteredEvents.map(e => e.timestamp_sec ?? 0)) - padding);
+      const end = Math.max(...filteredEvents.map(e => (e.timestamp_sec ?? 0) + (e.extra_data?.DURATION ?? 0))) + padding;
       return [start, end] as [number, number];
     }
     return [0, 600] as [number, number];
   }, [filteredEvents]);
 
-  onEventClick = (event) => {
-    console.log("Evento clickeado:", event);
-    playEvent(event);
-  }
-
-
-  const handleEventClick = (event: any) => {
-    setSelectedEvent(event);
-    setCurrentTime(event.timestamp_sec ?? 0);
-  };
-
-  const categories = useMemo(
-    () => Array.from(new Set(filteredEvents.map(ev => ev.event_type || "Otro"))).filter(cat => cat !== "END"),
-    [filteredEvents]
-  );
+  const categories = useMemo(() => Array.from(new Set(filteredEvents.map(ev => ev.event_type || "Otro"))).filter(cat => cat !== "END"), [filteredEvents]);
 
   const maxSecond = useMemo(() => {
     const max = Math.max(...filteredEvents.map(ev => (ev.timestamp_sec ?? 0) + (ev.extra_data?.DURATION ?? 1)), 60);
@@ -73,31 +64,22 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
 
   const minSecond = useMemo(() => Math.min(...filteredEvents.map(ev => ev.timestamp_sec ?? 0), 0), [filteredEvents]);
 
-  const eventTypes = useMemo(
-    () => Array.from(new Set(filteredEvents.map(ev => ev.event_type))),
-    [filteredEvents]
-  );
-
   const colors = useMemo(() => {
     const map: Record<string, string> = {};
-    eventTypes.forEach((type, idx) => {
+    const palette = ["#3498db", "#e74c3c", "#2ecc71", "#f1c40f", "#9b59b6", "#1abc9c", "#e67e22", "#34495e", "#fd79a8", "#00b894", "#636e72", "#fdcb6e", "#6c5ce7", "#00cec9", "#d35400"];
+    categories.forEach((type, idx) => {
       map[type] = palette[idx % palette.length];
     });
     return map;
-  }, [eventTypes]);
+  }, [categories]);
 
-  const data = useMemo(() => {
-    return filteredEvents.map(ev => {
-      const duration = typeof ev.extra_data?.DURATION === "number" ? ev.extra_data.DURATION : 1;
-      return {
-        ...ev,
-        category: ev.event_type || "Otro",
-        SECOND: ev.timestamp_sec ?? 0,
-        DURATION: duration,
-        color: colors[ev.event_type] || (ev.IS_OPPONENT ? "#e74c3c" : "#3498db"),
-      };
-    });
-  }, [filteredEvents, colors]);
+  const data = useMemo(() => filteredEvents.map(ev => ({
+    ...ev,
+    category: ev.event_type || "Otro",
+    SECOND: ev.timestamp_sec ?? 0,
+    DURATION: typeof ev.extra_data?.DURATION === "number" ? ev.extra_data.DURATION : 1,
+    color: colors[ev.event_type] || (ev.IS_OPPONENT ? "#e74c3c" : "#3498db"),
+  })), [filteredEvents, colors]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length > 0) {
@@ -121,8 +103,6 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
     }
   }, [chartRef.current]);
 
-
-
   useEffect(() => {
     if (filteredEvents.length === 1) {
       const ev = filteredEvents[0];
@@ -133,40 +113,38 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
     } else {
       const visibleRange = maxSecond / zoomFactor;
       const start = 0;
-      setScrollPosition(start);
       setXDomain([start, start + visibleRange]);
     }
   }, [filteredEvents, maxSecond, zoomFactor]);
 
   useEffect(() => {
     if (filteredEvents.length > 0) {
-      const padding = 60; // Margen en segundos
-      const start = Math.max(0, Math.min(...filteredEvents.map((e) => e.timestamp_sec ?? 0)) - padding);
-      const end = Math.max(...filteredEvents.map((e) => (e.timestamp_sec ?? 0) + (e.extra_data?.DURATION ?? 0))) + padding;
-      setXDomain([start, end]); // Establecer el dominio inicial
-      setScrollPosition(start); // Establecer la posición inicial
+      const padding = 60;
+      const start = Math.max(0, Math.min(...filteredEvents.map(e => e.timestamp_sec ?? 0)) - padding);
+      const end = Math.max(...filteredEvents.map(e => (e.timestamp_sec ?? 0) + (e.extra_data?.DURATION ?? 0))) + padding;
+      setXDomain([start, end]);
     }
   }, [filteredEvents]);
 
   const handleZoomChange = (zoomIn: boolean) => {
-    const zoomFactorChange = zoomIn ? 1.5 : 1 / 1.5; // Incremento o decremento del zoom
+    const zoomFactorChange = zoomIn ? 1.5 : 1 / 1.5;
     const visibleRange = (xDomain[1] - xDomain[0]) / zoomFactorChange;
-    const center = currentTime && currentTime >= xDomain[0] && currentTime <= xDomain[1]
-      ? currentTime // Centrar en currentTime si está dentro del rango
-      : (xDomain[0] + xDomain[1]) / 2; // De lo contrario, centrar en el rango actual
+
+    const center = (currentTime >= initialXDomain[0] && currentTime <= initialXDomain[1])
+      ? currentTime
+      : (xDomain[0] + xDomain[1]) / 2;
 
     const start = Math.max(initialXDomain[0], center - visibleRange / 2);
     const end = Math.min(initialXDomain[1], center + visibleRange / 2);
 
     setXDomain([start, end]);
   };
-  
+
   const handleScroll = (direction: "left" | "right") => {
-    const shift = (xDomain[1] - xDomain[0]) / 4; // Desplazamiento como fracción del rango visible
+    const shift = (xDomain[1] - xDomain[0]) / 4;
     let newStart = direction === "right" ? xDomain[0] + shift : xDomain[0] - shift;
     let newEnd = direction === "right" ? xDomain[1] + shift : xDomain[1] - shift;
 
-    // Respetar los límites del dominio inicial
     if (newStart < initialXDomain[0]) {
       newStart = initialXDomain[0];
       newEnd = initialXDomain[0] + (xDomain[1] - xDomain[0]);
@@ -181,87 +159,56 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
 
   const handleCategoryClick = (category: string) => {
     if (filterCategory.includes(category)) {
-      setFilterCategory(filterCategory.filter((c: string) => c !== category));
+      setFilterCategory(filterCategory.filter(c => c !== category));
     } else {
       setFilterCategory([...filterCategory, category]);
     }
   };
-  
+
   const dynamicHeight = Math.min(30, Math.max(16, 150 / categories.length));
-  console.log("Dynamic Height:", dynamicHeight);
-  const chartHeight = Math.min(400,Math.max(100, categories.length * dynamicHeight * 2)); // Altura mínima de 200px, ajustada por la cantidad de categorías
-  console.log("Chart Height:", chartHeight);
+  const chartHeight = Math.min(400, Math.max(100, categories.length * dynamicHeight * 2));
+
   return (
     <div className="w-full">
-      <div
-        ref={chartRef}
-        className="overflow-x-auto"
-        // style={{ height: `${Math.max(120, categories.length * 20)}px` }}
-        style={{
-          height: `${chartHeight}px`, // Altura dinámica del gráfico
-        }}
-      >
+      <div ref={chartRef} className="overflow-x-auto" style={{ height: `${chartHeight}px` }}>
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
-            {/* <CartesianGrid strokeDasharray="3 3" /> */}
             <CartesianGrid />
-            <XAxis
-              dataKey="timestamp_sec"
-              type="number"
-              domain={xDomain}
-              tickFormatter={(tick) => secondsToGameClock(tick)}
-            />
+            <XAxis dataKey="timestamp_sec" type="number" domain={xDomain} tickFormatter={(tick) => secondsToGameClock(tick)} />
             <YAxis
               type="category"
               dataKey="category"
               interval={0}
-              tick={(props: any) => {
-                const { x, y, payload } = props;
-                const value = payload.value;
-                return (
-                  <g
-                    transform={`translate(${x},${y})`}
-                    style={{ cursor: "pointer" }}
+              tick={({ x, y, payload }) => (
+                <g transform={`translate(${x},${y})`} style={{ cursor: "pointer" }}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={4}
+                    textAnchor="end"
+                    fill="#333"
+                    fontSize={10}
+                    style={{ textDecoration: filterCategory.includes(payload.value) ? "underline" : "none" }}
+                    onClick={() => handleCategoryClick(payload.value)}
                   >
-                    <text
-                      x={0}
-                      y={0}
-                      dy={4}
-                      textAnchor="end"
-                      fill="#333"
-                      fontSize={10}
-                      style={{
-                        margin: 0,
-                        padding: 0,
-                        textDecoration: filterCategory.includes(value)
-                          ? "underline"
-                          : "none",
-                      }}
-                      onClick={() => handleCategoryClick(value)}
-                    >
-                      {value}
-                    </text>
-                  </g>
-                );
-              }}
+                    {payload.value}
+                  </text>
+                </g>
+              )}
               width={60}
               allowDuplicatedCategory={false}
             />
             <Tooltip content={<CustomTooltip />} />
             <Scatter
-              data={data.filter(
-                (ev) => ev.SECOND >= xDomain[0] && ev.SECOND <= xDomain[1]
-              )}
+              data={data.filter(ev => ev.SECOND >= xDomain[0] && ev.SECOND <= xDomain[1])}
               shape={(props: any) => {
                 const { cx, cy, payload } = props;
-                const width =
-                  (payload.DURATION / (xDomain[1] - xDomain[0])) * chartWidth;
-                const minWidth = 4;
+                const width = (payload.DURATION / (xDomain[1] - xDomain[0])) * chartWidth;
                 return (
                   <rect
                     x={cx}
-                    y={cy - dynamicHeight / 2.1 }
-                    width={Math.max(width, minWidth)}
+                    y={cy - dynamicHeight / 2.1}
+                    width={Math.max(width, 4)}
                     height={dynamicHeight}
                     fill={payload.color}
                     rx={1}
@@ -271,42 +218,21 @@ const TimelineChart = ({ filteredEvents, onEventClick, currentTime }: TimelineCh
                 );
               }}
             />
-            {typeof currentTime === "number" &&
-              currentTime >= xDomain[0] &&
-              currentTime <= xDomain[1] && (
-                <ReferenceLine
-                  x={currentTime}
-                  stroke="#000"
-                  strokeWidth={2}
-                  strokeDasharray="4 2"
-                />
-              )}
+
+            <CurrentTimeLine currentTime={currentTime ?? 0} xDomain={xDomain} />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
       <div className="px-4 py-2 flex items-center gap-4 flex-wrap">
         <label className="text-sm">Zoom:</label>
         <div className="controls">
-          <Button variant="secondary" onClick={() => handleZoomChange(true)}>
-            +
-          </Button>
-          <Button variant="secondary" onClick={() => handleZoomChange(false)}>
-            -
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setXDomain(initialXDomain)}
-          >
-            Restablecer Zoom
-          </Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(true)}>+</Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(false)}>-</Button>
+          <Button variant="secondary" onClick={() => setXDomain(initialXDomain)}>Restablecer Zoom</Button>
         </div>
         <span>{zoomFactor}x</span>
-        <Button variant="secondary" onClick={() => handleScroll("left")}>
-          ←
-        </Button>
-        <Button variant="secondary" onClick={() => handleScroll("right")}>
-          →
-        </Button>
+        <Button variant="secondary" onClick={() => handleScroll("left")}>←</Button>
+        <Button variant="secondary" onClick={() => handleScroll("right")}>→</Button>
       </div>
     </div>
   );

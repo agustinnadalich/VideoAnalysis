@@ -10,7 +10,8 @@ from db import Base, engine, get_db, SessionLocal
 from models import Club, ImportProfile, Match  # importa solo lo necesario
 from werkzeug.utils import secure_filename
 from importer import import_match_from_excel, import_match_from_json
-from normalizer import normalize_excel_to_json, convert_json_safe
+from normalizer import normalize_excel_to_json
+# from normalizer import normalize_excel_to_json, convert_json_safe
 from register_routes import register_routes
 
 
@@ -589,6 +590,9 @@ def import_file():
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(save_path)
 
+    print("📝 Perfiles existentes:", [p.name for p in db.query(ImportProfile).all()])
+
+
     # Obtener perfil por nombre desde query param ?profile=nombre
     profile_name = request.args.get("profile")
     db = SessionLocal()
@@ -612,41 +616,58 @@ def import_file():
 
 @app.route('/api/import/preview', methods=['POST'])
 def preview_file():
+    print(f"👉 Preview request - method: {request.method}")
+    print(f"👉 Request files: {list(request.files.keys())}")
+    print(f"👉 Request args: {dict(request.args)}")
+    
     if 'file' not in request.files:
+        print("👉 No file in request")
         return {"error": "No file provided"}, 400
 
     file = request.files['file']
-    if file.filename == '':
-        return {"error": "Empty filename"}, 400
-
+    print(f"👉 Archivo recibido: {file.filename}")
+    
     filename = secure_filename(file.filename)
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(save_path)
+    
+    print(f"👉 Archivo guardado en: {save_path}")
+    print(f"👉 Archivo existe: {os.path.exists(save_path)}")
 
     profile_name = request.args.get("profile")
+    print(f"👉 Profile solicitado: {profile_name}")
+
     if not profile_name:
+        print("👉 No profile especificado")
         return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
 
     db = SessionLocal()
     try:
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
+            print(f"👉 Perfil no encontrado: {profile_name}")
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
+        
+        print("👉 Procesando preview con perfil:", profile.name)
 
-        result = normalize_excel_to_json(save_path, profile.settings)
-        # print("📦 Resultado normalizer:", result)
-
+        try:
+            result = normalize_excel_to_json(save_path, profile.settings)
+            print(f"👉 normalize_excel_to_json resultado: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
+        except Exception as e:
+            print(f"👉 Error en normalize_excel_to_json: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Error procesando archivo: {e}"}, 500
+        
         if not result or "match" not in result or "events" not in result:
-            # print("❌ Archivo inválido o sin datos:", result)
+            print(f"👉 Resultado inválido - result: {bool(result)}, match: {'match' in result if result else False}, events: {'events' in result if result else False}")
             return {"error": "Archivo inválido o sin datos"}, 400
+
 
         match = result["match"]
         events = result["events"]
         event_types = sorted(set(str(ev.get("event_type", "Desconocido")) for ev in events))
         players = sorted(set(str(ev.get("player")) for ev in events if ev.get("player")))
-
-        # print("✔ Resultado del normalizador:", result)
-        # print("✔ Keys del resultado:", result.keys() if result else "Resultado vacío")
 
         response_data = {
             "match_info": match,
@@ -665,21 +686,231 @@ def preview_file():
     finally:
         db.close()
 
+
 @app.route("/api/save_match", methods=["POST"])
 def save_match():
     data = request.get_json()
     if not data or "match" not in data or "events" not in data:
         return jsonify({"error": "Faltan datos"}), 400
+    
+    profile_name = data.get("profile")
+    if not profile_name:
+        return jsonify({"error": "Falta el perfil"}), 400
 
+    db = SessionLocal()
     try:
-        import_match_from_json(data)  # debes tener ya esta función
+        # Buscar el perfil en la base de datos
+        profile = db.query(ImportProfile).filter_by(name=profile_name).first()
+        if not profile:
+            return jsonify({"error": f"Perfil '{profile_name}' no encontrado"}), 404
+        
+        # Llamar a la función con los datos y el perfil
+        import_match_from_json(data, profile.settings)
         return jsonify({"message": "Importación exitosa"}), 200
     except Exception as e:
+        print(f"Error en save_match: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
+def ensure_default_import_profile():
+    db = SessionLocal()
+    try:
+        existing = db.query(ImportProfile).filter_by(name='Default').first()
+        # Definición de configuración por defecto con time_mapping actualizado
+        default_settings = {
+             "events_sheet": "MATRIZ",
+             "meta_sheet": "MATCHES",
+             "col_event_type": "CATEGORY",
+             "col_player": "PLAYER",
+             "col_time": "SECOND",
+             "col_x": "COORDINATE_X",
+             "col_y": "COORDINATE_Y",
+             "discard_categories": [],
+             "normalize_penalty_cards": True,
+             "normalize_lineout": True,
+             "normalize_tackle": True,
+        }
+        default_settings["time_mapping"] = {
+            "method": "event_based",
+            "kick_off_1": {"category": "KICK OFF", "descriptor": "PERIODS", "value": 1},
+            "end_1": {"category": "END", "descriptor": "PERIODS", "value": 1},
+            "kick_off_2": {"category": "KICK OFF", "descriptor": "PERIODS", "value": 2},
+            "end_2": {"category": "END", "descriptor": "PERIODS", "value": 2},
+            "manual_times": {
+                "kick_off_1": 0,
+                "end_1": 2400,
+                "kick_off_2": 2700,
+                "end_2": 4800
+            }
+        }
+        if not existing:
+            # Crear perfil Default si no existe
+            profile = ImportProfile(name='Default', description='Perfil por defecto', settings=default_settings)
+            db.add(profile)
+        else:
+            # Actualizar configuración legacy existente
+            existing.settings = default_settings
+        db.commit()
+    finally:
+        db.close()
+
+ensure_default_import_profile()
+
+@app.route('/api/import/profiles', methods=['POST'])
+def create_or_update_profile():
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description', '')
+    settings = data.get('settings')
+
+    if not name or not settings:
+        return jsonify({"error": "Faltan 'name' o 'settings'"}), 400
+
+    db = SessionLocal()
+    try:
+        profile = db.query(ImportProfile).filter_by(name=name).first()
+        if profile:
+            profile.description = description
+            profile.settings = settings
+            message = "Perfil actualizado"
+        else:
+            profile = ImportProfile(name=name, description=description, settings=settings)
+            db.add(profile)
+            message = "Perfil creado"
+        db.commit()
+        return jsonify({"message": message}), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+def convert_json_safe(data):
+    """Convierte datos que pueden contener tipos no serializables a JSON"""
+    import numpy as np
+    import pandas as pd
+    from datetime import datetime, date, time
+    
+    if isinstance(data, dict):
+        return {k: convert_json_safe(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_json_safe(item) for item in data]
+    elif isinstance(data, (np.integer, np.floating)):
+        return float(data)
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
+    elif isinstance(data, (datetime, date, time)):
+        return data.isoformat()
+    elif pd.isna(data):
+        return None
+    else:
+        return data
 
 
 register_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)
+
+@app.route('/api/debug/time_calculation', methods=['POST'])
+def debug_time_calculation():
+    """Endpoint para debug rápido de cálculos de tiempo sin import completo"""
+    data = request.get_json()
+    
+    # Eventos de ejemplo o datos reales
+    events = data.get('events', [])
+    profile_data = data.get('profile', {})
+    # Permitir indicar nombre de perfil en query param ?profile=Nombre
+    profile_name = request.args.get('profile')
+    if profile_name:
+        db = SessionLocal()
+        try:
+            prof = db.query(ImportProfile).filter_by(name=profile_name).first()
+            if not prof:
+                return jsonify({"error": f"Perfil '{profile_name}' no encontrado"}), 404
+            profile_data = prof.settings
+        finally:
+            db.close()
+    
+    if not events:
+        return jsonify({"error": "Se necesitan eventos para el debug"}), 400
+    
+    print(f"🔍 DEBUG TIME CALCULATION - Eventos recibidos: {len(events)}")
+    print(f"🔍 Profile data: {profile_data}")
+    
+    # Cargar perfil por defecto si no se especifica
+    if not profile_data:
+        db = SessionLocal()
+        try:
+            profile = db.query(ImportProfile).filter_by(name='Default').first()
+            if profile:
+                profile_data = profile.settings
+        finally:
+            db.close()
+    # Migrar esquema de time_mapping legacy: renombrar 'period' a 'value' y establecer descriptor por defecto
+    tm = profile_data.get('time_mapping', {})
+    for key in ['kick_off_1', 'end_1', 'kick_off_2', 'end_2']:
+        entry = tm.get(key)
+        if isinstance(entry, dict):
+            # migrar descriptor_value a value si existe
+            # migrar descriptor_value solo si tiene contenido válido
+            dv = entry.get('descriptor_value')
+            if dv not in (None, '', 'nan') and 'value' not in entry:
+                try:
+                    entry['value'] = int(float(dv))
+                except (TypeError, ValueError):
+                    # si no es convertible, ignorar descriptor_value
+                    pass
+            # renombrar clave 'period' a 'value' si existe
+            if 'period' in entry and 'value' not in entry:
+                entry['value'] = entry.pop('period')
+            # asegurar descriptor esté presente
+            if not entry.get('descriptor'):
+                entry['descriptor'] = 'PERIODS'
+    profile_data['time_mapping'] = tm
+    print(f"🔍 Migrated time_mapping: {profile_data['time_mapping']}")
+    # Simular match_info básico
+    match_info = data.get('match_info', {
+        'home_team': 'Test Team',
+        'away_team': 'Opponent',
+        'date': '2024-01-01'
+    })
+    
+    print(f"🔍 Match info: {match_info}")
+    
+    try:
+        # Llamar directamente a enrich_events para debug
+        from enricher import enrich_events
+        
+        enriched_events = enrich_events(events, match_info, profile_data)
+        
+        # Analizar resultados
+        time_analysis = {
+            'total_events': len(enriched_events),
+            'events_with_time_video': len([e for e in enriched_events if e.get('extra_data', {}).get('TIME(VIDEO)') != '00:00']),
+            'events_with_game_time': len([e for e in enriched_events if e.get('extra_data', {}).get('Game_Time') != '00:00']),
+            'sample_events': enriched_events[:5],  # Primeros 5 eventos para inspección
+            'time_distribution': {}
+        }
+        
+        # Distribución de tiempos TIME(VIDEO)
+        for event in enriched_events:
+            time_video = event.get('extra_data', {}).get('TIME(VIDEO)', 'N/A')
+            if time_video not in time_analysis['time_distribution']:
+                time_analysis['time_distribution'][time_video] = 0
+            time_analysis['time_distribution'][time_video] += 1
+        
+        return jsonify({
+            'enriched_events': enriched_events,
+            'analysis': time_analysis,
+            'profile_used': profile_data
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f"🔍 Error en debug time calculation: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500

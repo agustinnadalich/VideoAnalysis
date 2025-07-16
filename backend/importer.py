@@ -1,10 +1,11 @@
-
 from sqlalchemy.orm import Session
 from db import SessionLocal
 from models import Club, Team, Player, Match, Event
 from normalizer import normalize_excel_to_json
 from datetime import datetime, date, time
 import math
+
+db: Session = SessionLocal()
 
 
 def clean_extra_data(data):
@@ -26,7 +27,6 @@ def import_match_from_excel(excel_path: str, profile: dict):
     match_info = data["match"]
     events = data["events"]
 
-    db: Session = SessionLocal()
     try:
         # Crear o buscar club
         club = db.query(Club).filter_by(name=match_info["team"]).first()
@@ -71,40 +71,21 @@ def import_match_from_excel(excel_path: str, profile: dict):
         player_cache = {}
 
         for ev in events:
-            raw_player = ev.get("player", "")
-            player_name = str(raw_player).strip() if raw_player else "Desconocido"
-
-            if player_name not in player_cache:
-                player = db.query(Player).filter_by(full_name=player_name).first()
-                if not player:
-                    player = Player(full_name=player_name)
-                    db.add(player)
-                    db.commit()
-                player_cache[player_name] = player
-            else:
-                player = player_cache[player_name]
-
-            raw_time = ev.get("timestamp_sec")
-            x = ev.get("x")
-            x = None if x is None or (isinstance(x, float) and math.isnan(x)) else x
-            y = ev.get("y")
-            y = None if y is None or (isinstance(y, float) and math.isnan(y)) else y
+            player = create_or_get_player(db, ev.get("player"))
+            raw_time = ev.get("timestamp_sec") or 0
+            raw_time = int(raw_time) if not math.isnan(raw_time) else 0
 
             event = Event(
                 match_id=match.id,
                 player_id=player.id,
-                event_type=str(ev.get("event_type")),
-                timestamp_sec=int(raw_time) if raw_time and not math.isnan(raw_time) else 0,
-                x=x,
-                y=y,
-                tag=ev.get("tag"),
-                phase=ev.get("phase"),
-                origin=ev.get("origin"),
-                outcome=ev.get("outcome"),
-                notes=ev.get("notes"),
-                extra_data=clean_extra_data(ev.get("extra_data", {}))
+                event_type=str(ev.get("event_type")),  # 👈 Unificado
+                timestamp_sec=raw_time,
+                x=ev.get("x") if not (ev.get("x") is None or math.isnan(ev.get("x"))) else None,
+                y=ev.get("y") if not (ev.get("y") is None or math.isnan(ev.get("y"))) else None,
+                extra_data=clean_extra_data(ev.get("extra_data", {}))  # 👈 Aplicado
             )
             db.add(event)
+
 
         db.commit()
         print("✅ Eventos insertados correctamente.")
@@ -115,119 +96,146 @@ def import_match_from_excel(excel_path: str, profile: dict):
     finally:
         db.close()
 
+# # Ejemplo de uso directo
+# if __name__ == "__main__":
+#     profile = {
+#         "events_sheet": "MATRIZ",
+#         "meta_sheet": "MATCHES",
+#         "col_event_type": "CATEGORY",
+#         "col_player": "PLAYER",
+#         "col_time": "SECOND",
+#         "col_x": "COORDINATE_X",
+#         "col_y": "COORDINATE_Y",
+#         "team": "Pescara Rugby"
+#     }
+#     import_match_from_excel("uploads/SERIE_B_PRATO_match_2.xlsx", profile)
 
-def import_match_from_json(data: dict):
+
+
+def import_match_from_json(data, profile):
+    """
+    Importa un partido y sus eventos desde un JSON previamente normalizado.
+    """
     db = SessionLocal()
     try:
-        match_data = data.get("match")
-        events_data = data.get("events")
+        print("🔄 Iniciando importación de datos a la base de datos...")
+        match_info = data.get("match")
+        events_data = data.get("events", [])
 
-        if not match_data or not events_data:
-            raise ValueError("Faltan datos de partido o eventos")
+        if not match_info or not events_data:
+            print("❌ Datos incompletos para importar.")
+            return False
 
-        team_name = match_data.get("team", "Equipo Desconocido")
+        print(f"📊 Importando partido: {match_info.get('team')} vs {match_info.get('opponent')}")
+        print(f"📅 Fecha: {match_info.get('date')}")
+        print(f"📈 Eventos a procesar: {len(events_data)}")
 
-        # Crear o buscar club
-        club = db.query(Club).filter_by(name=team_name).first()
+        # *** NUEVO: ENRIQUECER EVENTOS ANTES DE GUARDAR ***
+        print("🔄 Enriqueciendo eventos...")
+        from enricher import enrich_events
+        enriched_events = enrich_events(events_data, match_info, profile)
+        print(f"✅ Eventos enriquecidos: {len(enriched_events)}")
+
+        # Crear o recuperar club y equipo principal
+        club = db.query(Club).filter_by(name=match_info.get("team")).first()
         if not club:
-            club = Club(name=team_name)
+            club = Club(name=match_info.get("team"))
             db.add(club)
             db.commit()
+            print(f"✅ Club creado: {club.name}")
+        else:
+            print(f"✅ Club encontrado: {club.name}")
 
-        # Crear o buscar equipo
-        team = db.query(Team).filter_by(name=team_name, club_id=club.id).first()
+        team = db.query(Team).filter_by(name=match_info.get("team"), club_id=club.id).first()
         if not team:
-            season = str(match_data.get("date", "")).split("-")[0]
-            team = Team(name=team_name, club_id=club.id, category="Senior", season=season)
+            team = Team(name=match_info.get("team"), club_id=club.id, category="Senior", season=str(match_info.get("date")[:4]))
             db.add(team)
             db.commit()
+            print(f"✅ Equipo creado: {team.name}")
+        else:
+            print(f"✅ Equipo encontrado: {team.name}")
 
         # Crear partido
-        match_date = match_data.get("date")
-        if isinstance(match_date, str):
-            match_date = datetime.strptime(match_date, "%Y-%m-%d").date()
-
+        match_date = datetime.strptime(match_info.get("date"), "%Y-%m-%d").date()
         match = Match(
             team_id=team.id,
-            opponent_name=match_data.get("opponent"),
+            opponent_name=match_info.get("opponent_name"),
             date=match_date,
-            location=match_data.get("location"),
-            competition=match_data.get("competition"),
-            round=match_data.get("round"),
-            field=match_data.get("field"),
-            rain=match_data.get("rain"),
-            muddy=match_data.get("muddy"),
-            wind_1p=match_data.get("wind_1p"),
-            wind_2p=match_data.get("wind_2p"),
-            referee=match_data.get("referee"),
-            video_url=match_data.get("video"),
-            result=match_data.get("result")
+            location=match_info.get("location"),
+            competition=match_info.get("competition"),
+            round=match_info.get("round"),
+            result=match_info.get("result"),
+            referee=match_info.get("referee"),
+            video_url=match_info.get("video_url"),
+            field=match_info.get("field"),
+            rain=match_info.get("rain"),
+            muddy=match_info.get("muddy"),
+            wind_1p=match_info.get("wind_1p"),
+            wind_2p=match_info.get("wind_2p")
         )
         db.add(match)
         db.commit()
+        print(f"✅ Partido creado con ID: {match.id}")
 
-        player_cache = {}
+        def is_valid_event(ev):
+            required = ["event_type", "timestamp_sec"]
+            return all(ev.get(k) is not None for k in required)
 
-        for ev in events_data:
-            player_name = str(ev.get("player", "Desconocido")).strip()
+        valid_events = [ev for ev in enriched_events if is_valid_event(ev)]
+        invalid_events = [ev for ev in enriched_events if not is_valid_event(ev)]
 
-            if player_name not in player_cache:
-                player = db.query(Player).filter_by(full_name=player_name).first()
-                if not player:
-                    player = Player(full_name=player_name)
-                    db.add(player)
-                    db.commit()
-                player_cache[player_name] = player
-            else:
-                player = player_cache[player_name]
+        print(f"📊 Eventos válidos: {len(valid_events)}")
+        print(f"⚠️  Eventos inválidos: {len(invalid_events)}")
 
-            # Sanear valores
-            x = ev.get("x")
-            x = None if x is None or (isinstance(x, float) and math.isnan(x)) else x
-            y = ev.get("y")
-            y = None if y is None or (isinstance(y, float) and math.isnan(y)) else y
-            ts = ev.get("timestamp_sec")
-            ts = int(ts) if ts is not None and not math.isnan(ts) else 0
+        if invalid_events:
+            print("Eventos inválidos detectados (primeros 3):", invalid_events[:3])
 
+        events_created = 0
+        for ev in valid_events:
+            # Manejar jugadores desde el campo 'players' (lista) o 'player' (string)
+            player_names = ev.get("players") or []
+            if not player_names and ev.get("player"):
+                player_names = [ev.get("player")]
+            
+            # Usar el primer jugador como principal
+            main_player = None
+            if player_names:
+                main_player = create_or_get_player(db, player_names[0])
+            
             event = Event(
                 match_id=match.id,
-                player_id=player.id,
-                event_type=ev.get("event_type"),
-                timestamp_sec=ts,
-                x=x,
-                y=y,
-                extra_data=clean_extra_data(ev.get("extra_data", {})),
-                tag=ev.get("tag"),
-                phase=ev.get("phase"),
-                origin=ev.get("origin"),
-                outcome=ev.get("outcome"),
-                notes=ev.get("notes")
+                player_id=main_player.id if main_player else None,
+                event_type=str(ev.get("event_type")),
+                timestamp_sec=ev.get("timestamp_sec") or 0,
+                x=ev.get("x"),
+                y=ev.get("y"),
+                extra_data=clean_extra_data(ev.get("extra_data", {}))
             )
             db.add(event)
+            events_created += 1
 
         db.commit()
+        print(f"✅ Partido {match.id} importado con {events_created} eventos guardados en la base de datos.")
+        return True
 
     except Exception as e:
         db.rollback()
-        raise e
+        print("❌ Error en import_match_from_json:")
+        import traceback
+        traceback.print_exc()
+        return False
     finally:
         db.close()
 
 
-
-# Ejemplo de uso directo
-if __name__ == "__main__":
-    profile = {
-        "events_sheet": "MATRIZ",
-        "meta_sheet": "MATCHES",
-        "col_event_type": "CATEGORY",
-        "col_player": "PLAYER",
-        "col_time": "SECOND",
-        "col_x": "COORDINATE_X",
-        "col_y": "COORDINATE_Y",
-        "team": "Pescara Rugby"
-    }
-    import_match_from_excel("uploads/SERIE_B_PRATO_match_2.xlsx", profile)
-
-
-
+def create_or_get_player(db, player_name):
+    """
+    Devuelve un jugador existente o lo crea si no existe.
+    """
+    name = str(player_name).strip() if player_name else "Desconocido"
+    player = db.query(Player).filter_by(full_name=name).first()
+    if not player:
+        player = Player(full_name=name)
+        db.add(player)
+        db.commit()
+    return player

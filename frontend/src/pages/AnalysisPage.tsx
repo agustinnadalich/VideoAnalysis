@@ -78,19 +78,18 @@ const AnalysisPageContent = () => {
             )}
             <HeaderPartido />
           </div>
-          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
               <VideoPlayer videoUrl={videoUrl} />
 
               <TimelineChart
-                filteredEvents={filteredEvents}
-                onEventClick={playEvent}
-                currentTime={currentTime}
+              filteredEvents={filteredEvents}
+              onEventClick={playEvent}
               />
               {/* <ChartsTabs
-                onEventClick={setSelectedEvent}
-                currentTime={currentTime}
+              onEventClick={setSelectedEvent}
+              currentTime={currentTime}
               /> */}
-          </div>
+            </div>
         </div>
       </div>
     </Layout>
