@@ -9,9 +9,9 @@ import math
 from db import Base, engine, get_db, SessionLocal
 from models import Club, ImportProfile, Match  # importa solo lo necesario
 from werkzeug.utils import secure_filename
-from importer import import_match_from_excel, import_match_from_json
-from normalizer import normalize_excel_to_json
-# from normalizer import normalize_excel_to_json, convert_json_safe
+from importer import import_match_from_excel, import_match_from_json, import_match_from_xml
+from normalizer import normalize_excel_to_json, normalize_xml_to_json
+import traceback
 from register_routes import register_routes
 
 
@@ -289,139 +289,139 @@ def events_table():
     return render_template_string(html)
 
     
-@app.route('/convert_excel_to_json_2', methods=['GET'])
-def convert_excel_to_json_2():
-    file_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_match_2.xlsx')
-    file_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_match_2.xlsx')
-    if not os.path.exists(file_path):
-        return jsonify({"error": "Archivo Excel no encontrado"}), 404
+# @app.route('/convert_excel_to_json_2', methods=['GET'])
+# def convert_excel_to_json_2():
+#     file_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_match_2.xlsx')
+#     file_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_match_2.xlsx')
+#     if not os.path.exists(file_path):
+#         return jsonify({"error": "Archivo Excel no encontrado"}), 404
 
-    try:
-        df = pd.read_excel(file_path, sheet_name='MATRIZ')
-        df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
+#     try:
+#         df = pd.read_excel(file_path, sheet_name='MATRIZ')
+#         df_partidos = pd.read_excel(file_path, sheet_name='MATCHES')
 
-                # Procesa los eventos PENALTY
-        def process_penalty_events(row):
-            if row['CATEGORY'] == 'PENALTY':
-                advance = str(row.get('ADVANCE', '')).strip()
-                player = str(row.get('PLAYER', '')).strip()
+#                 # Procesa los eventos PENALTY
+#         def process_penalty_events(row):
+#             if row['CATEGORY'] == 'PENALTY':
+#                 advance = str(row.get('ADVANCE', '')).strip()
+#                 player = str(row.get('PLAYER', '')).strip()
 
-                if advance == 'NEUTRAL':
-                    row['YELLOW-CARD'] = player
-                elif advance == 'NEGATIVE':
-                    row['RED-CARD'] = player
-                else:
-                    row['YELLOW-CARD'] = None
-                    row['RED-CARD'] = None
-            else:
-                # Asegúrate de que YELLOW-CARD y RED-CARD no existan en otras categorías
-                row['YELLOW-CARD'] = None
-                row['RED-CARD'] = None
-            return row
+#                 if advance == 'NEUTRAL':
+#                     row['YELLOW-CARD'] = player
+#                 elif advance == 'NEGATIVE':
+#                     row['RED-CARD'] = player
+#                 else:
+#                     row['YELLOW-CARD'] = None
+#                     row['RED-CARD'] = None
+#             else:
+#                 # Asegúrate de que YELLOW-CARD y RED-CARD no existan en otras categorías
+#                 row['YELLOW-CARD'] = None
+#                 row['RED-CARD'] = None
+#             return row
 
-        # Procesa los eventos LINEOUT
-        def process_lineout_events(row):
-            if row['CATEGORY'] == 'LINEOUT':
-                player = str(row.get('PLAYER', '')).strip()
-                player_2 = str(row.get('PLAYER_2', '')).strip()
+#         # Procesa los eventos LINEOUT
+#         def process_lineout_events(row):
+#             if row['CATEGORY'] == 'LINEOUT':
+#                 player = str(row.get('PLAYER', '')).strip()
+#                 player_2 = str(row.get('PLAYER_2', '')).strip()
 
-                # Determina el LINE_THROWER y LINE_RECEIVER
-                if player.startswith('T-'):
-                    thrower = player[2:]  # Elimina el prefijo "T-"
-                    receiver = player_2
-                elif player_2.startswith('T-'):
-                    thrower = player_2[2:]  # Elimina el prefijo "T-"
-                    receiver = player
-                else:
-                    thrower = None
-                    receiver = None
+#                 # Determina el LINE_THROWER y LINE_RECEIVER
+#                 if player.startswith('T-'):
+#                     thrower = player[2:]  # Elimina el prefijo "T-"
+#                     receiver = player_2
+#                 elif player_2.startswith('T-'):
+#                     thrower = player_2[2:]  # Elimina el prefijo "T-"
+#                     receiver = player
+#                 else:
+#                     thrower = None
+#                     receiver = None
 
-                # Asigna los valores al evento
-                row['LINE_THROWER'] = thrower
-                row['LINE_RECEIVER'] = receiver
+#                 # Asigna los valores al evento
+#                 row['LINE_THROWER'] = thrower
+#                 row['LINE_RECEIVER'] = receiver
 
-                # Coloca ambos jugadores en un array en PLAYER
-                players = [thrower, receiver]
-                players = [p for p in players if p and p.lower() != 'nan']  # Filtra valores no válidos
-                row['PLAYER'] = players if players else None  # Asigna None si está vacío
+#                 # Coloca ambos jugadores en un array en PLAYER
+#                 players = [thrower, receiver]
+#                 players = [p for p in players if p and p.lower() != 'nan']  # Filtra valores no válidos
+#                 row['PLAYER'] = players if players else None  # Asigna None si está vacío
 
-                # Depuración
-                print(f"Processed LINEOUT event: PLAYER={row['PLAYER']}, LINE_THROWER={row['LINE_THROWER']}, LINE_RECEIVER={row['LINE_RECEIVER']}")
-            else:
-                # Asegúrate de que LINE_THROWER y LINE_RECEIVER no existan en otras categorías
-                row['LINE_THROWER'] = None
-                row['LINE_RECEIVER'] = None
-            return row
+#                 # Depuración
+#                 print(f"Processed LINEOUT event: PLAYER={row['PLAYER']}, LINE_THROWER={row['LINE_THROWER']}, LINE_RECEIVER={row['LINE_RECEIVER']}")
+#             else:
+#                 # Asegúrate de que LINE_THROWER y LINE_RECEIVER no existan en otras categorías
+#                 row['LINE_THROWER'] = None
+#                 row['LINE_RECEIVER'] = None
+#             return row
 
-            # Procesa los eventos TACKLE
-        def process_tackle_events(row):
-            if row['CATEGORY'] == 'TACKLE':
-                player = str(row.get('PLAYER', '')).strip() if row.get('PLAYER') else None
-                player_2 = str(row.get('PLAYER_2', '')).strip() if row.get('PLAYER_2') else None
+#             # Procesa los eventos TACKLE
+#         def process_tackle_events(row):
+#             if row['CATEGORY'] == 'TACKLE':
+#                 player = str(row.get('PLAYER', '')).strip() if row.get('PLAYER') else None
+#                 player_2 = str(row.get('PLAYER_2', '')).strip() if row.get('PLAYER_2') else None
 
-                # Filtra valores no válidos como None o 'nan'
-                players = [p for p in [player, player_2] if p and p.lower() != 'nan']
+#                 # Filtra valores no válidos como None o 'nan'
+#                 players = [p for p in [player, player_2] if p and p.lower() != 'nan']
 
-                # Si hay un solo jugador, lo dejamos como un string; si no, como lista
-                row['PLAYER'] = players[0] if len(players) == 1 else (players if players else None)
-                row['Team_Tackle_Count'] = 1
-            return row
+#                 # Si hay un solo jugador, lo dejamos como un string; si no, como lista
+#                 row['PLAYER'] = players[0] if len(players) == 1 else (players if players else None)
+#                 row['Team_Tackle_Count'] = 1
+#             return row
 
-        # Calcula el ORIGIN, END y fases para ATTACK y DEFENCE
-        def calculate_attack_defence(row, df):
-            if row['CATEGORY'] in ['ATTACK', 'DEFENCE']:
-                origin_events = ['KICK-OFF', 'TURNOVER+', 'SCRUM', 'LINEOUT', 'PENALTY', 'FREE-KICK']
-                relevant_origin = df[(df['CATEGORY'].isin(origin_events)) & (df['SECOND'] < row['SECOND'])]
-                origin = relevant_origin.iloc[-1] if not relevant_origin.empty else None
+#         # Calcula el ORIGIN, END y fases para ATTACK y DEFENCE
+#         def calculate_attack_defence(row, df):
+#             if row['CATEGORY'] in ['ATTACK', 'DEFENCE']:
+#                 origin_events = ['KICK-OFF', 'TURNOVER+', 'SCRUM', 'LINEOUT', 'PENALTY', 'FREE-KICK']
+#                 relevant_origin = df[(df['CATEGORY'].isin(origin_events)) & (df['SECOND'] < row['SECOND'])]
+#                 origin = relevant_origin.iloc[-1] if not relevant_origin.empty else None
 
-                end_events = ['PENALTY', 'TURNOVER-', 'POINTS']
-                relevant_end = df[(df['CATEGORY'].isin(end_events)) & (df['SECOND'] > row['SECOND'])]
-                end = relevant_end.iloc[0] if not relevant_end.empty else None
+#                 end_events = ['PENALTY', 'TURNOVER-', 'POINTS']
+#                 relevant_end = df[(df['CATEGORY'].isin(end_events)) & (df['SECOND'] > row['SECOND'])]
+#                 end = relevant_end.iloc[0] if not relevant_end.empty else None
 
-                ruck_events = df[(df['CATEGORY'] == 'RUCK') & (df['SECOND'] >= (origin['SECOND'] if origin is not None else 0)) & (df['SECOND'] <= (end['SECOND'] if end is not None else row['SECOND']))]
-                phases = len(ruck_events) + 1 if not ruck_events.empty else 1
+#                 ruck_events = df[(df['CATEGORY'] == 'RUCK') & (df['SECOND'] >= (origin['SECOND'] if origin is not None else 0)) & (df['SECOND'] <= (end['SECOND'] if end is not None else row['SECOND']))]
+#                 phases = len(ruck_events) + 1 if not ruck_events.empty else 1
 
-                row['ORIGIN'] = origin['CATEGORY'] if origin is not None else None
-                row['END'] = end['CATEGORY'] if end is not None else None
-                row['PHASES'] = phases
-            return row
+#                 row['ORIGIN'] = origin['CATEGORY'] if origin is not None else None
+#                 row['END'] = end['CATEGORY'] if end is not None else None
+#                 row['PHASES'] = phases
+#             return row
         
 
 
 
-        # Limpia las filas eliminando claves con valores null, NaN, arrays vacíos o 'Undefined'
-        def clean_row(row):
-            return {
-                k: v for k, v in row.items()
-                if v is not None and v != 'undefined' and (not isinstance(v, list) or len(v) > 0) and (not (isinstance(v, float) and pd.isna(v)))
-            }
+#         # Limpia las filas eliminando claves con valores null, NaN, arrays vacíos o 'Undefined'
+#         def clean_row(row):
+#             return {
+#                 k: v for k, v in row.items()
+#                 if v is not None and v != 'undefined' and (not isinstance(v, list) or len(v) > 0) and (not (isinstance(v, float) and pd.isna(v)))
+#             }
 
-        # Inicializa las columnas LINE_THROWER y LINE_RECEIVER en el DataFrame
-        df['LINE_THROWER'] = None
-        df['LINE_RECEIVER'] = None
-        df['YELLOW-CARD'] = None
-        df['RED-CARD'] = None
+#         # Inicializa las columnas LINE_THROWER y LINE_RECEIVER en el DataFrame
+#         df['LINE_THROWER'] = None
+#         df['LINE_RECEIVER'] = None
+#         df['YELLOW-CARD'] = None
+#         df['RED-CARD'] = None
 
-        # Aplica las transformaciones a los eventos
-        df = df.apply(process_lineout_events, axis=1)
-        df = df.apply(process_tackle_events, axis=1)
-        df = df.apply(process_penalty_events, axis=1)  # Aplica la nueva función
-        df = df.apply(lambda row: calculate_attack_defence(row, df), axis=1)
+#         # Aplica las transformaciones a los eventos
+#         df = df.apply(process_lineout_events, axis=1)
+#         df = df.apply(process_tackle_events, axis=1)
+#         df = df.apply(process_penalty_events, axis=1)  # Aplica la nueva función
+#         df = df.apply(lambda row: calculate_attack_defence(row, df), axis=1)
 
-        # Aplica la limpieza
-        df_json = df.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
-        # Si necesitas guardar df_partidos_json, descomenta la siguiente línea:
-        # with open(os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_matches.json'), 'w') as f:
-        #     f.write(df_partidos_json)
+#         # Aplica la limpieza
+#         df_json = df.apply(lambda row: clean_row(row.to_dict()), axis=1).to_json(orient='records')
+#         # Si necesitas guardar df_partidos_json, descomenta la siguiente línea:
+#         # with open(os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO_matches.json'), 'w') as f:
+#         #     f.write(df_partidos_json)
 
-        # Guarda los JSON en archivos
-        with open(os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json'), 'w') as f:
-            f.write(df_json)
+#         # Guarda los JSON en archivos
+#         with open(os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json'), 'w') as f:
+#             f.write(df_json)
 
 
-        return jsonify({"message": "Conversion successful"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#         return jsonify({"message": "Conversion successful"}), 200
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_events', methods=['GET'])
 def analyze_events():
@@ -520,32 +520,6 @@ def manage_clubs():
         clubs = db.query(Club).all()
         return jsonify([{"id": c.id, "name": c.name} for c in clubs])
     
-@app.route('/api/import/profiles', methods=['POST'])
-def create_profile():
-    data = request.get_json()
-    name = data.get('name')
-    description = data.get('description', '')
-    settings = data.get('settings')
-
-    if not name or not settings:
-        return jsonify({"error": "Faltan 'name' o 'settings'"}), 400
-
-    db = SessionLocal()
-    try:
-        existing = db.query(ImportProfile).filter_by(name=name).first()
-        if existing:
-            return jsonify({"error": "Perfil ya existe"}), 409
-
-        profile = ImportProfile(name=name, description=description, settings=settings)
-        db.add(profile)
-        db.commit()
-        return jsonify({"message": "Perfil creado"}), 201
-    except Exception as e:
-        db.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        db.close()
-
 @app.route('/api/import/profiles', methods=['GET'])
 def list_profiles():
     db = SessionLocal()
@@ -590,10 +564,6 @@ def import_file():
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(save_path)
 
-    print("📝 Perfiles existentes:", [p.name for p in db.query(ImportProfile).all()])
-
-
-    # Obtener perfil por nombre desde query param ?profile=nombre
     profile_name = request.args.get("profile")
     db = SessionLocal()
     try:
@@ -604,7 +574,54 @@ def import_file():
         if not profile:
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
 
-        import_match_from_excel(save_path, profile.settings)
+        # Validar que el tipo de archivo coincide con la extensión
+        file_type = profile.settings.get('file_type', '').lower()
+        if file_type == 'xml' and not filename.lower().endswith('.xml'):
+            print("❌ Error: El archivo no tiene extensión .xml pero el perfil indica XML")
+            return {"error": "El archivo no coincide con el tipo XML indicado en el perfil"}, 400
+        elif file_type in ['xls', 'xlsx'] and not filename.lower().endswith(('.xls', '.xlsx')):
+            print("❌ Error: El archivo no tiene extensión .xls o .xlsx pero el perfil indica Excel")
+            return {"error": "El archivo no coincide con el tipo Excel indicado en el perfil"}, 400
+
+        # Detectar tipo de archivo según el perfil o la extensión
+        file_type = profile.settings.get('file_type', '').lower()
+        print(f"👉 Tipo de archivo según perfil: '{file_type}'")
+        print(f"👉 Nombre del archivo: '{filename}'")
+        print(f"👉 Extensión del archivo: '{filename.lower().split('.')[-1] if '.' in filename else 'sin extensión'}'")
+        
+        # Si no hay file_type definido en el perfil, detectar por extensión
+        if not file_type:
+            if filename.lower().endswith('.xml'):
+                file_type = 'xml'
+                print("👉 Tipo de archivo detectado por extensión: XML")
+            elif filename.lower().endswith(('.xls', '.xlsx')):
+                file_type = 'xlsx'
+                print("👉 Tipo de archivo detectado por extensión: Excel")
+            else:
+                print("❌ No se pudo detectar el tipo de archivo")
+                return {"error": "No se pudo detectar el tipo de archivo. Extensión no soportada."}, 400
+        
+        if file_type == 'xml':
+            print("👉 Archivo XML detectado")
+            try:
+                result = normalize_xml_to_json(save_path, profile.settings)
+                if not result or 'match' not in result or 'events' not in result:
+                    print(f"❌ Datos faltantes en resultado de normalización: {result}")
+                    return {"error": "Datos faltantes en archivo XML"}, 400
+                import_match_from_xml(result, profile.settings)
+            except Exception as e:
+                print(f"Error procesando archivo XML: {e}")
+                return {"error": f"Error procesando archivo XML: {str(e)}"}, 500
+        elif file_type in ['xls', 'xlsx']:
+            print("👉 Archivo Excel detectado")
+            result = normalize_excel_to_json(save_path, profile.settings)
+            # Pasar el perfil completo en lugar de solo profile.settings
+            import_match_from_excel(save_path, {'settings': profile.settings} if hasattr(profile, 'settings') else profile)
+        else:
+            print("❌ Tipo de archivo no soportado")
+            return {"error": "Tipo de archivo no soportado"}, 400
+
+        print(f"👉 Resultado de normalización: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
         return {"message": f"Archivo importado usando perfil '{profile_name}'"}, 200
 
     except Exception as e:
@@ -643,22 +660,101 @@ def preview_file():
 
     db = SessionLocal()
     try:
+        # Debug: mostrar todos los perfiles disponibles
+        all_profiles = db.query(ImportProfile).all()
+        print(f"👉 Perfiles disponibles en DB: {[p.name for p in all_profiles]}")
+        
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
             print(f"👉 Perfil no encontrado: {profile_name}")
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
         
         print("👉 Procesando preview con perfil:", profile.name)
+        print(f"👉 Perfil completo desde DB: {profile}")
+        print(f"👉 Configuración del perfil: {profile.settings}")
+        print(f"👉 Tipo del perfil.settings: {type(profile.settings)}")
 
-        try:
-            result = normalize_excel_to_json(save_path, profile.settings)
-            print(f"👉 normalize_excel_to_json resultado: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
-        except Exception as e:
-            print(f"👉 Error en normalize_excel_to_json: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"error": f"Error procesando archivo: {e}"}, 500
+        # Detectar tipo de archivo según el perfil o la extensión
+        file_type = profile.settings.get('file_type', '').lower()
+        print(f"👉 Tipo de archivo según perfil: '{file_type}'")
+        print(f"👉 Nombre del archivo: '{filename}'")
+        print(f"👉 Extensión del archivo: '{filename.lower().split('.')[-1] if '.' in filename else 'sin extensión'}'")
         
+        # Si no hay file_type definido en el perfil, detectar por extensión
+        if not file_type:
+            if filename.lower().endswith('.xml'):
+                file_type = 'xml'
+                print("👉 Tipo de archivo detectado por extensión: XML")
+            elif filename.lower().endswith(('.xls', '.xlsx')):
+                file_type = 'xlsx'
+                print("👉 Tipo de archivo detectado por extensión: Excel")
+            else:
+                print("❌ No se pudo detectar el tipo de archivo")
+                return {"error": "No se pudo detectar el tipo de archivo. Extensión no soportada."}, 400
+        
+        if file_type == 'xml':
+            print("👉 Archivo XML detectado")
+            try:
+                print(f"👉 Llamando normalize_xml_to_json con: {save_path}")
+                result = normalize_xml_to_json(save_path, profile.settings)
+                print(f"👉 Resultado de normalize_xml_to_json: {result}")
+                print(f"👉 Tipo de resultado: {type(result)}")
+                if result:
+                    print(f"👉 Claves en resultado: {list(result.keys())}")
+                    if 'match' in result:
+                        print(f"👉 Match info: {result['match']}")
+                    if 'events' in result:
+                        print(f"👉 Eventos encontrados: {len(result['events'])}")
+                        print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
+                else:
+                    print("👉 El resultado es None o vacío")
+            except Exception as xml_error:
+                print(f"👉 Error al procesar XML: {xml_error}")
+                import traceback
+                traceback.print_exc()
+                return {"error": f"Error procesando archivo XML: {str(xml_error)}"}, 500
+        elif file_type in ['xls', 'xlsx']:
+            print("👉 Archivo Excel detectado")
+            try:
+                print(f"👉 Llamando normalize_excel_to_json con: {save_path}")
+                result = normalize_excel_to_json(save_path, profile.settings)
+                print(f"👉 Resultado de normalize_excel_to_json: {result}")
+                print(f"👉 Tipo de resultado: {type(result)}")
+                if result:
+                    print(f"👉 Claves en resultado: {list(result.keys())}")
+                    if 'match' in result:
+                        print(f"👉 Match info: {result['match']}")
+                    if 'events' in result:
+                        print(f"👉 Eventos encontrados: {len(result['events'])}")
+                        print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
+                else:
+                    print("👉 El resultado es None o vacío")
+            except Exception as excel_error:
+                print(f"👉 Error al procesar Excel: {excel_error}")
+                import traceback
+                traceback.print_exc()
+                return {"error": f"Error procesando archivo Excel: {str(excel_error)}"}, 500
+        else:
+            print("❌ Tipo de archivo no soportado")
+            return {"error": "Tipo de archivo no soportado"}, 400
+
+        print(f"👉 Resultado de normalización: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
+        
+        if result is None:
+            print("👉 normalize_xml_to_json devolvió None - error en el procesamiento")
+            return {"error": "Error procesando el archivo XML. Verifique el formato del archivo."}, 500
+        
+        print(f"👉 Contenido del archivo después de normalización: {result}")
+        if result:
+            print(f"👉 Claves en el resultado: {list(result.keys())}")
+            if 'match' in result:
+                print(f"👉 Contenido de 'match': {result['match']}")
+            if 'events' in result:
+                print(f"👉 Número de eventos: {len(result['events'])}")
+                print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
+        else:
+            print("👉 Resultado de normalización es None o vacío")
+
         if not result or "match" not in result or "events" not in result:
             print(f"👉 Resultado inválido - result: {bool(result)}, match: {'match' in result if result else False}, events: {'events' in result if result else False}")
             return {"error": "Archivo inválido o sin datos"}, 400
@@ -687,14 +783,43 @@ def preview_file():
         db.close()
 
 
+def convert_json_safe(data):
+    """Convierte datos que pueden contener tipos no serializables a JSON"""
+    import numpy as np
+    import pandas as pd
+    from datetime import datetime, date, time
+    
+    if isinstance(data, dict):
+        return {k: convert_json_safe(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_json_safe(item) for item in data]
+    elif isinstance(data, (np.integer, np.floating)):
+        return float(data)
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
+    elif isinstance(data, (datetime, date, time)):
+        return data.isoformat()
+    elif pd.isna(data):
+        return None
+    else:
+        return data
+
+
 @app.route("/api/save_match", methods=["POST"])
 def save_match():
+    print("👉 SAVE_MATCH: Iniciando importación")
     data = request.get_json()
+    print(f"👉 SAVE_MATCH: Datos recibidos - keys: {list(data.keys()) if data else 'None'}")
+    
     if not data or "match" not in data or "events" not in data:
+        print("👉 SAVE_MATCH: Error - faltan datos básicos")
         return jsonify({"error": "Faltan datos"}), 400
     
     profile_name = data.get("profile")
+    print(f"👉 SAVE_MATCH: Perfil solicitado: {profile_name}")
+    
     if not profile_name:
+        print("👉 SAVE_MATCH: Error - falta el perfil")
         return jsonify({"error": "Falta el perfil"}), 400
 
     db = SessionLocal()
@@ -702,13 +827,19 @@ def save_match():
         # Buscar el perfil en la base de datos
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
+            print(f"👉 SAVE_MATCH: Error - perfil '{profile_name}' no encontrado")
             return jsonify({"error": f"Perfil '{profile_name}' no encontrado"}), 404
         
+        print(f"👉 SAVE_MATCH: Perfil encontrado: {profile.name}")
+        print(f"👉 SAVE_MATCH: Configuración del perfil: {profile.settings}")
+        
         # Llamar a la función con los datos y el perfil
+        print("👉 SAVE_MATCH: Llamando a import_match_from_json")
         import_match_from_json(data, profile.settings)
+        print("👉 SAVE_MATCH: Importación completada exitosamente")
         return jsonify({"message": "Importación exitosa"}), 200
     except Exception as e:
-        print(f"Error en save_match: {e}")
+        print(f"👉 SAVE_MATCH: Error en save_match: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -718,42 +849,78 @@ def save_match():
 def ensure_default_import_profile():
     db = SessionLocal()
     try:
-        existing = db.query(ImportProfile).filter_by(name='Default').first()
-        # Definición de configuración por defecto con time_mapping actualizado
+        # Crear perfil Default (Excel)
+        default_existing = db.query(ImportProfile).filter_by(name='Default').first()
         default_settings = {
-             "events_sheet": "MATRIZ",
-             "meta_sheet": "MATCHES",
-             "col_event_type": "CATEGORY",
-             "col_player": "PLAYER",
-             "col_time": "SECOND",
-             "col_x": "COORDINATE_X",
-             "col_y": "COORDINATE_Y",
-             "discard_categories": [],
-             "normalize_penalty_cards": True,
-             "normalize_lineout": True,
-             "normalize_tackle": True,
-        }
-        default_settings["time_mapping"] = {
-            "method": "event_based",
-            "kick_off_1": {"category": "KICK OFF", "descriptor": "PERIODS", "value": 1},
-            "end_1": {"category": "END", "descriptor": "PERIODS", "value": 1},
-            "kick_off_2": {"category": "KICK OFF", "descriptor": "PERIODS", "value": 2},
-            "end_2": {"category": "END", "descriptor": "PERIODS", "value": 2},
-            "manual_times": {
-                "kick_off_1": 0,
-                "end_1": 2400,
-                "kick_off_2": 2700,
-                "end_2": 4800
+            "file_type": "xlsx",
+            "events_sheet": "MATRIZ",
+            "meta_sheet": "MATCHES",
+            "col_event_type": "CATEGORY",  # Columna original en Excel
+            "col_player": "PLAYER",
+            "col_time": "SECOND",  # Columna original en Excel
+            "col_x": "COORDINATE_X",
+            "col_y": "COORDINATE_Y",
+            "discard_categories": [],
+            "normalize_penalty_cards": True,
+            "normalize_lineout": True,
+            "normalize_tackle": True,
+            "time_mapping": {
+                "method": "event_based",
+                "kick_off_1": {"category": "KICK OFF", "descriptor": "PERIODS", "descriptor_value": "1"},
+                "end_1": {"category": "END", "descriptor": "PERIODS", "descriptor_value": "1"},
+                "kick_off_2": {"category": "KICK OFF", "descriptor": "PERIODS", "descriptor_value": "2"},
+                "end_2": {"category": "END", "descriptor": "PERIODS", "descriptor_value": "2"},
+                "manual_times": {
+                    "kick_off_1": 0,
+                    "end_1": 2400,
+                    "kick_off_2": 2700,
+                    "end_2": 4800
+                }
             }
         }
-        if not existing:
-            # Crear perfil Default si no existe
-            profile = ImportProfile(name='Default', description='Perfil por defecto', settings=default_settings)
+        
+        if not default_existing:
+            profile = ImportProfile(name='Default', description='Perfil por defecto para Excel', settings=default_settings)
             db.add(profile)
         else:
-            # Actualizar configuración legacy existente
-            existing.settings = default_settings
+            default_existing.settings = default_settings
+        
+        # Crear perfil para XML
+        xml_existing = db.query(ImportProfile).filter_by(name='Importacion XML').first()
+        xml_settings = {
+            "file_type": "xml",
+            "col_event_type": "event_type",
+            "col_player": "player",
+            "col_time": "timestamp_sec",
+            "col_x": "x",
+            "col_y": "y",
+            "discard_categories": [],
+            "normalize_penalty_cards": True,
+            "normalize_lineout": True,
+            "normalize_tackle": True,
+            "time_mapping": {
+                "method": "event_based",
+                "kick_off_1": {"category": "KICK OFF", "descriptor": "period", "descriptor_value": "1"},
+                "end_1": {"category": "END", "descriptor": "period", "descriptor_value": "1"},
+                "kick_off_2": {"category": "KICK OFF", "descriptor": "period", "descriptor_value": "2"},
+                "end_2": {"category": "END", "descriptor": "period", "descriptor_value": "2"},
+                "manual_times": {
+                    "kick_off_1": 0,
+                    "end_1": 2400,
+                    "kick_off_2": 2700,
+                    "end_2": 4800
+                }
+            }
+        }
+        
+        if not xml_existing:
+            profile = ImportProfile(name='Importacion XML', description='Perfil para archivos XML', settings=xml_settings)
+            db.add(profile)
+        else:
+            xml_existing.settings = xml_settings
+        
         db.commit()
+        print("✅ Perfiles por defecto creados/actualizados")
     finally:
         db.close()
 
@@ -787,28 +954,6 @@ def create_or_update_profile():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
-
-def convert_json_safe(data):
-    """Convierte datos que pueden contener tipos no serializables a JSON"""
-    import numpy as np
-    import pandas as pd
-    from datetime import datetime, date, time
-    
-    if isinstance(data, dict):
-        return {k: convert_json_safe(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [convert_json_safe(item) for item in data]
-    elif isinstance(data, (np.integer, np.floating)):
-        return float(data)
-    elif isinstance(data, np.ndarray):
-        return data.tolist()
-    elif isinstance(data, (datetime, date, time)):
-        return data.isoformat()
-    elif pd.isna(data):
-        return None
-    else:
-        return data
-
 
 register_routes(app)
 

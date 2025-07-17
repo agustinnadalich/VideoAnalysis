@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ const CreateProfile = () => {
 
   // Estado para el perfil seleccionado
   const [selectedProfile, setSelectedProfile] = useState("");
+
+  // Nuevo: Tipo de archivo
+  const [fileType, setFileType] = useState<"xlsx" | "json" | "xml">("xlsx");
 
   // Paso 1: Nombre y descripción
   const [profileName, setProfileName] = useState("");
@@ -37,7 +40,7 @@ const CreateProfile = () => {
 
   // Paso 5: Configuración de tiempos
   const [timeMethod, setTimeMethod] = useState<"event_based" | "category_based" | "manual">("event_based");
-  const [manualTimes, setManualTimes] = useState({
+  const [manualTimes, setManualTimes] = useState<Record<string, number>>({
     kick_off_1: 0,
     end_1: 2400,
     kick_off_2: 2700,
@@ -58,11 +61,11 @@ const CreateProfile = () => {
     if (selectedProfile) {
       const profile = profilesQuery.data?.find((p: any) => p.name === selectedProfile);
       setTimeCategories({
-        kick_off_1: profile.settings?.time_mapping?.kick_off_1 || { category: "", descriptor: "" },
-        end_1: profile.settings?.time_mapping?.end_1 || { category: "", descriptor: "" },
-        kick_off_2: profile.settings?.time_mapping?.kick_off_2 || { category: "", descriptor: "" },
-        end_2: profile.settings?.time_mapping?.end_2 || { category: "", descriptor: "" },
-    });
+        kick_off_1: profile.settings?.time_mapping?.kick_off_1 || { category: "", descriptor: "", descriptor_value: "" },
+        end_1: profile.settings?.time_mapping?.end_1 || { category: "", descriptor: "", descriptor_value: "" },
+        kick_off_2: profile.settings?.time_mapping?.kick_off_2 || { category: "", descriptor: "", descriptor_value: "" },
+        end_2: profile.settings?.time_mapping?.end_2 || { category: "", descriptor: "", descriptor_value: "" },
+      });
 
       if (profile) {
         setProfileName(profile.name);
@@ -79,6 +82,7 @@ const CreateProfile = () => {
           kick_off_2: 2700,
           end_2: 4800,
         });
+        setFileType(profile.settings?.file_type || "xlsx");
       }
     }
   }, [selectedProfile, profilesQuery.data]);
@@ -92,16 +96,19 @@ const CreateProfile = () => {
         name: profileName,
         description: description,
         settings: {
+          file_type: fileType,
           events_sheet: "MATRIZ",
           meta_sheet: "MATCHES",
-          col_event_type: colEventType,
-          col_player: colPlayer,
-          col_time: colTime,
-          col_x: colX,
-          col_y: colY,
-          normalize_penalty_cards: true,
-          normalize_lineout: true,
-          normalize_tackle: true,
+          ...(fileType !== "xml" && {
+            col_event_type: colEventType,
+            col_player: colPlayer,
+            col_time: colTime,
+            col_x: colX,
+            col_y: colY,
+            normalize_penalty_cards: true,
+            normalize_lineout: true,
+            normalize_tackle: true,
+          }),
           time_mapping: {
             method: timeMethod,
             kick_off_1: {
@@ -162,9 +169,9 @@ const CreateProfile = () => {
     // Validación para habilitar/deshabilitar el botón
     const isSaveDisabled =
     !profileName.trim() ||
-    !colEventType.trim() ||
-    (timeMethod === "manual" && Object.values(manualTimes).some((time) => time <= 0)) ||
-    (timeMethod !== "manual" && Object.values(timeCategories).some(tc => !tc.category.trim()));
+    (fileType !== "xml" && !colEventType.trim()) ||
+    (timeMethod === "manual" && (Object.values(manualTimes) as number[]).some((time) => time <= 0)) ||
+    (timeMethod !== "manual" && (Object.values(timeCategories) as { category: string }[]).some(tc => !tc.category.trim()));
 
 
   if (profilesQuery.isLoading) {
@@ -190,7 +197,7 @@ const CreateProfile = () => {
             <Label>Seleccionar Perfil</Label>
             <select
               value={selectedProfile}
-              onChange={(e) => setSelectedProfile(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedProfile(e.target.value)}
               className="w-full border p-2 rounded"
             >
               <option value="">Seleccionar un perfil existente...</option>
@@ -210,6 +217,19 @@ const CreateProfile = () => {
           </div>
 
           <div>
+            <Label>Tipo de archivo</Label>
+            <select
+              value={fileType}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFileType(e.target.value as "xlsx" | "json" | "xml")}
+              className="w-full border p-2 rounded"
+            >
+              <option value="xlsx">Excel</option>
+              <option value="json">JSON</option>
+              <option value="xml">XML</option>
+            </select>
+          </div>
+
+          <div>
             <Label>Nombre del Perfil</Label>
             <Input
               value={profileName}
@@ -225,45 +245,50 @@ const CreateProfile = () => {
             />
           </div>
 
-          <div>
-            <Label>Columna Categoría</Label>
-            <Input
-              value={colEventType}
-              onChange={(e) => setColEventType(e.target.value)}
-            />
-          </div>
+          {/* Solo mostrar campos de columnas si el tipo de archivo no es XML */}
+          {fileType !== "xml" && (
+            <>
+              <div>
+                <Label>Columna Categoría</Label>
+                <Input
+                  value={colEventType}
+                  onChange={(e) => setColEventType(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <Label>Columna Jugador</Label>
-            <Input
-              value={colPlayer}
-              onChange={(e) => setColPlayer(e.target.value)}
-            />
-          </div>
+              <div>
+                <Label>Columna Jugador</Label>
+                <Input
+                  value={colPlayer}
+                  onChange={(e) => setColPlayer(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <Label>Columna Tiempo (segundos)</Label>
-            <Input
-              value={colTime}
-              onChange={(e) => setColTime(e.target.value)}
-            />
-          </div>
+              <div>
+                <Label>Columna Tiempo (segundos)</Label>
+                <Input
+                  value={colTime}
+                  onChange={(e) => setColTime(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <Label>Columna Coordenada X</Label>
-            <Input value={colX} onChange={(e) => setColX(e.target.value)} />
-          </div>
+              <div>
+                <Label>Columna Coordenada X</Label>
+                <Input value={colX} onChange={(e) => setColX(e.target.value)} />
+              </div>
 
-          <div>
-            <Label>Columna Coordenada Y</Label>
-            <Input value={colY} onChange={(e) => setColY(e.target.value)} />
-          </div>
+              <div>
+                <Label>Columna Coordenada Y</Label>
+                <Input value={colY} onChange={(e) => setColY(e.target.value)} />
+              </div>
+            </>
+          )}
 
           <div>
             <Label>Método para Calcular Tiempo de Juego</Label>
             <select
               value={timeMethod}
-              onChange={(e) => setTimeMethod(e.target.value as any)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTimeMethod(e.target.value as "event_based" | "category_based" | "manual")}
               className="w-full border p-2 rounded"
             >
               <option value="event_based">Por Evento + Descriptor</option>
@@ -283,7 +308,7 @@ const CreateProfile = () => {
                   <Input
                     placeholder="Categoría (ej: KICK OFF)"
                     value={val.category}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setTimeCategories((prev) => ({
                         ...prev,
                         [key]: { ...prev[key], category: e.target.value },
@@ -296,7 +321,7 @@ const CreateProfile = () => {
                       <Input
                         placeholder="Nombre del descriptor (ej: INICIO)"
                         value={val.descriptor}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setTimeCategories((prev) => ({
                             ...prev,
                             [key]: {
@@ -311,7 +336,7 @@ const CreateProfile = () => {
                       <Input
                         placeholder="Valor esperado (ej: 1ER TIEMPO)"
                         value={val.descriptor_value || ""}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setTimeCategories((prev) => ({
                             ...prev,
                             [key]: {
@@ -336,7 +361,7 @@ const CreateProfile = () => {
                   <Input
                     type="number"
                     value={value}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setManualTimes((prev) => ({
                         ...prev,
                         [key]: parseInt(e.target.value) || 0, // Asegura que el valor sea un número válido
