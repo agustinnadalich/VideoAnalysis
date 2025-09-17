@@ -49,7 +49,7 @@ CREATE TABLE Events (
     match_id INTEGER REFERENCES Matches(id),
     player_id INTEGER REFERENCES Players(id),
     event_type VARCHAR(50),
-    timestamp_sec INTEGER,
+    timestamp_sec FLOAT,
     x FLOAT,
     y FLOAT,
     tag TEXT,

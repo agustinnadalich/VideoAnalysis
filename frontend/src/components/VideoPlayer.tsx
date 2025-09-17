@@ -93,7 +93,7 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
           opts={{ playerVars: { autoplay: 0, controls: 1 } }}
           className="w-full rounded shadow"
         />
-      ) : (
+      ) : videoUrl ? (
         <video
           ref={videoRef}
           src={videoUrl}
@@ -102,6 +102,10 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
           onTimeUpdate={handleTimeUpdate}
           onEnded={playNext} // Reproducir el siguiente evento al terminar
         />
+      ) : (
+        <div className="w-full h-64 bg-gray-200 rounded shadow flex items-center justify-center">
+          <p className="text-gray-500">No video available</p>
+        </div>
       )}
       <div className="flex gap-2 mt-2">
         {/* Botón de play/pausa removido para evitar inconsistencias de estado */}

@@ -71,7 +71,18 @@ class Match(Base):
     wind_1p = Column(String(20))
     wind_2p = Column(String(20))
     referee = Column(String(100))
-    result = Column(String) 
+    result = Column(String)
+    import_profile_name = Column(String(100))
+    
+    # Tiempos manuales en segundos
+    kick_off_1_seconds = Column(Integer)
+    end_1_seconds = Column(Integer)
+    kick_off_2_seconds = Column(Integer)
+    end_2_seconds = Column(Integer)
+    
+    # Delays para ajustar timestamps (en segundos)
+    global_delay_seconds = Column(Integer, default=0)  # Delay global aplicado a todos los eventos
+    event_delays = Column(JSONB)  # Delays específicos por tipo de evento, ej: {"TACKLE": -2, "PASS": 1}
 
     team = relationship("Team", back_populates="matches")
     events = relationship("Event", back_populates="match")
@@ -81,13 +92,19 @@ class Match(Base):
             "id": self.id,
             "team_id": self.team_id,
             "opponent_name": self.opponent_name,
-            "date": self.date.isoformat() if self.date else None,
+            "date": self.date.isoformat() if self.date is not None else None,
             "location": self.location,
             "competition": self.competition,
             "round": self.round,
             "result": self.result,
             "video_url": self.video_url,
-            # ...otros campos simples...
+            "import_profile_name": self.import_profile_name,
+            "kick_off_1_seconds": self.kick_off_1_seconds,
+            "end_1_seconds": self.end_1_seconds,
+            "kick_off_2_seconds": self.kick_off_2_seconds,
+            "end_2_seconds": self.end_2_seconds,
+            "global_delay_seconds": self.global_delay_seconds,
+            "event_delays": self.event_delays,
         }
 
 
@@ -98,7 +115,7 @@ class Event(Base):
     match_id = Column(Integer, ForeignKey("matches.id"))
     player_id = Column(Integer, ForeignKey("players.id"))
     event_type = Column(String(50))
-    timestamp_sec = Column(Integer)
+    timestamp_sec = Column(Float)
     x = Column(Float)
     y = Column(Float)
     tag = Column(Text)

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 export interface FilterContextType {
   matchInfo: any;
@@ -17,13 +17,34 @@ export interface FilterContextType {
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
-export const FilterProvider = ({ children }: { children: React.ReactNode }) => {
+export const FilterProvider = ({ 
+  children, 
+  initialResponse 
+}: { 
+  children: React.ReactNode;
+  initialResponse?: any;
+}) => {
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [filteredEventsState, setFilteredEventsState] = useState<any[]>([]);
   const [filterDescriptors, setFilterDescriptors] = useState<any[]>([]);
   const [filterCategory, setFilterCategory] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+
+  // Inicializar con datos cuando se recibe initialResponse
+  useEffect(() => {
+    console.log("FilterProvider useEffect - initialResponse:", initialResponse);
+    if (initialResponse && initialResponse.events) {
+      console.log("FilterProvider - Setting events:", initialResponse.events.length);
+      setEvents(initialResponse.events);
+      setFilteredEventsState(initialResponse.events);
+      
+      if (initialResponse.match_info) {
+        console.log("FilterProvider - Setting match_info:", initialResponse.match_info);
+        setMatchInfo(initialResponse.match_info);
+      }
+    }
+  }, [initialResponse]);
 
   // Ordenar los eventos antes de establecerlos en el estado
   const setFilteredEvents = (events: any[]) => {

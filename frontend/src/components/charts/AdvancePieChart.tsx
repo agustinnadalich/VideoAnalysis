@@ -1,93 +1,78 @@
-import React, { useContext } from 'react';
-import { Pie } from 'react-chartjs-2';
-import FilterContext from "../../context/FilterContext";
+import React from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-const AdvancePieChart = ({ events, onChartClick, category }) => {
-  const { setFilterDescriptors, filterDescriptors } = useContext(FilterContext);
+const COLORS = ['#00C49F', '#FFBB28', '#FF8042', '#0088FE'];
 
+type Props = {
+  events: any[];
+  onChartClick?: (event: any, elements: any, chart: any, chartType: string, tabId?: string, additionalFilters?: any[]) => void;
+  category: string;
+};
+
+const AdvancePieChart: React.FC<Props> = ({ events, onChartClick, category }) => {
+  // Soportar tanto formato nuevo como legacy
   const filteredEvents = events.filter(
-    (event) => event.CATEGORY === category
+    (event) => event.CATEGORY === category || event.event_type === category
   );
 
+  // Obtener avances únicos soportando ambos formatos
   const advanceLabels = [
-    ...new Set(filteredEvents.map((event) => event.ADVANCE).filter((avance) => avance !== null)),
-  ].sort((a, b) => a - b);
+    ...new Set(filteredEvents.map((event) => {
+      const advance = event.ADVANCE || (event.extra_data && event.extra_data.AVANCE);
+      return advance;
+    }).filter((avance) => avance !== null && avance !== undefined)),
+  ].sort();
+
+  console.log("AdvancePieChart - Filtered events:", filteredEvents.length);
+  console.log("AdvancePieChart - Advance labels:", advanceLabels);
 
   const advanceData = advanceLabels.map(
     (result) =>
-      filteredEvents.filter((event) => event.ADVANCE === result).length
+      filteredEvents.filter((event) => {
+        const advance = event.ADVANCE || (event.extra_data && event.extra_data.AVANCE);
+        return advance === result;
+      }).length
   );
 
-  const pieChartData = {
-    labels: advanceLabels,
-    datasets: [
-      {
-        label: `Advance by ${category.toLowerCase()}`,
-        data: advanceData,
-        backgroundColor: advanceLabels.map((label) => {
-          if (label === "POSITIVE") {
-            return "rgba(75, 192, 192, 0.6)";
-          } else if (label === "NEGATIVE") {
-            return "rgba(255, 99, 132, 0.6)";
-          } else {
-            return "rgba(201, 203, 207, 0.6)";
-          }
-        }),
-      },
-    ],
-  };
+  const data = advanceLabels.map((label, index) => ({
+    name: label,
+    value: advanceData[index],
+  }));
 
-  const handleChartClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const index = elements[0].index;
-      const clickedLabel = chart.data.labels[index];
-
-      // Pass filter data to the onChartClick function in New-charts.js
-      onChartClick(event, elements,chart, "advance-chart", "tackles-tab", [
-        { descriptor: "CATEGORY", value: category },
-        { descriptor: "ADVANCE", value: clickedLabel }
+  const onPieClick = (data: any) => {
+    if (onChartClick && data.name) {
+      onChartClick(null, null, null, 'advance-chart', 'tackles-tab', [
+        { descriptor: "ADVANCE", value: data.name }
       ]);
     }
   };
 
-
-  const pieChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: `Advance Distribution - ${category}`,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const label = context.label;
-            const value = context.raw;
-            return `${label}: ${value}`;
-          },
-        },
-      },
-      datalabels: {
-        color: 'grey',
-        formatter: (value, context) => {
-          const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const dataElement = meta.data[context.dataIndex];
-          const hidden = dataElement ? dataElement.hidden : false;
-          return hidden || value === 0 ? '' : value;
-        },
-        font: {
-          weight: 'bold',
-        },
-      },
-    },
-    onClick: handleChartClick,
-  };
-
-  return <Pie data={pieChartData} options={pieChartOptions} />;
+  return (
+    <div className="w-full">
+      <h3 className="text-lg font-semibold mb-2">Distribución de Avances - {category}</h3>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={({ name, percent }) => `${name}: ${((percent as number) * 100).toFixed(0)}%`}
+            outerRadius={80}
+            fill="#8884d8"
+            dataKey="value"
+            onClick={onPieClick}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
 };
 
 export default AdvancePieChart;

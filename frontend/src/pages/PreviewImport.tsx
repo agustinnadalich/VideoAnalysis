@@ -1,5 +1,5 @@
+import React, { ChangeEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { toast } from "sonner"; // Asumiendo que sonner está instalado
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,8 @@ const PreviewImport = () => {
   const [discardedCategories, setDiscardedCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [labelsWithoutGroup, setLabelsWithoutGroup] = useState(previewData?.labels_without_group || []);
+  const [editedLabels, setEditedLabels] = useState<string[]>([]);
 
   // Definir los campos del modelo Match con etiquetas amigables
   const matchFields = [
@@ -43,9 +45,9 @@ const PreviewImport = () => {
   };
 
   const toggleCategory = (category: string) => {
-    setDiscardedCategories((prev) =>
+    setDiscardedCategories((prev: string[]) =>
       prev.includes(category)
-        ? prev.filter((c) => c !== category)
+        ? prev.filter((c: string) => c !== category)
         : [...prev, category]
     );
   };
@@ -59,11 +61,11 @@ const PreviewImport = () => {
   };
 
   const discardCommonCategories = () => {
-    const commonDiscard = ['WARMUP', 'HALFTIME', 'END', 'TIMEOUT'];
-    const toDiscard = availableCategories.filter(cat => 
-      commonDiscard.some(common => cat.toUpperCase().includes(common))
+    const commonDiscard = ["WARMUP", "HALFTIME", "END", "TIMEOUT"];
+    const toDiscard = availableCategories.filter((cat: string) =>
+      commonDiscard.some((common) => cat.toUpperCase().includes(common))
     );
-    setDiscardedCategories(prev => [...new Set([...prev, ...toDiscard])]);
+    setDiscardedCategories((prev: string[]) => [...new Set([...prev, ...toDiscard])]);
   };
 
   const handleConfirm = async () => {
@@ -102,6 +104,45 @@ const PreviewImport = () => {
     }
   };
 
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      // La funcionalidad de archivo debería ser manejada en la página de importación
+      console.log("File selected:", e.target.files[0]);
+    }
+  };
+
+  const handleLabelChange = (index: number, value: string) => {
+    setEditedLabels((prev: string[]) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const renderLabelsWithoutGroup = () => (
+    <Card className="mb-4">
+      <CardContent className="space-y-4 pt-6">
+        <h2 className="text-lg font-semibold">Labels sin Grupo</h2>
+        {labelsWithoutGroup.length > 0 ? (
+          labelsWithoutGroup.map((label: string, index: number) => (
+            <div key={index} className="flex flex-col mb-2">
+              <Label>Label {index + 1}</Label>
+              <Input
+                type="text"
+                value={editedLabels[index] || label}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleLabelChange(index, e.target.value)
+                }
+              />
+            </div>
+          ))
+        ) : (
+          <p>No hay labels sin grupo.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   if (!previewData) return <p>No hay datos para mostrar</p>;
 
   return (
@@ -129,13 +170,13 @@ const PreviewImport = () => {
         </CardContent>
       </Card>
 
+      {renderLabelsWithoutGroup()}
+
       <Card className="mb-4">
         <CardContent className="space-y-4 pt-6">
           <h2 className="text-lg font-semibold">Categorías Detectadas</h2>
           <p className="text-sm text-muted-foreground">
-            Eventos detectados: {events.length} | 
-            Categorías descartadas: {discardedCategories.length} | 
-            Eventos que se importarán: {events.filter((ev: any) => !discardedCategories.includes(ev.event_type)).length}
+            Eventos detectados: {events.length} | Categorías descartadas: {discardedCategories.length} | Eventos que se importarán: {events.filter((ev: any) => !discardedCategories.includes(ev.event_type)).length}
           </p>
           
           {/* Botones de acción rápida */}

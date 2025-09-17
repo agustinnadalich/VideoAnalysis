@@ -85,10 +85,10 @@ const AnalysisPageContent = () => {
               filteredEvents={filteredEvents}
               onEventClick={playEvent}
               />
-              {/* <ChartsTabs
+              <ChartsTabs
               onEventClick={setSelectedEvent}
               currentTime={currentTime}
-              /> */}
+              />
             </div>
         </div>
       </div>

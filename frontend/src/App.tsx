@@ -1,17 +1,18 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home"; // si tenés
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import AnalysisPage from "./pages/AnalysisPage";
-import ImportMatch from "@/pages/ImportMatch"; // ajusta el path si es diferente
-import PreviewImport from "@/pages/PreviewImport"; // ajusta el path si es diferente
-import MatchesAdmin from "@/pages/MatchesAdmin"; // ajusta el path si es diferente
-import CreateProfile from "@/pages/CreateProfile"; // ajusta el path si es diferente
-
+import ImportMatch from "@/pages/ImportMatch";
+import PreviewImport from "@/pages/PreviewImport";
+import MatchesAdmin from "@/pages/MatchesAdmin";
+import CreateProfile from "@/pages/CreateProfile";
 
 function App() {
   return (
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/analysis/:matchId" element={<AnalysisPage />} />
         <Route path="/match/:matchId" element={<AnalysisPage />} />
         <Route path="/admin/matches" element={<MatchesAdmin />} />

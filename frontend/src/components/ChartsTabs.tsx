@@ -5,6 +5,8 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { useState } from "react";
+import TacklesBarChart from "./charts/TacklesBarChart";
+import AdvancePieChart from "./charts/AdvancePieChart";
 // import TimelineChart from "./charts/TimelineChart";
 // import ScatterChart from "./charts/ScatterChart";
 // Aquí luego podrás importar los otros charts
@@ -30,18 +32,33 @@ const ChartsTabs = (_props: any) => {
     <Tabs defaultValue="overview" className="w-full mt-4">
       <TabsList>
         <TabsTrigger value="overview">Resumen</TabsTrigger>
+        <TabsTrigger value="tackles">Tackles</TabsTrigger>
+        <TabsTrigger value="advances">Avances</TabsTrigger>
         <TabsTrigger value="scatter">Mapa</TabsTrigger>
         {/* Agrega más pestañas según los charts */}
       </TabsList>
       
 
       <TabsContent value="overview">
-        {/* <TimelineChart
-          filteredEvents={filteredEvents}
-          colors={colors}
-          onEventClick={onEventClick}
-          currentTime={currentTime}
-        /> */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Resumen del partido</h3>
+          <p>Eventos totales: {filteredEvents.length}</p>
+          <p>Debug: {JSON.stringify(filteredEvents.slice(0, 2), null, 2)}</p>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="tackles">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Estadísticas de Tackles</h3>
+          <TacklesBarChart events={filteredEvents} />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="advances">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Distribución de Avances</h3>
+          <AdvancePieChart events={filteredEvents} category="ADVANCE" />
+        </div>
       </TabsContent>
 
 

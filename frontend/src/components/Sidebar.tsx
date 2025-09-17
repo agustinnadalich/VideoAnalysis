@@ -68,12 +68,18 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     }
     if (filterDescriptors.length > 0) {
       result = result.filter((ev) =>
-        filterDescriptors.every((fd) =>
-          ev.extra_data?.[fd.descriptor] === fd.value ||
-          ev[fd.descriptor] === fd.value
-        )
-      );
+        filterDescriptors.every((fd) => {
+          const eventValue = ev.extra_data?.[fd.descriptor] || ev[fd.descriptor];
 
+          // Si el valor del evento es un array, verificar si contiene el valor del filtro
+          if (Array.isArray(eventValue)) {
+            return eventValue.includes(fd.value);
+          }
+
+          // Si no es array, comparar directamente
+          return eventValue === fd.value;
+        })
+      );
     }
 
     if (selectedTeam) {
@@ -138,11 +144,18 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     return Array.from(
       new Set(
         filteredEvents
-          .map(ev =>
-            ev.extra_data && selectedDescriptor in ev.extra_data
+          .flatMap(ev => {
+            const value = ev.extra_data && selectedDescriptor in ev.extra_data
               ? ev.extra_data[selectedDescriptor]
-              : ev[selectedDescriptor]
-          )
+              : ev[selectedDescriptor];
+
+            // Si el valor es un array (como JUGADOR: ["13", "20"]), extraer cada elemento
+            if (Array.isArray(value)) {
+              return value;
+            }
+
+            return [value];
+          })
           .filter(v => v !== undefined && v !== null && v !== "None")
       )
     );
@@ -159,10 +172,17 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     // Filtrar por descriptores
     if (filterDescriptors.length > 0) {
       result = result.filter((ev) =>
-        filterDescriptors.every((fd) =>
-          ev.extra_data?.[fd.descriptor] === fd.value ||
-          ev[fd.descriptor] === fd.value
-        )
+        filterDescriptors.every((fd) => {
+          const eventValue = ev.extra_data?.[fd.descriptor] || ev[fd.descriptor];
+
+          // Si el valor del evento es un array, verificar si contiene el valor del filtro
+          if (Array.isArray(eventValue)) {
+            return eventValue.includes(fd.value);
+          }
+
+          // Si no es array, comparar directamente
+          return eventValue === fd.value;
+        })
       );
     }
 

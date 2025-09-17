@@ -1,156 +1,111 @@
 from flask import Blueprint, jsonify
 from sqlalchemy.orm import Session
 from db import SessionLocal
-from models import Match, Event, Player, Team
+from models import Match, Event, Player, Team, ImportProfile
 import math
 import pandas as pd
+from enricher import enrich_events
+import logging
 
-match_events_bp = Blueprint('match_events', __name__)
+print("🔍 DEBUG: match_events.py se está cargando")
 
+match_events_bp = Blueprint("match_events", __name__)
 
-def calcular_tiempo_de_juego(df):
-    def safe_second(val):
-        if val is None or (isinstance(val, float) and math.isnan(val)):
-            return 0
-        return val
-
-    kick_off_1 = safe_second(df[(df['event_type'] == 'KICK OFF') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 1))]['timestamp_sec'].min())
-    fin_1 = safe_second(df[(df['event_type'] == 'END') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 1))]['timestamp_sec'].max())
-    kick_off_2 = safe_second(df[(df['event_type'] == 'KICK OFF') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 2))]['timestamp_sec'].min())
-    fin_2 = safe_second(df[(df['event_type'] == 'END') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 2))]['timestamp_sec'].max())
-
-    def calcular(second):
-        if second <= fin_1:
-            return second - kick_off_1
-        elif second >= kick_off_2:
-            return (fin_1 - kick_off_1) + (second - kick_off_2)
-        return None
-
-    return calcular, kick_off_1, fin_1, kick_off_2, fin_2
-
-
-def calcular_origen_tries(df):
-    if 'POINTS' not in df.columns:
-        df['POINTS'] = df['extra_data'].apply(lambda x: x.get('POINTS'))
-
-    origin_categories = ["TURNOVER+", "SCRUM", "LINEOUT", "KICKOFF"]
-    tries_events = df[df['POINTS'] == "TRY"]
-
-    def get_origin_event(try_event):
-        try_time = try_event['timestamp_sec']
-        relevant_events = df[(df['event_type'].isin(origin_categories)) & (df['timestamp_sec'] < try_time)]
-        return relevant_events.iloc[-1]['event_type'] if not relevant_events.empty else None
-
-    df['TRY_ORIGIN'] = df.apply(lambda event: get_origin_event(event) if event.get('POINTS') == "TRY" else None, axis=1)
-    return df
-
-
-@match_events_bp.route('/matches/<int:match_id>/events', methods=['GET'])
-def get_match_events(match_id):
-
-    db: Session = SessionLocal()
+@match_events_bp.route("/matches/<int:match_id>/info", methods=["GET"])
+def get_match_info(match_id):
     try:
-        match = db.query(Match).filter(Match.id == match_id).first()
-        if not match:
-            Session.close()
-            return jsonify({"error": "Match not found"}), 404
-        
-        match_info = {col.name.upper(): getattr(match, col.name) for col in Match.__table__.columns}
-        match_info["TEAM"] = match.team.name if match.team else None
-        match_info["OPPONENT"] = match.opponent_name
-        match_info["DATE"] = match.date.isoformat() if match.date else None
-
-
-
-        # Obtener todos los nombres de equipos de la base de datos
-        teams = db.query(Team).all()
-        team_names = [team.name for team in teams]
-        # my_team variable removed as it was not used
-
-        events = db.query(Event).filter_by(match_id=match.id).all()
-        event_dicts = [ev.to_dict() for ev in events]
-
-        # 1. Obtener todos los player_id presentes en los eventos
-        player_ids = [ev.get("player_id") for ev in event_dicts if ev.get("player_id")]
-
-        # 2. Consultar los nombres de los jugadores
-        if player_ids:
-            players = db.query(Player).filter(Player.id.in_(player_ids)).all()
-            player_dict = {p.id: p.full_name for p in players}
-        else:
-            player_dict = {}
-
-        # 3. Agregar el nombre del jugador a cada evento y si es rival o no
-        for ev in event_dicts:
-            pid = ev.get("player_id")
-            ev["player_name"] = player_dict.get(pid) if pid else None
-            extra_data = ev.get("extra_data", {})
-            team_name = extra_data.get("TEAM")
-
-            if team_name is None:
-                ev["IS_OPPONENT"] = None
-            elif team_name in team_names:
-                ev["IS_OPPONENT"] = False
-            else:
-                ev["IS_OPPONENT"] = True
-
-        # CREA EL DATAFRAME ANTES DE USARLO
-        df = pd.DataFrame(event_dicts)
-
-        calcular_juego, k1, f1, k2, f2 = calcular_tiempo_de_juego(df)
-        time_groups = [
-            {"label": "0'-20'", "start": 0, "end": 20 * 60},
-            {"label": "20'-40'", "start": 20 * 60, "end": calcular_juego(f1)},
-            {"label": "40'-60'", "start": calcular_juego(k2), "end": calcular_juego(k2) + 20 * 60},
-            {"label": "60'-80'", "start": calcular_juego(k2) + 20 * 60, "end": calcular_juego(f2)}
-        ]
-
-        # Ahora puedes recorrer event_dicts y asignar los campos de tiempo
-        for ev in event_dicts:
-            sec = ev.get("timestamp_sec")
-
-             # Nuevo campo para saber si es un evento del rival
-
-            if sec is not None:
-                mins, secs = divmod(int(sec), 60)
-                ev['TIME(VIDEO)'] = f"{mins:02}:{secs:02}"
-
-                game_time = calcular_juego(sec)
-                if game_time is not None:
-                    gm, gs = divmod(game_time, 60)
-                    ev['Game_Time'] = f"{int(gm):02}:{int(gs):02}"
-                    for group in time_groups:
-                        if group['start'] <= game_time < group['end']:
-                            ev['Time_Group'] = group['label']
-                            break
-                else:
-                    ev['Game_Time'] = None
-                    ev['Time_Group'] = None
-
-        df = calcular_origen_tries(df)
-        final_data = df.to_dict(orient='records')
-
-        def clean_nan(obj):
-            if isinstance(obj, dict):
-                return {k: clean_nan(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [clean_nan(v) for v in obj]
-            elif isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
-                return None
-            else:
-                return obj
-
-        # Antes de jsonify:
-        final_data = clean_nan(final_data)
-
-
-
-        return jsonify({
-            "match_info": match_info,
-            "events": final_data
-        })
-
+        with SessionLocal() as session:
+            match = session.query(Match).filter(Match.id == match_id).first()
+            if not match:
+                return jsonify({"error": "Match not found"}), 404
+            
+            return jsonify({
+                "id": match.id,
+                "video_url": match.video_url,
+                "VIDEO_URL": match.video_url,
+                "opponent_name": match.opponent_name,
+                "date": match.date.isoformat() if match.date else None,
+                "kick_off_1_seconds": match.kick_off_1_seconds,
+                "end_1_seconds": match.end_1_seconds,
+                "kick_off_2_seconds": match.kick_off_2_seconds,
+                "end_2_seconds": match.end_2_seconds
+            })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        db.close()
+
+@match_events_bp.route("/matches/<int:match_id>/events", methods=["GET"])
+def get_match_events(match_id):
+    logging.warning("🚨��🚨 LOGGING: get_match_events LLAMADA PARA match_id: %s", match_id)
+    print("🚨🚨🚨 PRINT: get_match_events LLAMADA PARA match_id:", match_id)
+    print("🚨🚨🚨 DEBUG: Inicio de get_match_events")
+    
+    try:
+        with SessionLocal() as session:
+            match = session.query(Match).filter(Match.id == match_id).first()
+            if not match:
+                return jsonify({"error": "Match not found"}), 404
+            
+            profile = None
+            if match.import_profile_name:
+                profile_record = session.query(ImportProfile).filter(ImportProfile.name == match.import_profile_name).first()
+                if profile_record:
+                    profile = profile_record.settings
+                    logging.warning("🚨🚨🚨 LOGGING: Perfil encontrado: %s", match.import_profile_name)
+                else:
+                    logging.warning("🚨🚨🚨 LOGGING: Perfil no encontrado: %s", match.import_profile_name)
+            
+            if not profile and match.kick_off_1_seconds is not None:
+                profile = {
+                    "time_mapping": {
+                        "method": "manual",
+                        "manual_times": {
+                            "kick_off_1": match.kick_off_1_seconds,
+                            "end_1": match.end_1_seconds,
+                            "kick_off_2": match.kick_off_2_seconds,
+                            "end_2": match.end_2_seconds
+                        },
+                        "delays": {
+                            "global_delay_seconds": match.global_delay_seconds or 0,
+                            "event_delays": match.event_delays or {}
+                        }
+                    }
+                }
+                logging.warning("🚨🚨🚨 LOGGING: Usando tiempos manuales del match como perfil")
+            
+            events = session.query(Event).filter(Event.match_id == match_id).all()
+            
+            events_list = []
+            for event in events:
+                event_dict = {
+                    "id": event.id,
+                    "match_id": event.match_id,
+                    "timestamp_sec": event.timestamp_sec,
+                    "event_type": event.event_type,
+                    "tag": event.tag,
+                    "notes": event.notes,
+                    "player_id": event.player_id,
+                    "x": event.x,
+                    "y": event.y,
+                    "phase": event.phase,
+                    "origin": event.origin,
+                    "outcome": event.outcome,
+                    "extra_data": event.extra_data
+                }
+                events_list.append(event_dict)
+            
+            if events_list:
+                logging.warning("🚨🚨🚨 LOGGING: Aplicando enricher a %d eventos con perfil: %s", len(events_list), profile is not None)
+                enriched_events = enrich_events(events_list, match_id, profile)
+                # Priorizar clip_start para timestamp_sec si está disponible
+                for event_dict in enriched_events:
+                    if "clip_start" in event_dict.get("extra_data", {}):
+                        event_dict["timestamp_sec"] = event_dict["extra_data"]["clip_start"]
+                print("🚨🚨🚨 DEBUG: Ajustados timestamps con clip_start")
+                return jsonify(enriched_events)
+            else:
+                return jsonify([])
+                
+    except Exception as e:
+        logging.error("🚨🚨🚨 LOGGING: Error en get_match_events: %s", str(e))
+        print("🚨🚨🚨 PRINT: Error en get_match_events:", str(e))
+        return jsonify({"error": str(e)}), 500

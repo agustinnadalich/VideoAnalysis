@@ -84,11 +84,11 @@ def parse_coordinates(value):
 # def extract_descriptors(row, profile):
 #     """Extrae descriptores basándose en la configuración del perfil"""
 #     descriptors = {}
-#     time_mapping = profile.get("time_mapping", {})
+    time_mapping = profile.get("time_mapping", {})
     
 #     # Si el método es event_based, buscar descriptores
-#     if time_mapping.get("method") == "event_based":
-#         for key, config in time_mapping.items():
+    # El time_mapping ahora se usa solo para configuración adicional, no para tiempos manuales
+    # La conversión automática de tiempos está integrada en la función detect_periods_and_convert_times
 #             if isinstance(config, dict) and "descriptor" in config:
 #                 descriptor_col = config.get("descriptor")
 #                 if descriptor_col and descriptor_col in row:
@@ -253,6 +253,342 @@ def normalize_excel_to_json(filepath, profile, discard_categories=None):
         return None
 
 
+def detect_periods_and_convert_times(instances, profile=None):
+    """Detecta períodos usando configuración del perfil (manual o automática)"""
+    print("🔍 Detectando períodos del partido...")
+
+    # Método 1: Usar tiempos manuales directos (nueva estructura simplificada)
+    if profile and "manual_period_times" in profile:
+        manual_times = profile["manual_period_times"]
+        print(f"🔍 Usando tiempos manuales directos: {manual_times}")
+
+        time_offsets = {
+            1: {
+                'start_offset': -manual_times.get('kick_off_1', 0),
+                'start_time': manual_times.get('kick_off_1', 0),
+                'end_time': manual_times.get('end_1', 2400)
+            },
+            2: {
+                'start_offset': -manual_times.get('kick_off_2', 2700),
+                'start_time': manual_times.get('kick_off_2', 2700),
+                'end_time': manual_times.get('end_2', 4800)
+            }
+        }
+
+        print(f"🔍 Offsets calculados desde tiempos manuales: {time_offsets}")
+        return [], [], time_offsets
+
+    # Método 2: Usar configuración de time_mapping (estructura antigua)
+    if profile and "time_mapping" in profile:
+        time_mapping = profile["time_mapping"]
+        method = time_mapping.get('method', 'auto')
+        print(f"🔍 Usando configuración time_mapping con método: {method}")
+
+        if method == 'manual':
+            # Configuración manual dentro de time_mapping
+            manual_times = time_mapping.get('manual_times', {})
+            if manual_times:
+                print(f"🔍 Tiempos manuales desde time_mapping: {manual_times}")
+                time_offsets = {
+                    1: {
+                        'start_offset': -manual_times.get('kick_off_1', 0),
+                        'start_time': manual_times.get('kick_off_1', 0),
+                        'end_time': manual_times.get('end_1', 2400)
+                    },
+                    2: {
+                        'start_offset': -manual_times.get('kick_off_2', 2700),
+                        'start_time': manual_times.get('kick_off_2', 2700),
+                        'end_time': manual_times.get('end_2', 4800)
+                    }
+                }
+                return [], [], time_offsets
+
+        elif method == 'event_based':
+            # Configuración basada en eventos
+            return detect_periods_event_based(instances, time_mapping)
+
+        # Método automático
+        return detect_periods_auto(instances)
+
+    # Método 3: Fallback - detección automática básica
+    print("🔍 No se encontró configuración específica, usando detección automática básica...")
+    return detect_periods_fallback(instances)
+
+
+def detect_periods_event_based(instances, time_mapping):
+    """Detecta períodos usando configuración específica de eventos"""
+    print("🔍 Usando método event_based para detectar períodos")
+
+    control_events = []
+    game_events = []
+
+    # Configuración de eventos de control
+    control_config = {
+        'kick_off_1': time_mapping.get('kick_off_1', {}),
+        'end_1': time_mapping.get('end_1', {}),
+        'kick_off_2': time_mapping.get('kick_off_2', {}),
+        'end_2': time_mapping.get('end_2', {}),
+        # Configuraciones alternativas
+        'alt_kick_off_1': time_mapping.get('alt_kick_off_1', {}),
+        'alt_end_1': time_mapping.get('alt_end_1', {}),
+        'alt_kick_off_2': time_mapping.get('alt_kick_off_2', {}),
+        'alt_end_2': time_mapping.get('alt_end_2', {})
+    }
+
+    print(f"🔍 Configuración de eventos de control: {control_config}")
+
+    for i, inst in enumerate(instances):
+        event_type = inst.findtext("code")
+        if not event_type:
+            continue
+
+        start = float(inst.findtext("start") or 0)
+        end = float(inst.findtext("end") or 0)
+
+        # Extraer descriptores del evento
+        descriptors = extract_descriptors_from_xml(inst)
+
+        # Verificar si este evento coincide con algún evento de control
+        matched_control = None
+        for control_key, config in control_config.items():
+            if not config:
+                continue
+
+            expected_category = config.get('category', '').upper()
+            expected_descriptor = config.get('descriptor', '')
+            expected_value = config.get('descriptor_value', '')
+
+            if event_type.upper() == expected_category:
+                if expected_descriptor and expected_value:
+                    # Verificar descriptor específico
+                    actual_value = descriptors.get(expected_descriptor, '')
+                    if str(actual_value).upper() == str(expected_value).upper():
+                        matched_control = control_key
+                        break
+                else:
+                    # Solo verificar categoría
+                    matched_control = control_key
+                    break
+
+        if matched_control:
+            # Es un evento de control
+            period = 1 if '1' in matched_control else 2
+            event_type_name = 'kick_off' if 'kick_off' in matched_control else 'end'
+
+            # Si es una configuración alternativa, usar la misma lógica
+            if matched_control.startswith('alt_'):
+                base_config = matched_control[4:]  # Remover 'alt_' prefix
+                period = 1 if '1' in base_config else 2
+                event_type_name = 'kick_off' if 'kick_off' in base_config else 'end'
+
+            control_events.append({
+                'type': event_type_name,
+                'index': i,
+                'start': start,
+                'end': end,
+                'period': period,
+                'matched_config': matched_control
+            })
+            print(f"🔍 Evento de control detectado: {event_type} en {start}s (config: {matched_control})")
+        else:
+            # Es un evento de juego
+            game_events.append((i, inst, start, end))
+
+    print(f"🔍 Encontrados {len(control_events)} eventos de control usando event_based")
+
+    # Calcular offsets de tiempo
+    time_offsets = calculate_time_offsets(control_events)
+
+    return control_events, game_events, time_offsets
+
+
+def detect_periods_auto(instances):
+    """Detecta períodos automáticamente sin configuración específica"""
+    print("🔍 Usando método automático para detectar períodos")
+
+    # Primero detectar todos los eventos de control
+    control_events = []
+    game_events = []
+
+    for i, inst in enumerate(instances):
+        event_type = inst.findtext("code")
+        if not event_type:
+            continue
+
+        start = float(inst.findtext("start") or 0)
+        end = float(inst.findtext("end") or 0)
+
+        # Extraer descriptores para análisis
+        descriptors = extract_descriptors_from_xml(inst)
+
+        # Clasificar eventos - método mejorado con descriptores
+        if event_type.upper() in ['KICK OFF', 'KICKOFF', 'START', 'BEGIN']:
+            # Solo considerar como evento de control si tiene descriptor de período
+            if descriptors.get('period') or descriptors.get('PERIODS'):
+                period = int(descriptors.get('period') or descriptors.get('PERIODS') or 1)
+                control_events.append({
+                    'type': 'kick_off',
+                    'index': i,
+                    'start': start,
+                    'end': end,
+                    'period': period
+                })
+        elif event_type.upper() in ['END', 'HALF TIME', 'HALFTIME', 'HT', 'FINAL']:
+            # Solo considerar como evento de control si tiene descriptor de período
+            if descriptors.get('period') or descriptors.get('PERIODS'):
+                period = int(descriptors.get('period') or descriptors.get('PERIODS') or 1)
+                control_events.append({
+                    'type': 'end',
+                    'index': i,
+                    'start': start,
+                    'end': end,
+                    'period': period
+                })
+        else:
+            game_events.append((i, inst, start, end))
+
+    print(f"🔍 Encontrados {len(control_events)} eventos de control usando auto: {[e['type'] for e in control_events]}")
+
+    # Calcular offsets de tiempo
+    time_offsets = calculate_time_offsets(control_events)
+
+    return control_events, game_events, time_offsets
+
+
+def extract_descriptors_from_xml(inst):
+    """Extrae descriptores de un elemento XML de instancia"""
+    descriptors = {}
+
+    # Buscar todos los elementos label
+    for label in inst.findall("label"):
+        group = label.get("group")
+        text = label.text or ""
+
+        if group:
+            descriptors[group.lower()] = text
+
+    return descriptors
+
+
+def calculate_time_offsets(control_events):
+    """Calcula los offsets de tiempo basándose en eventos de control"""
+    time_offsets = {}
+    current_offset = 0
+
+    # Ordenar eventos de control por tiempo
+    control_events.sort(key=lambda x: x['start'])
+
+    for event in control_events:
+        period = event['period']
+
+        if event['type'] == 'kick_off':
+            # El kick off marca el inicio de un período
+            if period not in time_offsets:
+                time_offsets[period] = {
+                    'start_offset': current_offset - event['start'],
+                    'start_time': event['start']
+                }
+        elif event['type'] == 'end':
+            # El end marca el final de un período
+            if period in time_offsets:
+                time_offsets[period]['end_time'] = event['end']
+                # El próximo período empezará después de este
+                current_offset = current_offset + (event['end'] - time_offsets[period]['start_time'])
+
+    print(f"🔍 Offsets calculados: {time_offsets}")
+
+    # Si no se detectaron períodos, usar modo simple (todo en período 1)
+    if not time_offsets:
+        time_offsets[1] = {'start_offset': 0, 'start_time': 0, 'end_time': float('inf')}
+
+    return time_offsets
+
+
+def detect_periods_fallback(instances):
+    """Detección automática básica como fallback"""
+    control_events = []
+    game_events = []
+
+    for i, inst in enumerate(instances):
+        event_type = inst.findtext("code")
+        if not event_type:
+            continue
+
+        start = float(inst.findtext("start") or 0)
+        end = float(inst.findtext("end") or 0)
+
+        # Solo detectar eventos muy específicos
+        if event_type.upper() in ['KICK OFF', 'START', 'BEGIN']:
+            # Solo el primer KICK OFF como inicio del primer tiempo
+            if len([e for e in control_events if e['type'] == 'kick_off']) == 0:
+                control_events.append({
+                    'type': 'kick_off',
+                    'index': i,
+                    'start': start,
+                    'end': end,
+                    'period': 1
+                })
+        elif event_type.upper() in ['END', 'HALF TIME', 'END', 'TIMEOUT']:
+            # Solo el primer END como fin del primer tiempo
+            if len([e for e in control_events if e['type'] == 'end']) == 0:
+                control_events.append({
+                    'type': 'end',
+                    'index': i,
+                    'start': start,
+                    'end': end,
+                    'period': 1
+                })
+        else:
+            game_events.append((i, inst, start, end))
+
+    print(f"🔍 Fallback: {len(control_events)} eventos de control detectados")
+
+    # Calcular offsets básicos
+    time_offsets = {}
+    if control_events:
+        for event in control_events:
+            if event['type'] == 'kick_off' and event['period'] == 1:
+                time_offsets[1] = {
+                    'start_offset': -event['start'],
+                    'start_time': event['start'],
+                    'end_time': event['start'] + 2400  # 40 minutos por defecto
+                }
+            elif event['type'] == 'end' and event['period'] == 1:
+                if 1 in time_offsets:
+                    time_offsets[1]['end_time'] = event['end']
+
+        # Agregar segundo tiempo por defecto
+        if 1 in time_offsets:
+            time_offsets[2] = {
+                'start_offset': -(time_offsets[1]['end_time'] + 900),  # 15 min descanso
+                'start_time': time_offsets[1]['end_time'] + 900,
+                'end_time': time_offsets[1]['end_time'] + 900 + 2400
+            }
+
+    # Si no se detectó nada, usar valores por defecto
+    if not time_offsets:
+        time_offsets[1] = {'start_offset': 0, 'start_time': 0, 'end_time': 2400}
+        time_offsets[2] = {'start_offset': -2700, 'start_time': 2700, 'end_time': 4800}
+
+    return control_events, game_events, time_offsets
+
+    return control_events, game_events, time_offsets
+
+
+def convert_timestamp_to_absolute(start_time, time_offsets):
+    """Convierte un tiempo relativo del XML a tiempo absoluto del partido"""
+    # Determinar en qué período cae este tiempo
+    for period, offsets in time_offsets.items():
+        if offsets['start_time'] <= start_time < (offsets.get('end_time', float('inf'))):
+            return start_time + offsets['start_offset']
+
+    # Si no está en ningún período conocido, asumir período 1
+    if 1 in time_offsets:
+        return start_time + time_offsets[1]['start_offset']
+
+    return start_time  # fallback
+
+
 def normalize_xml_to_json(filepath, profile, discard_categories=None):
     """Normaliza archivo XML a formato JSON"""
     print(f"🔍 normalize_xml_to_json: Iniciando procesamiento de {filepath}")
@@ -286,6 +622,25 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
         content = re.sub(r'[^\x00-\x7F]+', '', content)  # Remover caracteres no-ASCII
         content = content.replace('�', '')  # Remover caracteres de reemplazo
         
+        # Limpiar caracteres especiales XML sin escapar
+        def clean_xml_text(text):
+            """Limpia solo el contenido de las etiquetas <text>"""
+            text = text.replace('&', '&amp;')
+            # Revertir los que ya estaban correctamente escapados
+            text = text.replace('&amp;amp;', '&amp;')
+            text = text.replace('&amp;lt;', '&lt;')
+            text = text.replace('&amp;gt;', '&gt;')
+            text = text.replace('&amp;quot;', '&quot;')
+            text = text.replace('&amp;apos;', '&apos;')
+            return text
+        
+        # Aplicar limpieza solo al contenido de las etiquetas <text>
+        content = re.sub(r'(<text>)(.*?)(</text>)', 
+                        lambda m: m.group(1) + clean_xml_text(m.group(2)) + m.group(3), 
+                        content, flags=re.DOTALL)
+        
+        print(f"🔍 Contenido XML limpiado para caracteres especiales")
+        
         # Crear archivo temporal limpio
         import tempfile
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as temp_file:
@@ -303,21 +658,71 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
         # Buscar elementos instance
         instances = root.findall(".//instance")
         print(f"🔍 Encontrados {len(instances)} elementos instance")
-        
+
+        # Detectar períodos y convertir tiempos
+        control_events, game_events, time_offsets = detect_periods_and_convert_times(instances, profile)
+
         events = []
-        for i, inst in enumerate(instances):
+        processed_control = 0
+
+        # Procesar eventos de control primero
+        for control in control_events:
+            inst = instances[control['index']]
             event_type = inst.findtext("code")
-            print(f"🔍 Procesando evento {i+1}: {event_type}")
-            
+
+            # Convertir tiempos a absolutos
+            abs_start = convert_timestamp_to_absolute(control['start'], time_offsets)
+            abs_end = convert_timestamp_to_absolute(control['end'], time_offsets)
+            duration = abs_end - abs_start
+            timestamp = abs_start + duration / 2
+
+            # Descriptores para eventos de control
+            descriptors = {}
+            labels = inst.findall("label")
+            for lbl in labels:
+                group = lbl.findtext("group")
+                text = lbl.findtext("text")
+                if text:
+                    key = group if group else "MISC"
+                    descriptors[key] = text
+
+            event = {
+                "event_type": event_type,
+                "timestamp_sec": round(timestamp, 1),
+                "players": None,
+                "x": None,
+                "y": None,
+                "team": descriptors.get('EQUIPO'),
+                "period": control['period'],
+                "extra_data": {
+                    "clip_start": abs_start,
+                    "clip_end": abs_end,
+                    "original_start": control['start'],
+                    "original_end": control['end'],
+                    **descriptors
+                }
+            }
+
+            events.append(event)
+            processed_control += 1
+
+        print(f"🔍 Procesados {processed_control} eventos de control")
+
+        # Procesar eventos de juego
+        for i, inst, start, end in game_events:
+            event_type = inst.findtext("code")
+            print(f"🔍 Procesando evento de juego {i+1}: {event_type}")
+
             # Filtrar categorías descartadas
             if not event_type or event_type in discard_categories:
                 print(f"🔍 Evento descartado: {event_type}")
                 continue
-                
-            start = float(inst.findtext("start") or 0)
-            end = float(inst.findtext("end") or 0)
-            duration = end - start
-            timestamp = start + duration / 2
+
+            # Convertir tiempos a absolutos
+            abs_start = convert_timestamp_to_absolute(start, time_offsets)
+            abs_end = convert_timestamp_to_absolute(end, time_offsets)
+            duration = abs_end - abs_start
+            timestamp = abs_start + duration / 2
 
             # Coordenadas
             pos_x = inst.findall("pos_x")
@@ -331,12 +736,12 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
             descriptors = {}
             labels = inst.findall("label")
             print(f"🔍 Procesando {len(labels)} labels para evento {event_type}")
-            
+
             for lbl in labels:
                 group = lbl.findtext("group")
                 text = lbl.findtext("text")
                 print(f"🔍 Label: group={group}, text={text}")
-                
+
                 if text:
                     key = group if group else "MISC"
                     if key in descriptors:
@@ -347,17 +752,26 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
                     else:
                         descriptors[key] = text
 
+            # Determinar período basado en el tiempo absoluto
+            period = 1
+            for p, offsets in time_offsets.items():
+                if abs_start >= offsets['start_offset'] and abs_start < (offsets.get('end_time', float('inf')) + offsets['start_offset']):
+                    period = p
+                    break
+
             event = {
                 "event_type": event_type,
-                "timestamp_sec": round(timestamp),
+                "timestamp_sec": round(timestamp, 1),
                 "players": None,
                 "x": x,
                 "y": y,
-                "team": None,
-                "period": 1,
+                "team": descriptors.get('EQUIPO'),
+                "period": period,
                 "extra_data": {
-                    "clip_start": start,
-                    "clip_end": end,
+                    "clip_start": abs_start,
+                    "clip_end": abs_end,
+                    "original_start": start,
+                    "original_end": end,
                     **descriptors
                 }
             }

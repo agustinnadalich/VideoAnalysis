@@ -14,7 +14,7 @@ from normalizer import normalize_excel_to_json, normalize_xml_to_json
 import traceback
 from register_routes import register_routes
 
-
+print("🔍 DEBUG: app.py se está cargando")
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
@@ -898,18 +898,11 @@ def ensure_default_import_profile():
             "normalize_penalty_cards": True,
             "normalize_lineout": True,
             "normalize_tackle": True,
-            "time_mapping": {
-                "method": "event_based",
-                "kick_off_1": {"category": "KICK OFF", "descriptor": "period", "descriptor_value": "1"},
-                "end_1": {"category": "END", "descriptor": "period", "descriptor_value": "1"},
-                "kick_off_2": {"category": "KICK OFF", "descriptor": "period", "descriptor_value": "2"},
-                "end_2": {"category": "END", "descriptor": "period", "descriptor_value": "2"},
-                "manual_times": {
-                    "kick_off_1": 0,
-                    "end_1": 2400,
-                    "kick_off_2": 2700,
-                    "end_2": 4800
-                }
+            "manual_period_times": {
+                "kick_off_1": 0,      # Segundo donde inicia el primer tiempo
+                "end_1": 2400,        # Segundo donde termina el primer tiempo
+                "kick_off_2": 2700,   # Segundo donde inicia el segundo tiempo
+                "end_2": 4800         # Segundo donde termina el segundo tiempo
             }
         }
         

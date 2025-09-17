@@ -58,7 +58,17 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   const categories = useMemo(() => Array.from(new Set(filteredEvents.map(ev => ev.event_type || "Otro"))).filter(cat => cat !== "END"), [filteredEvents]);
 
   const maxSecond = useMemo(() => {
-    const max = Math.max(...filteredEvents.map(ev => (ev.timestamp_sec ?? 0) + (ev.extra_data?.DURATION ?? 1)), 60);
+    const max = Math.max(...filteredEvents.map(ev => {
+      let duration = 1; // default
+      if (ev.extra_data?.clip_end && ev.extra_data?.clip_start) {
+        duration = ev.extra_data.clip_end - ev.extra_data.clip_start;
+      } else if (ev.extra_data?.duration) {
+        duration = ev.extra_data.duration;
+      } else if (ev.extra_data?.DURATION) {
+        duration = ev.extra_data.DURATION;
+      }
+      return (ev.timestamp_sec ?? 0) + duration;
+    }), 60);
     return max + 5;
   }, [filteredEvents]);
 
@@ -73,23 +83,73 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     return map;
   }, [categories]);
 
-  const data = useMemo(() => filteredEvents.map(ev => ({
-    ...ev,
-    category: ev.event_type || "Otro",
-    SECOND: ev.timestamp_sec ?? 0,
-    DURATION: typeof ev.extra_data?.DURATION === "number" ? ev.extra_data.DURATION : 1,
-    color: colors[ev.event_type] || (ev.IS_OPPONENT ? "#e74c3c" : "#3498db"),
-  })), [filteredEvents, colors]);
+  const data = useMemo(() => filteredEvents.map(ev => {
+    // Calcular duración correctamente
+    let duration = 1; // default
+    if (ev.extra_data?.clip_end && ev.extra_data?.clip_start) {
+      duration = ev.extra_data.clip_end - ev.extra_data.clip_start;
+    } else if (ev.extra_data?.duration) {
+      duration = ev.extra_data.duration;
+    } else if (ev.extra_data?.DURATION) {
+      duration = ev.extra_data.DURATION;
+    }
+
+    return {
+      ...ev,
+      category: ev.event_type || "Otro",
+      SECOND: ev.timestamp_sec ?? 0,
+      DURATION: duration,
+      color: colors[ev.event_type] || (ev.IS_OPPONENT ? "#e74c3c" : "#3498db"),
+    };
+  }), [filteredEvents, colors]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length > 0) {
       const event = payload[0].payload;
+
+      // Obtener información del jugador
+      let playerInfo = "N/A";
+      if (event.extra_data?.JUGADOR) {
+        if (Array.isArray(event.extra_data.JUGADOR)) {
+          playerInfo = event.extra_data.JUGADOR.join(", ");
+        } else {
+          playerInfo = event.extra_data.JUGADOR;
+        }
+      } else if (event.player_name) {
+        playerInfo = event.player_name;
+      } else if (event.player) {
+        playerInfo = event.player;
+      }
+
+      // Obtener otros descriptores no null
+      const otherDescriptors = [];
+      if (event.extra_data) {
+        for (const [key, value] of Object.entries(event.extra_data)) {
+          if (key !== 'JUGADOR' && key !== 'duration' && key !== 'DURATION' &&
+              key !== 'clip_start' && key !== 'clip_end' && value !== null && value !== "") {
+            if (Array.isArray(value)) {
+              otherDescriptors.push(`${key}: ${value.join(", ")}`);
+            } else {
+              otherDescriptors.push(`${key}: ${value}`);
+            }
+          }
+        }
+      }
+
       return (
-        <div className="rounded bg-white p-2 shadow-md border border-gray-200 text-sm">
-          <div><strong>Jugador:</strong> {event.player_name || event.player}</div>
+        <div className="rounded bg-white p-2 shadow-md border border-gray-200 text-sm max-w-xs">
+          <div><strong>Jugador:</strong> {playerInfo}</div>
           <div><strong>Tiempo:</strong> {secondsToGameClock(event.SECOND)}</div>
           <div><strong>Duración:</strong> {Math.round(event.DURATION * 10) / 10}s</div>
           <div><strong>Categoría:</strong> {event.category}</div>
+          {otherDescriptors.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <div><strong>Detalles:</strong></div>
+              {otherDescriptors.map((desc, idx) => (
+                <div key={idx} className="text-xs text-gray-600 ml-2">• {desc}</div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
@@ -107,7 +167,18 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     if (filteredEvents.length === 1) {
       const ev = filteredEvents[0];
       const start = ev.timestamp_sec ?? 0;
-      const end = start + (ev.extra_data?.DURATION ?? 1);
+
+      // Calcular duración correctamente
+      let duration = 1; // default
+      if (ev.extra_data?.clip_end && ev.extra_data?.clip_start) {
+        duration = ev.extra_data.clip_end - ev.extra_data.clip_start;
+      } else if (ev.extra_data?.duration) {
+        duration = ev.extra_data.duration;
+      } else if (ev.extra_data?.DURATION) {
+        duration = ev.extra_data.DURATION;
+      }
+
+      const end = start + duration;
       const padding = 10;
       setXDomain([Math.max(0, start - padding), end + padding]);
     } else {

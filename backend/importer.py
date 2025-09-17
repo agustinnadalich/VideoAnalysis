@@ -182,10 +182,10 @@ def import_match_from_xml(xml_path: str, profile: dict):
 
         # Si hay labels sin group, devolverlos para la preview
         if labels_without_group:
-            print(f"⚠️ Labels sin group detectados: {labels_without_group}")
-            # Se pueden devolver para que el frontend los solicite al usuario
+            print(f"⚠️ Labels sin grupo detectados: {labels_without_group}")
+            return {"labels_without_group": list(labels_without_group), "events": events, "match_info": match_info}
 
-        return True
+        return {"events": events, "match_info": match_info}
 
     except Exception as e:
         db.rollback()

@@ -9,7 +9,7 @@ import MatchReportLeft from "../components/MatchReportLeft.tsx";
 import MatchReportRight from "../components/MatchReportRight.tsx";
 import Header from "../components/Header.tsx";
 import Sidebar from "../components/Sidebar.tsx";
-import FilterProvider from "../context/FilterProvider.tsx";
+import { FilterProvider } from "../context/FilterContext.tsx";
 import './VideoAnalysisPage.css';
 
 library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward, faStepBackward, faStepForward, faChevronLeft, faExternalLinkAlt, faFilter, faSpinner);
@@ -35,11 +35,20 @@ const VideoAnalysisPage = () => {
   useEffect(() => {
     const fetchMatchData = async () => {
       try {
-        const response = await fetch(`http://localhost:5001/events?match_id=${id}`); // Cambiar la URL para incluir el ID del partido
+        const response = await fetch(`http://localhost:5001/api/matches/${id}/events`); // Corregido el endpoint
         const matchData = await response.json();
-        setData(matchData);
-        setVideoSrc(matchData.header.video_url); // Asumimos que el backend devuelve la URL del video
-        console.log("Video URL:", matchData.header.video_url);
+        console.log("VideoAnalysisPage - Fetched data:", matchData);
+        
+        // El backend devuelve directamente un array de eventos, pero el frontend espera { events: [...], match_info: {...} }
+        const formattedData = {
+          events: Array.isArray(matchData) ? matchData : [],
+          match_info: {} // Por ahora vacío, se puede agregar más info del match si es necesario
+        };
+        
+        console.log("VideoAnalysisPage - Events count:", formattedData.events.length);
+        setData(formattedData);
+        setVideoSrc(""); // Por ahora vacío hasta que tengamos la URL del video
+        console.log("Video URL: (empty for now)");
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching match data:", error);
@@ -157,14 +166,14 @@ const VideoAnalysisPage = () => {
           onClick={() => navigate('/')} // Botón para volver a home/dashboard
           style={{ width: '100px', margin: '5px', padding: '5px' }}
         >
-          <FontAwesomeIcon icon="fa-chevron-left" /> Dashboard
+          <FontAwesomeIcon icon="chevron-left" /> Dashboard
         </button>
         <button
           className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
           onClick={toggleSidebar}
           style={{ width: '100px', margin: '5px', padding: '5px' }}
         >
-          <FontAwesomeIcon icon="fa-solid fa-filter" /> Filters
+          <FontAwesomeIcon icon="filter" /> Filters
         </button>
         <button
           className={`toggle-sidebar-button ${!isSidebarVisible ? 'visible' : 'hidden'}`}
@@ -183,11 +192,8 @@ const VideoAnalysisPage = () => {
             <>
               <div className={`sidebar-container ${isSidebarVisible ? 'visible' : ''}`}>
                 <Sidebar
-                  events={data.events}
-                  onPlayFilteredEvents={handlePlayFilteredEvents}
-                  toggleSidebar={toggleSidebar}
-                  onClearFilters={handleClearFilters}
-                  clearFiltersTrigger={clearFiltersTrigger}
+                  sidebarOpen={isSidebarVisible}
+                  setSidebarOpen={setIsSidebarVisible}
                 />
               </div>
               <div className="main-content">
@@ -197,30 +203,7 @@ const VideoAnalysisPage = () => {
                   </div>
                   <div className="video">
                     <VideoPlayer
-                      ref={videoRef}
-                      src={videoSrc} // Video dinámico
-                      tempTime={tempTime}
-                      duration={duration}
-                      isPlayingFilteredEvents={isPlayingFilteredEvents}
-                      onPlayFilteredEvents={handlePlayFilteredEvents}
-                      filteredEvents={filteredEvents}
-                      onTimeUpdate={handleTimeUpdate}
-                      onEnd={() => {
-                        if (isPlayingFilteredEvents) {
-                          setCurrentEventIndex((prevIndex) => {
-                            const nextIndex = prevIndex + 1;
-                            if (nextIndex < filteredEvents.length) {
-                              playNextEvent(filteredEvents, nextIndex);
-                            } else {
-                              setIsPlayingFilteredEvents(false);
-                            }
-                            return nextIndex;
-                          });
-                        }
-                      }}
-                      onStop={handleStop}
-                      onNext={handleNext}
-                      onPrevious={handlePrevious}
+                      videoUrl={videoSrc} 
                     />
                   </div>
                   <div className="right">
@@ -228,16 +211,7 @@ const VideoAnalysisPage = () => {
                   </div>
                 </div>
                 <div className="charts-container">
-                  <Charts
-                    events={data.events}
-                    filteredEvents={filteredEvents.length > 0 ? filteredEvents : data.events}
-                    setFilteredEvents={setFilteredEvents}
-                    filterDescriptors={[]} // o el estado que uses para filtros en el individual
-                    setFilterDescriptors={() => {}} // o el setter real si lo usás
-                    onEventClick={handleEventClick}
-                    onPlayFilteredEvents={handlePlayFilteredEvents}
-                    currentTime={currentTime}
-                  />
+                  <Charts />
                 </div>
               </div>
             </>
