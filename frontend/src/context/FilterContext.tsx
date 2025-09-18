@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 export interface FilterContextType {
   matchInfo: any;
@@ -30,6 +30,19 @@ export const FilterProvider = ({
   const [filterDescriptors, setFilterDescriptors] = useState<any[]>([]);
   const [filterCategory, setFilterCategory] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+
+  // Inicializar con datos si existen
+  useEffect(() => {
+    if (initialResponse && initialResponse.events) {
+      console.log("🔄 FilterProvider - Inicializando con:", initialResponse.events.length, "eventos");
+      console.log("🔄 FilterProvider - Primer evento:", initialResponse.events[0]);
+      setEventsState(initialResponse.events);
+      const sortedEvents = [...initialResponse.events].sort((a, b) => (a.timestamp_sec ?? 0) - (b.timestamp_sec ?? 0));
+      setFilteredEventsState(sortedEvents);
+    } else {
+      console.log("🔄 FilterProvider - No hay datos iniciales:", initialResponse);
+    }
+  }, [initialResponse]);
 
   // Función para establecer eventos sin crear bucles
   const setEventsAndFilter = useCallback((newEvents: any[]) => {

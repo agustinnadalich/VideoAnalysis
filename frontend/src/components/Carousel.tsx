@@ -1,6 +1,7 @@
 import React, { useState, useContext, useImperativeHandle, forwardRef, useEffect } from 'react';
 import TacklesBarChart from './charts/TacklesBarChart';
 import MissedTacklesBarChart from './charts/MissedTacklesBarChart';
+import TacklesByTeamChart from './charts/TacklesByTeamChart';
 import AdvancePieChart from './charts/AdvancePieChart';
 import TacklesEffectivityChart from './charts/TacklesEffectivityChart';
 import TacklesTimeChart from './charts/TacklesTimeChart';
@@ -137,7 +138,12 @@ const Carousel = forwardRef<any, CarouselProps>(
             <div className="chart-container">
               <TacklesBarChart
                 events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")}
-                onChartClick={handleChartClick}
+                onBarClick={(category, player) => {
+                  // Convertir onBarClick a onChartClick format
+                  const mockElements = [{ index: 0 }];
+                  const mockChart = { data: { labels: [`${category} - ${player}`] } };
+                  handleChartClick(null, mockElements, mockChart, "player", "tackles-tab");
+                }}
               />
             </div>
           )}
@@ -145,6 +151,14 @@ const Carousel = forwardRef<any, CarouselProps>(
             <div className="chart-container">
               <MissedTacklesBarChart
                 events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")}
+                onChartClick={handleChartClick}
+              />
+            </div>
+          )}
+          {(hasTackles || hasMissedTackles) && (
+            <div className="chart-container">
+              <TacklesByTeamChart
+                events={filteredEvents}
                 onChartClick={handleChartClick}
               />
             </div>
@@ -160,12 +174,12 @@ const Carousel = forwardRef<any, CarouselProps>(
           )}
           {hasTeamTackles || hasTeamMissedTackles ? (
             <div className="chart-container">
-              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} onChartClick={handleChartClick} style={{ maxHeight: "400px" }} />
+              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} onChartClick={handleChartClick} />
             </div>
           ) : null}
           {hasRivalTackles || hasRivalMissedTackles ? (
             <div className="chart-container">
-              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" onChartClick={handleChartClick} style={{ maxHeight: "400px" }} />
+              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" onChartClick={handleChartClick} />
             </div>
           ) : null}
           {hasTackles && (

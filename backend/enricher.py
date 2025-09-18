@@ -5,6 +5,28 @@ Enriquece eventos de rugby con cálculos de Game_Time, detección de períodos y
 
 import pandas as pd
 
+# Mapeo de campos en español a inglés para estandarizar
+SPANISH_TO_ENGLISH_MAPPING = {
+    'AVANCE': 'ADVANCE',
+    'JUGADOR': 'PLAYER',
+    'EQUIPO': 'TEAM',
+    'VELOCIDAD-RUCK': 'RUCK_SPEED',
+    'ENCUADRE-TACKLE': 'TACKLE_FRAME',
+    'RESULTADO-LINE': 'LINEOUT_RESULT',
+    'POSICION-LINE': 'LINEOUT_POSITION',
+    'CANTIDAD-LINE': 'LINEOUT_COUNT',
+    'TIRADOR-LINE': 'LINEOUT_THROWER',
+    'INFRACCION': 'INFRACTION',
+    'TIPO-PUNTOS': 'POINTS_TYPE',
+    'TIPO-PERDIDA/RECUPERACION': 'TURNOVER_TYPE',
+    'TIPO-PERDIDA/RECUPERACIN': 'TURNOVER_TYPE',  # Variante con acento
+    'SCRUM': 'SCRUM_RESULT',
+    'PIE': 'KICK_TYPE',
+    'RESULTADO-PALOS': 'GOAL_RESULT',
+    'TIPO-QUIEBRE': 'BREAK_TYPE',
+    'CANAL-QUIEBRE': 'BREAK_CHANNEL'
+}
+
 def seconds_to_mmss(seconds):
     """Convierte segundos a formato MM:SS"""
     try:
@@ -32,6 +54,22 @@ def assign_time_group(game_time_sec, first_half_duration=2400.0):
         return "Tercer cuarto"
     else:
         return "Cuarto cuarto"
+
+def translate_fields_to_english(event_data):
+    """
+    Traduce los campos de español a inglés usando el mapeo definido.
+    Preserva los valores originales y crea nuevas claves en inglés.
+    """
+    translated_data = event_data.copy()
+    
+    for spanish_key, english_key in SPANISH_TO_ENGLISH_MAPPING.items():
+        if spanish_key in event_data:
+            # Mover el valor a la clave en inglés
+            translated_data[english_key] = event_data[spanish_key]
+            # Opcionalmente, eliminar la clave en español para limpiar
+            # del translated_data[spanish_key]  # Comentado para mantener compatibilidad
+    
+    return translated_data
 
 def process_penalty_events(event):
     """Procesa eventos PENALTY para extraer tarjetas"""
@@ -149,6 +187,37 @@ def process_tackle_events(event):
             players = [p for p in [player, player_2] if p and p.lower() != 'nan']
         event['extra_data']['PLAYER'] = players[0] if len(players) == 1 else (players if players else None)
         event['extra_data']['Team_Tackle_Count'] = 1
+    return event
+
+def consolidate_descriptors(event):
+    """Consolida descriptores duplicados en extra_data"""
+    if 'extra_data' not in event:
+        return event
+    
+    extra_data = event['extra_data']
+    consolidated = {}
+    
+    for key, value in extra_data.items():
+        if isinstance(value, list):
+            # Remover duplicados manteniendo orden
+            unique_values = []
+            for v in value:
+                if v not in unique_values and v is not None and str(v).strip() != '':
+                    unique_values.append(v)
+            
+            # Para ciertos campos, permitir múltiples valores (tackles dobles, etc.)
+            if key in ['JUGADOR', 'PLAYER', 'ENCUADRE-TACKLE'] and len(unique_values) > 1:
+                consolidated[key] = unique_values
+            elif len(unique_values) == 1:
+                consolidated[key] = unique_values[0]
+            elif len(unique_values) > 1:
+                # Para otros campos, tomar el primer valor único
+                consolidated[key] = unique_values[0]
+                print(f"🔍 Consolidando {key}: {value} -> {unique_values[0]}")
+        else:
+            consolidated[key] = value
+    
+    event['extra_data'] = consolidated
     return event
 
 def clean_row(row):
@@ -556,6 +625,12 @@ def enrich_events(events, match_info, profile=None):
     
     # Procesar eventos especiales y limpiar
     for event_dict in enriched:
+        # Consolidar descriptores duplicados PRIMERO
+        event_dict = consolidate_descriptors(event_dict)
+        
+        # Traducir campos de español a inglés
+        event_dict = translate_fields_to_english(event_dict)
+        
         # Procesar eventos específicos
         if event_dict.get('event_type') == 'PENALTY':
             event_dict = process_penalty_events(event_dict)

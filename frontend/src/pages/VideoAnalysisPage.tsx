@@ -39,10 +39,10 @@ const VideoAnalysisPage = () => {
         const matchData = await response.json();
         console.log("VideoAnalysisPage - Fetched data:", matchData);
         
-        // El backend devuelve directamente un array de eventos, pero el frontend espera { events: [...], match_info: {...} }
+        // El backend ya devuelve el formato correcto: { events: [...], match_id, total_events }
         const formattedData = {
-          events: Array.isArray(matchData) ? matchData : [],
-          match_info: {} // Por ahora vacío, se puede agregar más info del match si es necesario
+          events: matchData.events || [],
+          match_info: { match_id: matchData.match_id, total_events: matchData.total_events }
         };
         
         console.log("VideoAnalysisPage - Events count:", formattedData.events.length);

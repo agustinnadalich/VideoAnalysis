@@ -32,7 +32,7 @@ UPLOAD_FOLDER = '/app/uploads/'
 matches_json_path = os.path.join(UPLOAD_FOLDER, 'matches.json')
 
 # Ruta del archivo JSON
-matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
+matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matriz_semplyfied.json')
 
 # Funciones utilitarias para cargar los DataFrames bajo demanda
 def load_df():
@@ -427,7 +427,7 @@ def events_table():
 def analyze_events():
     try:
         # Cargar el archivo matriz_semplyfied.json
-        matriz_semplyfied_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
+        matriz_semplyfied_path = os.path.join(UPLOAD_FOLDER, 'matriz_semplyfied.json')
         if not os.path.exists(matriz_semplyfied_path):
             return jsonify({"error": "Archivo JSON no encontrado"}), 404
 
@@ -608,7 +608,7 @@ def import_file():
                 if not result or 'match' not in result or 'events' not in result:
                     print(f"❌ Datos faltantes en resultado de normalización: {result}")
                     return {"error": "Datos faltantes en archivo XML"}, 400
-                import_match_from_xml(result, profile.settings)
+                import_match_from_json(result, profile.settings)
             except Exception as e:
                 print(f"Error procesando archivo XML: {e}")
                 return {"error": f"Error procesando archivo XML: {str(e)}"}, 500

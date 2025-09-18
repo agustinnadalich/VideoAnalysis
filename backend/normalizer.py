@@ -273,6 +273,12 @@ def normalize_excel_to_json(filepath, profile, discard_categories=None):
             processed_count += 1
             timestamp_sec = make_json_serializable(row.get(col_time, 0))
             
+            # Extraer TODOS los campos disponibles como extra_data
+            extra_data = {}
+            for col_name, value in row.items():
+                if pd.notna(value):  # Solo incluir valores no nulos
+                    extra_data[col_name] = make_json_serializable(value)
+            
             event = {
                 "event_type": make_json_serializable(row.get(col_event_type, "")),
                 "timestamp_sec": timestamp_sec,
@@ -281,10 +287,7 @@ def normalize_excel_to_json(filepath, profile, discard_categories=None):
                 "duration": make_json_serializable(row.get(col_duration, 0)),
                 "x": make_json_serializable(row.get(col_x)),
                 "y": make_json_serializable(row.get(col_y)),
-                "extra_data": {
-                    "player": make_json_serializable(row.get(col_player, "")),
-                    "team": make_json_serializable(row.get(col_team, ""))
-                }
+                "extra_data": extra_data
             }
             events.append(event)
 

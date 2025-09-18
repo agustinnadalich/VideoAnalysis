@@ -388,3 +388,100 @@ def import_match_from_json(data, profile):
         return False
     finally:
         db.close()
+
+def import_match_from_json(json_data: dict, profile: dict):
+    """
+    Importa un partido y sus eventos desde un diccionario JSON (resultado de normalize_xml_to_json).
+    """
+    print(f"🔍 Iniciando importación desde JSON")
+    db = SessionLocal()
+    try:
+        match_info = json_data.get("match", {})
+        events = json_data.get("events", [])
+        
+        # Usar datos del perfil si no están en match_info
+        match_info.setdefault("team", profile.get("team", "Desconocido"))
+        match_info.setdefault("opponent_name", profile.get("opponent", "Rival"))
+        match_info.setdefault("date", profile.get("date", "2023-01-01"))
+        
+        print(f"🔍 Metadatos del partido: {match_info}")
+        print(f"🔍 Eventos a importar: {len(events)}")
+
+        # Enriquecer eventos usando enricher
+        from enricher import enrich_events
+        try:
+            events = enrich_events(events, match_info, profile)
+            print(f"✅ Eventos enriquecidos correctamente.")
+        except Exception as enrich_error:
+            print(f"❌ Error en enriquecimiento de eventos: {enrich_error}")
+            return False
+
+        # Crear o buscar club/equipo/partido
+        club = db.query(Club).filter_by(name=match_info["team"]).first()
+        if not club:
+            club = Club(name=match_info["team"])
+            db.add(club)
+            db.commit()
+            print(f"✅ Club creado: {club.name}")
+
+        team = db.query(Team).filter_by(name=match_info["team"], club_id=club.id).first()
+        if not team:
+            team = Team(name=match_info["team"], club_id=club.id, category="Senior", season=str(match_info["date"][:4]))
+            db.add(team)
+            db.commit()
+            print(f"✅ Equipo creado: {team.name}")
+
+        match_date = datetime.strptime(match_info["date"], "%Y-%m-%d").date()
+        match = Match(
+            team_id=team.id,
+            opponent_name=match_info.get("opponent_name"),
+            date=match_date,
+            location=match_info.get("location", "Desconocido"),
+            video_url=match_info.get("video_url", ""),
+            competition=match_info.get("competition"),
+            round=match_info.get("round"),
+            field=match_info.get("field"),
+            rain=match_info.get("rain"),
+            muddy=match_info.get("muddy"),
+            wind_1p=match_info.get("wind_1p"),
+            wind_2p=match_info.get("wind_2p"),
+            referee=match_info.get("referee"),
+            result=match_info.get("result")
+        )
+        db.add(match)
+        db.commit()
+        print(f"✅ Partido creado: vs {match.opponent_name} en {match.location}")
+
+        # Insertar eventos y jugadores
+        for ev in events:
+            # Si hay jugadores, crear todos
+            player_ids = []
+            if ev.get("players"):
+                for pname in ev["players"]:
+                    player = create_or_get_player(db, pname)
+                    player_ids.append(player.id)
+            # Usar el primer jugador como principal
+            main_player_id = player_ids[0] if player_ids else None
+
+            event = Event(
+                match_id=match.id,
+                player_id=main_player_id,
+                event_type=str(ev.get("event_type")),
+                timestamp_sec=ev.get("timestamp_sec", 0),
+                x=ev.get("x"),
+                y=ev.get("y"),
+                extra_data=clean_extra_data(ev.get("extra_data", {}))
+            )
+            db.add(event)
+
+        db.commit()
+        print(f"✅ Eventos insertados correctamente. Total: {len(events)}")
+
+        return {"events": events, "match_info": match_info}
+
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error al importar desde JSON: {e}")
+        return False
+    finally:
+        db.close()
