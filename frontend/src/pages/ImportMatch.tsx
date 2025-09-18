@@ -30,7 +30,18 @@ const ImportMatch = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      
+      // Si es un archivo XML y no hay perfil seleccionado, sugerir "Importacion XML"
+      if (selectedFile.name.toLowerCase().endsWith('.xml') && !selectedProfile) {
+        const xmlProfile = profilesQuery.data?.find((p: any) => p.name === "Importacion XML");
+        if (xmlProfile) {
+          setSelectedProfile(xmlProfile.name);
+          // Mostrar mensaje informativo
+          setError(null); // Limpiar errores previos
+        }
+      }
     }
   };
 
@@ -40,25 +51,42 @@ const ImportMatch = () => {
       return;
     }
 
+    // Limpiar errores previos
+    setError(null);
+
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        console.log(selectedProfile);
-        const res = await fetch(`http://localhost:5001/api/import/preview?profile=${selectedProfile}`, {
+        console.log("Perfil seleccionado:", selectedProfile);
+        console.log("Archivo:", file.name, "Tamaño:", file.size);
+
+        const res = await fetch(`http://localhost:5001/api/import/preview?profile=${encodeURIComponent(selectedProfile)}`, {
             method: 'POST',
             body: formData,
         });
-        
-        const data = await res.json();
-        
+
         if (!res.ok) {
-          // Si el backend devuelve un error, mostrarlo
-          const errorMessage = data.error || "Error al previsualizar archivo";
+          const errorData = await res.json().catch(() => ({ error: `HTTP ${res.status}: ${res.statusText}` }));
+          const errorMessage = errorData.error || "Error al previsualizar archivo";
           throw new Error(errorMessage);
         }
+
+        const data = await res.json();
+        console.log("Datos de preview:", data);
+
+        // No pasar el archivo en el state, solo la información necesaria
+        // Buscar el objeto completo del perfil
+        const profileObject = profilesQuery.data?.find((p: any) => p.name === selectedProfile);
         
-        navigate("/preview", { state: { previewData: data, file, profile: selectedProfile } });
+        navigate("/preview", {
+          state: {
+            previewData: data,
+            fileName: file.name,
+            fileSize: file.size,
+            profile: profileObject
+          }
+        });
     } catch (err: any) {
       console.error("Error en preview:", err);
       setError(err.message || "Error al procesar el archivo");

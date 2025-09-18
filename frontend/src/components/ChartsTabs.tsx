@@ -26,7 +26,17 @@ const ChartsTabs = (_props: any) => {
 
 
 
-  console.log("filteredEvents en ChartsTabs:", filteredEvents);
+  console.log("🔍 ChartsTabs - filteredEvents:", filteredEvents?.length || 0);
+
+  // Mostrar mensaje de carga si no hay eventos
+  if (!filteredEvents || filteredEvents.length === 0) {
+    return (
+      <div className="w-full mt-4 p-4 border rounded">
+        <p className="text-gray-500">Cargando eventos...</p>
+        <p className="text-sm text-gray-400">Eventos encontrados: {filteredEvents?.length || 0}</p>
+      </div>
+    );
+  }
 
   return (
     <Tabs defaultValue="overview" className="w-full mt-4">

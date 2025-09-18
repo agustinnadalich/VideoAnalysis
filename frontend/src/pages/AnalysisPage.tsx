@@ -7,14 +7,14 @@ import TimelineChart from "@/components/charts/TimelineChart";
 import VideoPlayer from "@/components/VideoPlayer";
 import ChartsTabs from "@/components/ChartsTabs";
 import { useEvents } from "@/hooks/useEvents";
-import { useFilterContext } from "@/context/FilterContext";
+import { FilterProvider, useFilterContext } from "@/context/FilterContext";
 import { PlaybackProvider, usePlayback } from "@/context/PlaybackContext";
 import { FiFilter, FiX } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
 const AnalysisPageContent = () => {
   const { matchId } = useParams<{ matchId: string }>();
-  const { data } = useEvents(Number(matchId));
+  const { data, isLoading, error } = useEvents(Number(matchId));
   const { setEvents, setFilteredEvents, setMatchInfo, filteredEvents } = useFilterContext();
   const {
     currentTime,
@@ -29,17 +29,34 @@ const AnalysisPageContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (data?.events) {
-      console.log("Eventos cargados en AnalysisPage:", data.events);
-      setEvents(data.events);
-      // Ordena los eventos por timestamp_sec antes de establecerlos en filteredEvents
-      const sortedEvents = [...data.events].sort((a, b) => (a.timestamp_sec ?? 0) - (b.timestamp_sec ?? 0));
-      setFilteredEvents(sortedEvents);
+    if (data?.events && data.events.length > 0) {
+      console.log("✅ Eventos cargados en AnalysisPage:", data.events.length);
+      setEvents(data.events);  // Esto ahora maneja ambos: events y filteredEvents
     }
     if (data?.match_info) {
       setMatchInfo(data.match_info);
     }
-  }, [data, setEvents, setFilteredEvents, setMatchInfo]);
+  }, [data]); // Removiendo setEvents y setMatchInfo de las dependencias
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <p>Cargando eventos del partido...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-red-500">Error al cargar los eventos: {error.message}</p>
+        </div>
+      </Layout>
+    );
+  }
 
   const videoUrl = data?.match_info?.VIDEO_URL || data?.match_info?.video || "";
 
@@ -98,9 +115,11 @@ const AnalysisPageContent = () => {
 
 const AnalysisPage = () => {
   return (
-    <PlaybackProvider>
-      <AnalysisPageContent />
-    </PlaybackProvider>
+    <FilterProvider>
+      <PlaybackProvider>
+        <AnalysisPageContent />
+      </PlaybackProvider>
+    </FilterProvider>
   );
 };
 

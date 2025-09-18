@@ -149,6 +149,38 @@ def update_match(id):
         db.close()
 
 
+@match_bp.route('/matches/<int:id>', methods=['DELETE'])
+def delete_match(id):
+    """Eliminar un partido y todos sus eventos asociados"""
+    db = SessionLocal()
+    try:
+        # Buscar el partido
+        match = db.query(Match).get(id)
+        if not match:
+            return jsonify({"error": "Partido no encontrado"}), 404
+
+        # Eliminar eventos asociados primero (por la restricción de clave foránea)
+        events_count = db.query(Event).filter(Event.match_id == id).count()
+        db.query(Event).filter(Event.match_id == id).delete()
+        
+        # Eliminar el partido
+        db.delete(match)
+        db.commit()
+        
+        return jsonify({
+            "message": f"Partido eliminado exitosamente",
+            "deleted_match_id": id,
+            "deleted_events_count": events_count
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR eliminando partido {id}: {str(e)}")
+        return jsonify({"error": f"Error eliminando partido: {str(e)}"}), 500
+    finally:
+        db.close()
+
+
 __all__ = ['match_bp']
 
 

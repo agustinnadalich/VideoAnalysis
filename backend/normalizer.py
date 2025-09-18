@@ -59,6 +59,48 @@ def time_str_to_seconds(time_str):
     return int(numbers) if numbers else 0
 
 
+def seconds_to_game_time(seconds, period=1, time_offsets=None):
+    """Convierte segundos a formato de tiempo de juego (MM:SS) con tiempo efectivo acumulado"""
+    if seconds is None or seconds < 0:
+        return "00:00"
+    
+    # Si no hay time_offsets, usar lógica antigua (compatibilidad)
+    if not time_offsets:
+        game_seconds = int(seconds) % 2400  # 40 minutos por período
+        minutes = game_seconds // 60
+        seconds_remainder = game_seconds % 60
+        return f"{minutes:02d}:{seconds_remainder:02d}"
+    
+    # Nueva lógica con tiempo efectivo de juego acumulado
+    game_time_seconds = 0
+    
+    # Obtener configuración de períodos
+    period_1_start = time_offsets.get(1, {}).get('start_time', 0)
+    period_1_end = time_offsets.get(1, {}).get('end_time', 2400)
+    period_2_start = time_offsets.get(2, {}).get('start_time', 2700)
+    period_2_end = time_offsets.get(2, {}).get('end_time', 4800)
+    
+    # Calcular duración efectiva del primer tiempo
+    period_1_duration = period_1_end - period_1_start
+    
+    if period == 1 or seconds < period_2_start:
+        # Evento en el primer tiempo
+        game_time_seconds = max(0, seconds - period_1_start)
+        # Limitar al máximo del primer tiempo
+        game_time_seconds = min(game_time_seconds, period_1_duration)
+    else:
+        # Evento en el segundo tiempo
+        # Tiempo acumulado = duración del primer tiempo + tiempo transcurrido en el segundo tiempo
+        seconds_in_period_2 = max(0, seconds - period_2_start)
+        game_time_seconds = period_1_duration + seconds_in_period_2
+    
+    # Convertir a formato MM:SS
+    minutes = int(game_time_seconds) // 60
+    seconds_remainder = int(game_time_seconds) % 60
+    
+    return f"{minutes:02d}:{seconds_remainder:02d}"
+
+
 def parse_coordinates(value):
     """Parsea coordenadas en formato 'x;y' o valores separados"""
     if not value or not isinstance(value, str):
@@ -229,9 +271,13 @@ def normalize_excel_to_json(filepath, profile, discard_categories=None):
         processed_count = 0
         for _, row in events_df.iterrows():
             processed_count += 1
+            timestamp_sec = make_json_serializable(row.get(col_time, 0))
+            
             event = {
                 "event_type": make_json_serializable(row.get(col_event_type, "")),
-                "timestamp_sec": make_json_serializable(row.get(col_time, 0)),
+                "timestamp_sec": timestamp_sec,
+                "Game_Time": seconds_to_game_time(timestamp_sec),
+                "game_time": seconds_to_game_time(timestamp_sec),
                 "duration": make_json_serializable(row.get(col_duration, 0)),
                 "x": make_json_serializable(row.get(col_x)),
                 "y": make_json_serializable(row.get(col_y)),
@@ -276,7 +322,16 @@ def detect_periods_and_convert_times(instances, profile=None):
         }
 
         print(f"🔍 Offsets calculados desde tiempos manuales: {time_offsets}")
-        return [], [], time_offsets
+        
+        # Procesar TODOS los eventos como eventos de juego cuando se usan tiempos manuales
+        game_events = []
+        for i, inst in enumerate(instances):
+            start = float(inst.findtext("start") or 0)
+            end = float(inst.findtext("end") or 0)
+            game_events.append((i, inst, start, end))
+        
+        print(f"🔍 Procesando {len(game_events)} eventos como eventos de juego con tiempos manuales")
+        return [], game_events, time_offsets
 
     # Método 2: Usar configuración de time_mapping (estructura antigua)
     if profile and "time_mapping" in profile:
@@ -301,7 +356,16 @@ def detect_periods_and_convert_times(instances, profile=None):
                         'end_time': manual_times.get('end_2', 4800)
                     }
                 }
-                return [], [], time_offsets
+                
+                # Procesar TODOS los eventos como eventos de juego cuando se usan tiempos manuales
+                game_events = []
+                for i, inst in enumerate(instances):
+                    start = float(inst.findtext("start") or 0)
+                    end = float(inst.findtext("end") or 0)
+                    game_events.append((i, inst, start, end))
+                
+                print(f"🔍 Procesando {len(game_events)} eventos como eventos de juego con tiempos manuales")
+                return [], game_events, time_offsets
 
         elif method == 'event_based':
             # Configuración basada en eventos
@@ -577,16 +641,9 @@ def detect_periods_fallback(instances):
 
 def convert_timestamp_to_absolute(start_time, time_offsets):
     """Convierte un tiempo relativo del XML a tiempo absoluto del partido"""
-    # Determinar en qué período cae este tiempo
-    for period, offsets in time_offsets.items():
-        if offsets['start_time'] <= start_time < (offsets.get('end_time', float('inf'))):
-            return start_time + offsets['start_offset']
-
-    # Si no está en ningún período conocido, asumir período 1
-    if 1 in time_offsets:
-        return start_time + time_offsets[1]['start_offset']
-
-    return start_time  # fallback
+    # Para perfiles manuales, el tiempo en XML ya es absoluto
+    # Solo necesitamos determinar el período, no convertir el tiempo
+    return start_time
 
 
 def normalize_xml_to_json(filepath, profile, discard_categories=None):
@@ -674,7 +731,7 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
             abs_start = convert_timestamp_to_absolute(control['start'], time_offsets)
             abs_end = convert_timestamp_to_absolute(control['end'], time_offsets)
             duration = abs_end - abs_start
-            timestamp = abs_start + duration / 2
+            timestamp = abs_start  # Usar el tiempo de inicio del evento para reproducción
 
             # Descriptores para eventos de control
             descriptors = {}
@@ -689,6 +746,8 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
             event = {
                 "event_type": event_type,
                 "timestamp_sec": round(timestamp, 1),
+                "Game_Time": seconds_to_game_time(timestamp, control['period'], time_offsets),
+                "game_time": seconds_to_game_time(timestamp, control['period'], time_offsets),
                 "players": None,
                 "x": None,
                 "y": None,
@@ -722,7 +781,7 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
             abs_start = convert_timestamp_to_absolute(start, time_offsets)
             abs_end = convert_timestamp_to_absolute(end, time_offsets)
             duration = abs_end - abs_start
-            timestamp = abs_start + duration / 2
+            timestamp = abs_start  # Usar el tiempo de inicio del evento para reproducción
 
             # Coordenadas
             pos_x = inst.findall("pos_x")
@@ -762,6 +821,8 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
             event = {
                 "event_type": event_type,
                 "timestamp_sec": round(timestamp, 1),
+                "Game_Time": seconds_to_game_time(timestamp, period, time_offsets),
+                "game_time": seconds_to_game_time(timestamp, period, time_offsets),
                 "players": None,
                 "x": x,
                 "y": y,

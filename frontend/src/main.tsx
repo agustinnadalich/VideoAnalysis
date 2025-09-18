@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import './index.css'
 import App from './App'
-import FilterProvider from "./context/FilterProvider";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 
@@ -13,9 +12,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <React.StrictMode>
       <BrowserRouter>
-        <FilterProvider>
-          <App />
-        </FilterProvider>
+        <App />
       </BrowserRouter>
     </React.StrictMode>
   </QueryClientProvider>

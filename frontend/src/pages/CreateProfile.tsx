@@ -170,8 +170,7 @@ const CreateProfile = () => {
     const isSaveDisabled =
     !profileName.trim() ||
     (fileType !== "xml" && !colEventType.trim()) ||
-    (timeMethod === "manual" && (Object.values(manualTimes) as number[]).some((time) => time <= 0)) ||
-    (timeMethod !== "manual" && (Object.values(timeCategories) as { category: string }[]).some(tc => !tc.category.trim()));
+    (timeMethod !== "manual" && selectedProfile && (Object.values(timeCategories) as { category: string }[]).some(tc => !tc.category.trim()));
 
 
   if (profilesQuery.isLoading) {
@@ -189,7 +188,9 @@ const CreateProfile = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
-      <h1 className="text-xl font-bold mb-2">Crear Perfil de Importación</h1>
+      <h1 className="text-xl font-bold mb-2">
+        {selectedProfile ? "Editar Perfil de Importación" : "Crear Nuevo Perfil de Importación"}
+      </h1>
 
       <Card>
         <CardContent className="space-y-4 pt-6">
@@ -200,19 +201,21 @@ const CreateProfile = () => {
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedProfile(e.target.value)}
               className="w-full border p-2 rounded"
             >
-              <option value="">Seleccionar un perfil existente...</option>
+              <option value="">➕ Crear un perfil nuevo</option>
               {profilesQuery.data?.map((p: any) => (
                 <option key={p.name} value={p.name}>
-                  {p.name}
+                  ✏️ Editar: {p.name}
                 </option>
               ))}
             </select>
             {selectedProfile ? (
-              <p className="text-sm text-gray-500">
-                Editando perfil: <strong>{selectedProfile}</strong>
+              <p className="text-sm text-blue-600">
+                Editando perfil existente: <strong>{selectedProfile}</strong>
               </p>
             ) : (
-              <p className="text-sm text-gray-500">Creando un perfil nuevo</p>
+              <p className="text-sm text-green-600">
+                Creando un perfil completamente nuevo
+              </p>
             )}
           </div>
 

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ interface Match {
   import_profile_name?: string;
   global_delay_seconds?: number;
   event_delays?: Record<string, number>;
+  manual_period_times?: Record<string, number>;
 }
 
 interface ImportProfile {
@@ -27,6 +29,7 @@ interface ImportProfile {
 }
 
 const MatchesAdmin = () => {
+    const navigate = useNavigate();
     const [matches, setMatches] = useState<Match[]>([]);
     const [editingMatch, setEditingMatch] = useState<Match | null>(null);
     const [profiles, setProfiles] = useState<ImportProfile[]>([]);
@@ -48,6 +51,31 @@ const MatchesAdmin = () => {
     fetchMatches();
     fetchProfiles();
     }, []);
+
+    // Detectar automáticamente si el perfil seleccionado es manual
+    useEffect(() => {
+        if (selectedProfile && profiles.length > 0) {
+            const profile = profiles.find(p => p.name === selectedProfile);
+            if (profile && (profile.settings?.manual_period_times || profile.settings?.time_mapping?.manual_times)) {
+                setTimeMethod("manual");
+                // Para perfiles manuales, cargar los tiempos desde el partido si están disponibles,
+                // sino usar valores por defecto
+                if (editingMatch?.manual_period_times) {
+                    setManualTimes(editingMatch.manual_period_times);
+                } else {
+                    // Valores por defecto para configuración manual
+                    setManualTimes({
+                        kick_off_1: 0,
+                        end_1: 2400,
+                        kick_off_2: 2700,
+                        end_2: 4800
+                    });
+                }
+            } else {
+                setTimeMethod("profile");
+            }
+        }
+    }, [selectedProfile, profiles, editingMatch]);
 
     const fetchMatches = async () => {
     const res = await fetch("http://localhost:5001/api/matches");
@@ -77,28 +105,65 @@ const MatchesAdmin = () => {
     };
 
     const handleDelete = async (id: number) => {
-    await fetch(`http://localhost:5001/api/matches/${id}`, { method: "DELETE" });
-    fetchMatches();
+        // Encontrar el partido para mostrar información en la confirmación
+        const match = matches.find(m => m.id === id);
+        const matchName = match ? `${match.team} vs ${match.opponent}` : `Partido #${id}`;
+        
+        // Confirmar eliminación
+        if (!confirm(`¿Estás seguro de que quieres eliminar "${matchName}"?\n\nEsta acción eliminará el partido y todos sus eventos asociados. No se puede deshacer.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`http://localhost:5001/api/matches/${id}`, { 
+                method: "DELETE" 
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                alert(`Partido eliminado exitosamente.\nEventos eliminados: ${result.deleted_events_count || 0}`);
+                fetchMatches(); // Recargar la lista
+            } else {
+                const error = await response.json();
+                alert(`Error eliminando partido: ${error.error || 'Error desconocido'}`);
+            }
+        } catch (error) {
+            console.error('Error eliminando partido:', error);
+            alert('Error de conexión al eliminar el partido');
+        }
     };
 
     const handleEdit = (match: Match) => {
     setEditingMatch(match);
     setSelectedProfile(match.import_profile_name || "");
-    setTimeMethod("profile");
     setGlobalDelay(match.global_delay_seconds || 0);
     setEventDelays(match.event_delays || {});
 
     // Cargar tipos de eventos disponibles para este partido
     fetchEventTypes(match.id);
 
-    // Si hay un perfil seleccionado, cargar su configuración
+    // Determinar automáticamente si el perfil es manual basado en sus settings
     if (match.import_profile_name) {
         const profile = profiles.find(p => p.name === match.import_profile_name);
-        if (profile && profile.settings?.time_mapping?.manual_times) {
-            setManualTimes(profile.settings.time_mapping.manual_times);
-        } else if (profile && profile.settings?.manual_period_times) {
-            setManualTimes(profile.settings.manual_period_times);
+        if (profile && (profile.settings?.manual_period_times || profile.settings?.time_mapping?.manual_times)) {
+            setTimeMethod("manual");
+            // Para perfiles manuales, cargar los tiempos desde la metadata del partido
+            if (match.manual_period_times) {
+                setManualTimes(match.manual_period_times);
+            } else {
+                // Valores por defecto si no hay tiempos guardados en el partido
+                setManualTimes({
+                    kick_off_1: 0,
+                    end_1: 2400,
+                    kick_off_2: 2700,
+                    end_2: 4800
+                });
+            }
+        } else {
+            setTimeMethod("profile");
         }
+    } else {
+        setTimeMethod("profile");
     }
     };
 
@@ -165,55 +230,117 @@ const MatchesAdmin = () => {
     };
 
     const handleSaveProfileSettings = async () => {
-        if (!selectedProfile) return;
+        if (!editingMatch) return;
 
-        const profile = profiles.find(p => p.name === selectedProfile);
-        if (!profile) return;
-
-        // Actualizar la configuración del perfil
-        const updatedSettings = {
-            ...profile.settings,
+        // Para configuración manual, siempre guardar los tiempos en la metadata del partido
+        const matchData = {
+            ...editingMatch,
             manual_period_times: manualTimes
         };
 
-        const res = await fetch(`http://localhost:5001/api/import/profiles`, {
-            method: "POST",
+        const res = await fetch(`http://localhost:5001/api/matches/${editingMatch.id}`, {
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: profile.name,
-                description: profile.description,
-                settings: updatedSettings
-            }),
+            body: JSON.stringify(matchData),
         });
 
         if (res.ok) {
             alert("Configuración de tiempos guardada correctamente");
-            fetchProfiles(); // Recargar perfiles
+            // Actualizar el estado local para reflejar los cambios
+            setEditingMatch(matchData);
+            fetchMatches(); // Recargar partidos
         } else {
             alert("Error al guardar la configuración");
         }
     };
 
     return (
-    <div className="max-w-4xl mx-auto p-4">
-    <h1 className="text-2xl font-bold mb-4">Administrar Partidos</h1>
+    <div className="max-w-6xl mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4">
+                <Button 
+                    onClick={() => navigate('/')} 
+                    variant="outline"
+                    size="sm"
+                >
+                    ← Inicio
+                </Button>
+                <h1 className="text-3xl font-bold">Administrar Partidos</h1>
+            </div>
+            <div className="text-sm text-gray-600">
+                Total: {matches.length} partido{matches.length !== 1 ? 's' : ''}
+            </div>
+        </div>
 
-    {matches.map((match) => (
-        <Card key={match.id} className="mb-4">
-        <CardContent className="p-4 space-y-2">
-            <div className="flex justify-between items-center">
-            <div>
-                <strong>{match.team}</strong> vs <strong>{match.opponent}</strong>
-                <div className="text-sm text-gray-600">{match.date} - {match.location}</div>
+        {matches.length === 0 ? (
+            <Card className="p-8 text-center">
+                <div className="text-gray-500">
+                    <p className="text-lg mb-2">No hay partidos registrados</p>
+                    <p className="text-sm">Importa tu primer partido para comenzar</p>
+                </div>
+            </Card>
+        ) : (
+            <div className="space-y-4">
+                {matches.map((match) => (
+                    <Card key={match.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="text-lg font-semibold">
+                                            <span className="text-blue-600">{match.team}</span> 
+                                            <span className="text-gray-400 mx-2">vs</span> 
+                                            <span className="text-red-600">{match.opponent}</span>
+                                        </div>
+                                        {match.result && (
+                                            <span className="px-2 py-1 bg-gray-100 rounded text-sm">
+                                                {match.result}
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                                        <div>
+                                            <span className="font-medium">Fecha:</span><br />
+                                            {new Date(match.date).toLocaleDateString()}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Lugar:</span><br />
+                                            {match.location || 'No especificado'}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Competición:</span><br />
+                                            {match.competition || 'No especificada'}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Perfil:</span><br />
+                                            {match.import_profile_name || 'No especificado'}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-col gap-2 ml-4">
+                                    <Button 
+                                        onClick={() => handleEdit(match)}
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        Editar
+                                    </Button>
+                                    <Button 
+                                        variant="destructive" 
+                                        onClick={() => handleDelete(match.id)}
+                                        size="sm"
+                                    >
+                                        Eliminar
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
-            <div className="flex gap-2">
-                <Button onClick={() => handleEdit(match)}>Editar</Button>
-                <Button variant="destructive" onClick={() => handleDelete(match.id)}>Eliminar</Button>
-            </div>
-            </div>
-        </CardContent>
-        </Card>
-    ))}
+        )}
 
     {editingMatch && (
         <Card className="mt-6">
@@ -301,61 +428,85 @@ const MatchesAdmin = () => {
                     </Select>
                 </div>
 
-                <div className="mb-4">
-                    <Label>Método de Configuración</Label>
-                    <Select value={timeMethod} onValueChange={(value: "manual" | "profile") => setTimeMethod(value)}>
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="profile">Usar configuración del perfil</SelectItem>
-                            <SelectItem value="manual">Configurar manualmente</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                {/* Solo mostrar método de configuración si el perfil NO es manual */}
+                {(() => {
+                    const selectedProfileObj = profiles.find(p => p.name === selectedProfile);
+                    const isManualProfile = selectedProfileObj && (selectedProfileObj.settings?.manual_period_times || selectedProfileObj.settings?.time_mapping?.manual_times);
+                    
+                    return !isManualProfile && (
+                        <div className="mb-4">
+                            <Label>Método de Configuración</Label>
+                            <Select value={timeMethod} onValueChange={(value: "manual" | "profile") => setTimeMethod(value)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="profile">Usar configuración del perfil</SelectItem>
+                                    <SelectItem value="manual">Configurar manualmente</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    );
+                })()}
 
-                {timeMethod === "manual" && (
-                    <div className="grid grid-cols-2 gap-4">
+                {/* Mostrar configuración manual solo si no es un perfil manual o si está en modo manual */}
+                {(() => {
+                    const selectedProfileObj = profiles.find(p => p.name === selectedProfile);
+                    const isManualProfile = selectedProfileObj && (selectedProfileObj.settings?.manual_period_times || selectedProfileObj.settings?.time_mapping?.manual_times);
+                    
+                    return (timeMethod === "manual" || isManualProfile) && (
                         <div>
-                            <Label>Kick Off 1er Tiempo (segundos)</Label>
-                            <Input
-                                type="number"
-                                value={manualTimes.kick_off_1}
-                                onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_1: parseInt(e.target.value) || 0 }))}
-                            />
+                            <div className="mb-3 p-3 bg-blue-50 rounded">
+                                <p className="text-sm text-blue-700">
+                                    {isManualProfile 
+                                        ? "Este perfil requiere configuración manual de tiempos. Los valores se guardarán específicamente para este partido."
+                                        : "Configuración manual de tiempos para este partido."
+                                    }
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Kick Off 1er Tiempo (segundos)</Label>
+                                    <Input
+                                        type="number"
+                                        value={manualTimes.kick_off_1}
+                                        onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_1: parseInt(e.target.value) || 0 }))}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Fin 1er Tiempo (segundos)</Label>
+                                    <Input
+                                        type="number"
+                                        value={manualTimes.end_1}
+                                        onChange={(e) => setManualTimes(prev => ({ ...prev, end_1: parseInt(e.target.value) || 0 }))}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Kick Off 2do Tiempo (segundos)</Label>
+                                    <Input
+                                        type="number"
+                                        value={manualTimes.kick_off_2}
+                                        onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_2: parseInt(e.target.value) || 0 }))}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Fin 2do Tiempo (segundos)</Label>
+                                    <Input
+                                        type="number"
+                                        value={manualTimes.end_2}
+                                        onChange={(e) => setManualTimes(prev => ({ ...prev, end_2: parseInt(e.target.value) || 0 }))}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <Label>Fin 1er Tiempo (segundos)</Label>
-                            <Input
-                                type="number"
-                                value={manualTimes.end_1}
-                                onChange={(e) => setManualTimes(prev => ({ ...prev, end_1: parseInt(e.target.value) || 0 }))}
-                            />
-                        </div>
-                        <div>
-                            <Label>Kick Off 2do Tiempo (segundos)</Label>
-                            <Input
-                                type="number"
-                                value={manualTimes.kick_off_2}
-                                onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_2: parseInt(e.target.value) || 0 }))}
-                            />
-                        </div>
-                        <div>
-                            <Label>Fin 2do Tiempo (segundos)</Label>
-                            <Input
-                                type="number"
-                                value={manualTimes.end_2}
-                                onChange={(e) => setManualTimes(prev => ({ ...prev, end_2: parseInt(e.target.value) || 0 }))}
-                            />
-                        </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {selectedProfile && timeMethod === "profile" && (
                     <div className="mt-4 p-3 bg-gray-50 rounded">
                         <p className="text-sm text-gray-600">
-                            Los tiempos se configurarán usando el perfil "{selectedProfile}".
-                            Para modificarlos, ve a la página de Crear Perfil.
+                            Los tiempos se detectarán automáticamente usando el perfil "{selectedProfile}" 
+                            basándose en eventos específicos durante la importación.
                         </p>
                     </div>
                 )}

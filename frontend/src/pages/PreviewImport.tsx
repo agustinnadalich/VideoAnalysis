@@ -18,6 +18,30 @@ const PreviewImport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [labelsWithoutGroup, setLabelsWithoutGroup] = useState(previewData?.labels_without_group || []);
   const [editedLabels, setEditedLabels] = useState<string[]>([]);
+  
+  // Estados para configuración de tiempos manuales
+  const [manualTimes, setManualTimes] = useState<Record<string, number>>(() => {
+    // Intentar cargar valores desde el perfil si está disponible
+    if (profile?.settings?.manual_period_times) {
+      return profile.settings.manual_period_times;
+    }
+    if (profile?.settings?.time_mapping?.manual_times && profile?.settings?.time_mapping?.method === "manual") {
+      return profile.settings.time_mapping.manual_times;
+    }
+    // Valores por defecto
+    return {
+      kick_off_1: 0,
+      end_1: 2400,
+      kick_off_2: 2700,
+      end_2: 4800
+    };
+  });
+
+  // Detectar si el perfil requiere configuración manual
+  const isManualProfile = profile && (
+    profile.settings?.manual_period_times || 
+    (profile.settings?.time_mapping?.manual_times && profile.settings?.time_mapping?.method === "manual")
+  );
 
   // Definir los campos del modelo Match con etiquetas amigables
   const matchFields = [
@@ -85,9 +109,13 @@ const PreviewImport = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          match: matchInfo, 
+          match: {
+            ...matchInfo,
+            // Incluir tiempos manuales si el perfil los requiere
+            ...(isManualProfile && { manual_period_times: manualTimes })
+          }, 
           events: eventsToImport,
-          profile: profile 
+          profile: profile?.name || profile  // Enviar solo el nombre del perfil
         })
       });
       if (!res.ok) {
@@ -148,6 +176,22 @@ const PreviewImport = () => {
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Paso 2: Revisar y Confirmar</h1>
+      
+      {/* Información del perfil */}
+      {profile && (
+        <Card className="mb-4">
+          <CardContent className="space-y-2 pt-6">
+            <h2 className="text-lg font-semibold">Perfil de Importación</h2>
+            <p><strong>Nombre:</strong> {profile.name}</p>
+            <p><strong>Descripción:</strong> {profile.description}</p>
+            <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
+              isManualProfile ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+            }`}>
+              {isManualProfile ? '🔧 Configuración Manual' : '⚡ Detección Automática'}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-4">
         <CardContent className="space-y-4 pt-6">
@@ -171,6 +215,58 @@ const PreviewImport = () => {
       </Card>
 
       {renderLabelsWithoutGroup()}
+
+      {/* Configuración de tiempos manuales */}
+      {isManualProfile && (
+        <Card className="mb-4">
+          <CardContent className="space-y-4 pt-6">
+            <h2 className="text-lg font-semibold">Configuración de Tiempos</h2>
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-sm text-blue-700">
+                Este perfil requiere configuración manual de tiempos. Ingresa los segundos exactos para cada período del partido.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Kick Off 1er Tiempo (segundos)</Label>
+                <Input
+                  type="number"
+                  value={manualTimes.kick_off_1}
+                  onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_1: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ej: 0"
+                />
+              </div>
+              <div>
+                <Label>Fin 1er Tiempo (segundos)</Label>
+                <Input
+                  type="number"
+                  value={manualTimes.end_1}
+                  onChange={(e) => setManualTimes(prev => ({ ...prev, end_1: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ej: 2400"
+                />
+              </div>
+              <div>
+                <Label>Kick Off 2do Tiempo (segundos)</Label>
+                <Input
+                  type="number"
+                  value={manualTimes.kick_off_2}
+                  onChange={(e) => setManualTimes(prev => ({ ...prev, kick_off_2: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ej: 2700"
+                />
+              </div>
+              <div>
+                <Label>Fin 2do Tiempo (segundos)</Label>
+                <Input
+                  type="number"
+                  value={manualTimes.end_2}
+                  onChange={(e) => setManualTimes(prev => ({ ...prev, end_2: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ej: 4800"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-4">
         <CardContent className="space-y-4 pt-6">

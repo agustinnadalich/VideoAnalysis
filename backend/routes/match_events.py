@@ -5,10 +5,41 @@ from models import Match, Event, Player, Team, ImportProfile
 import math
 import pandas as pd
 from enricher import enrich_events
+import json
 
 print("🔍 DEBUG: match_events.py se está cargando")
 
 match_events_bp = Blueprint('match_events', __name__)
+
+def safe_serialize(obj):
+    """Función segura para serializar objetos a JSON"""
+    if obj is None:
+        return None
+    elif isinstance(obj, (int, float)):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, str):
+        return obj
+    elif isinstance(obj, (list, tuple)):
+        return [safe_serialize(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: safe_serialize(value) for key, value in obj.items()}
+    else:
+        # Para otros tipos, convertir a string
+        return str(obj)
+
+def seconds_to_game_time(seconds, period=1):
+    """Convierte segundos a formato de tiempo de juego (MM:SS)"""
+    if seconds is None or seconds < 0:
+        return "00:00"
+    
+    # Calcular minutos y segundos dentro del período
+    game_seconds = int(seconds) % 2400  # 40 minutos por período
+    minutes = game_seconds // 60
+    seconds_remainder = game_seconds % 60
+    
+    return f"{minutes:02d}:{seconds_remainder:02d}"
 
 @match_events_bp.route('/test', methods=['GET'])
 def test_route():
@@ -16,24 +47,64 @@ def test_route():
     return jsonify({"message": "Test route working"})
 
 @match_events_bp.route('/matches/<int:match_id>/events', methods=['GET'])
-    def safe_second(val):
-        if val is None or (isinstance(val, float) and math.isnan(val)):
-            return 0
-        return val
+def get_match_events(match_id):
+    """Obtener eventos de un partido específico"""
+    db = SessionLocal()
+    try:
+        # Obtener el partido
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if not match:
+            return jsonify({"error": "Partido no encontrado"}), 404
 
-    kick_off_1 = safe_second(df[(df['event_type'] == 'KICK OFF') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 1))]['timestamp_sec'].min())
-    fin_1 = safe_second(df[(df['event_type'] == 'END') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 1))]['timestamp_sec'].max())
-    kick_off_2 = safe_second(df[(df['event_type'] == 'KICK OFF') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 2))]['timestamp_sec'].min())
-    fin_2 = safe_second(df[(df['event_type'] == 'END') & (df['extra_data'].apply(lambda x: x.get('PERIODS') == 2))]['timestamp_sec'].max())
+        # Obtener eventos del partido
+        events = db.query(Event).filter(Event.match_id == match_id).all()
 
-    def calcular(second):
-        if second <= fin_1:
-            return second - kick_off_1
-        elif second >= kick_off_2:
-            return (fin_1 - kick_off_1) + (second - kick_off_2)
-        return None
+        # Convertir a formato JSON con serialización segura
+        events_data = []
+        for event in events:
+            # Serializar extra_data de forma segura
+            safe_extra_data = safe_serialize(event.extra_data) if event.extra_data is not None else {}
+            
+            # Calcular los campos de tiempo de juego
+            timestamp_sec = safe_serialize(event.timestamp_sec)
+            period_value = safe_extra_data.get("period") if isinstance(safe_extra_data, dict) else 1
+            
+            # Convertir period de forma segura
+            try:
+                period = int(period_value) if period_value is not None and isinstance(period_value, (int, float, str)) else 1
+            except (ValueError, TypeError):
+                period = 1
+                
+            game_time = seconds_to_game_time(timestamp_sec, period) if timestamp_sec is not None else "00:00"
 
-    return calcular, kick_off_1, fin_1, kick_off_2, fin_2
+            event_dict = {
+                "id": event.id,
+                "event_type": event.event_type,
+                "timestamp_sec": timestamp_sec,
+                "Game_Time": game_time,
+                "game_time": game_time,
+                "players": None,  # No hay atributo players directo en el modelo Event
+                "x": safe_serialize(event.x),
+                "y": safe_serialize(event.y),
+                "team": safe_extra_data.get("EQUIPO") if isinstance(safe_extra_data, dict) else None,  # Extraer de extra_data
+                "period": period,
+                "extra_data": safe_extra_data
+            }
+            events_data.append(event_dict)
+
+        return jsonify({
+            "match_id": match_id,
+            "events": events_data,
+            "total_events": len(events_data)
+        })
+
+    except Exception as e:
+        print(f"Error obteniendo eventos del partido {match_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Error interno del servidor"}), 500
+    finally:
+        db.close()
 
 
 def calcular_origen_tries(df):
@@ -52,8 +123,8 @@ def calcular_origen_tries(df):
     return df
 
 
-@match_events_bp.route('/matches/<int:match_id>/events', methods=['GET'])
-def get_match_events(match_id):
+# @match_events_bp.route('/matches/<int:match_id>/events', methods=['GET'])  # COMENTADO PARA EVITAR DUPLICADO
+def get_match_events_deprecated(match_id):
     print("🚨🚨🚨 DEBUG: get_match_events LLAMADA PARA match_id:", match_id)
     print("🚨🚨🚨 DEBUG: Inicio de get_match_events")
     db: Session = SessionLocal()
