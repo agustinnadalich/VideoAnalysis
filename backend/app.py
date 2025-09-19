@@ -97,6 +97,129 @@ def calcular_origen_tries(df):
     df['TRY_ORIGIN'] = df.apply(lambda event: get_origin_event(event) if event['POINTS'] == "TRY" else None, axis=1)
     return df
 
+
+def mmss_to_seconds_py(val):
+    try:
+        if val is None:
+            return None
+        if isinstance(val, (int, float)):
+            return float(val)
+        s = str(val).strip()
+        if ':' in s:
+            parts = s.split(':')
+            if len(parts) == 2:
+                m = float(parts[0]) if parts[0] else 0
+                sec = float(parts[1]) if parts[1] else 0
+                return m * 60 + sec
+            # fallback
+            return float(parts[0])
+        return float(s)
+    except Exception:
+        return None
+
+
+def read_path(ev, path):
+    # path examples: 'extra_data.AVANCE', 'extra_data.descriptors.AVANCE', 'PLAYER'
+    try:
+        if '.' not in path:
+            return ev.get(path)
+        parts = path.split('.')
+        cur = ev
+        for p in parts:
+            if cur is None:
+                return None
+            if isinstance(cur, dict):
+                cur = cur.get(p)
+            else:
+                return None
+        return cur
+    except Exception:
+        return None
+
+
+def write_path(ev, path, value):
+    try:
+        if '.' not in path:
+            ev[path] = value
+            return
+        parts = path.split('.')
+        cur = ev
+        for i, p in enumerate(parts):
+            if i == len(parts) - 1:
+                # final
+                if isinstance(cur, dict):
+                    cur[p] = value
+                return
+            # intermediate
+            if isinstance(cur, dict):
+                if p not in cur or cur[p] is None:
+                    cur[p] = {}
+                cur = cur[p]
+            else:
+                return
+    except Exception:
+        return
+
+
+def apply_mapping_to_events_py(events, mapping):
+    # mapping: list of { source: 'extra_data.AVANCE', target: 'extra_data.ADVANCE', transformer: 'to_upper' }
+    out_events = []
+    for ev in events:
+        new_ev = dict(ev) if isinstance(ev, dict) else ev
+        # ensure nested dicts exist
+        if 'extra_data' not in new_ev or new_ev.get('extra_data') is None:
+            new_ev['extra_data'] = {}
+        if 'descriptors' not in new_ev['extra_data'] or new_ev['extra_data'].get('descriptors') is None:
+            new_ev['extra_data']['descriptors'] = {}
+
+        for m in mapping or []:
+            src = m.get('source')
+            tgt = m.get('target')
+            transformer = m.get('transformer')
+
+            raw = read_path(new_ev, src) if src else None
+
+            val = raw
+            if transformer == 'to_upper' and isinstance(val, str):
+                val = val.upper()
+            elif transformer == 'split_and_dedupe' and isinstance(val, str):
+                parts = [p.strip() for p in val.split(',') if p.strip()]
+                # if only one element, keep string? keep array
+                val = list(dict.fromkeys(parts))
+            elif transformer == 'mmss_to_seconds' and isinstance(val, (str, int, float)):
+                sec = mmss_to_seconds_py(val)
+                if sec is not None:
+                    val = sec
+
+            # write to target
+            if tgt:
+                write_path(new_ev, tgt, val)
+
+        out_events.append(new_ev)
+    return out_events
+
+
+def safe_profile_settings(profile):
+    """Return a plain dict for profile.settings regardless of ORM attribute typing."""
+    try:
+        if profile is None:
+            return {}
+        s = getattr(profile, 'settings', None)
+        if s is None:
+            return {}
+        # if it's a string (JSON) try to load
+        if isinstance(s, str):
+            try:
+                return json.loads(s)
+            except Exception:
+                return {}
+        if isinstance(s, dict):
+            return s
+        # fallback
+        return {}
+    except Exception:
+        return {}
+
 @app.route('/api/matches/<int:id>', methods=['PUT'])
 def update_match(id):
     session = SessionLocal()
@@ -105,6 +228,8 @@ def update_match(id):
         return jsonify({"error": "Match not found"}), 404
 
     data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
     for key, value in data.items():
         if key == "id":
             continue
@@ -557,73 +682,49 @@ def import_file():
         return {"error": "No file provided"}, 400
 
     file = request.files['file']
-    if file.filename == '':
+    if not file or not file.filename:
         return {"error": "Empty filename"}, 400
 
+    if not file or not getattr(file, 'filename', None):
+        return {"error": "Empty filename"}, 400
     filename = secure_filename(file.filename)
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(save_path)
 
     profile_name = request.args.get("profile")
+    if not profile_name:
+        return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
+
     db = SessionLocal()
     try:
-        if not profile_name:
-            return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
-
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
 
-        # Validar que el tipo de archivo coincide con la extensión
-        file_type = profile.settings.get('file_type', '').lower()
-        if file_type == 'xml' and not filename.lower().endswith('.xml'):
-            print("❌ Error: El archivo no tiene extensión .xml pero el perfil indica XML")
-            return {"error": "El archivo no coincide con el tipo XML indicado en el perfil"}, 400
-        elif file_type in ['xls', 'xlsx'] and not filename.lower().endswith(('.xls', '.xlsx')):
-            print("❌ Error: El archivo no tiene extensión .xls o .xlsx pero el perfil indica Excel")
-            return {"error": "El archivo no coincide con el tipo Excel indicado en el perfil"}, 400
+        settings = safe_profile_settings(profile)
+        file_type = settings.get('file_type', '').lower()
 
-        # Detectar tipo de archivo según el perfil o la extensión
-        file_type = profile.settings.get('file_type', '').lower()
-        print(f"👉 Tipo de archivo según perfil: '{file_type}'")
-        print(f"👉 Nombre del archivo: '{filename}'")
-        print(f"👉 Extensión del archivo: '{filename.lower().split('.')[-1] if '.' in filename else 'sin extensión'}'")
-        
-        # Si no hay file_type definido en el perfil, detectar por extensión
+        # If not specified, detect by extension
         if not file_type:
             if filename.lower().endswith('.xml'):
                 file_type = 'xml'
-                print("👉 Tipo de archivo detectado por extensión: XML")
             elif filename.lower().endswith(('.xls', '.xlsx')):
                 file_type = 'xlsx'
-                print("👉 Tipo de archivo detectado por extensión: Excel")
             else:
-                print("❌ No se pudo detectar el tipo de archivo")
                 return {"error": "No se pudo detectar el tipo de archivo. Extensión no soportada."}, 400
-        
+
         if file_type == 'xml':
-            print("👉 Archivo XML detectado")
-            try:
-                result = normalize_xml_to_json(save_path, profile.settings)
-                if not result or 'match' not in result or 'events' not in result:
-                    print(f"❌ Datos faltantes en resultado de normalización: {result}")
-                    return {"error": "Datos faltantes en archivo XML"}, 400
-                import_match_from_json(result, profile.settings)
-            except Exception as e:
-                print(f"Error procesando archivo XML: {e}")
-                return {"error": f"Error procesando archivo XML: {str(e)}"}, 500
+            result = normalize_xml_to_json(save_path, settings)
+            if not result or 'match' not in result or 'events' not in result:
+                return {"error": "Datos faltantes en archivo XML"}, 400
+            import_match_from_json(result, settings)
         elif file_type in ['xls', 'xlsx']:
-            print("👉 Archivo Excel detectado")
-            result = normalize_excel_to_json(save_path, profile.settings)
-            # Pasar el perfil completo en lugar de solo profile.settings
-            import_match_from_excel(save_path, {'settings': profile.settings} if hasattr(profile, 'settings') else profile)
+            result = normalize_excel_to_json(save_path, settings)
+            import_match_from_excel(save_path, {'settings': settings})
         else:
-            print("❌ Tipo de archivo no soportado")
             return {"error": "Tipo de archivo no soportado"}, 400
 
-        print(f"👉 Resultado de normalización: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
         return {"message": f"Archivo importado usando perfil '{profile_name}'"}, 200
-
     except Exception as e:
         return {"error": str(e)}, 500
     finally:
@@ -652,131 +753,48 @@ def preview_file():
     print(f"👉 Archivo existe: {os.path.exists(save_path)}")
 
     profile_name = request.args.get("profile")
-    print(f"👉 Profile solicitado: {profile_name}")
-
     if not profile_name:
-        print("👉 No profile especificado")
         return {"error": "Debe especificar ?profile=NombreDelPerfil"}, 400
 
     db = SessionLocal()
     try:
-        # Debug: mostrar todos los perfiles disponibles
-        all_profiles = db.query(ImportProfile).all()
-        print(f"👉 Perfiles disponibles en DB: {[p.name for p in all_profiles]}")
-        
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
-            print(f"👉 Perfil no encontrado: {profile_name}")
             return {"error": f"Perfil '{profile_name}' no encontrado"}, 404
-        
-        print("👉 Procesando preview con perfil:", profile.name)
-        print(f"👉 Perfil completo desde DB: {profile}")
-        print(f"👉 Configuración del perfil: {profile.settings}")
-        print(f"👉 Tipo del perfil.settings: {type(profile.settings)}")
 
-        # Detectar tipo de archivo según el perfil o la extensión
-        file_type = profile.settings.get('file_type', '').lower()
-        print(f"👉 Tipo de archivo según perfil: '{file_type}'")
-        print(f"👉 Nombre del archivo: '{filename}'")
-        print(f"👉 Extensión del archivo: '{filename.lower().split('.')[-1] if '.' in filename else 'sin extensión'}'")
-        
-        # Si no hay file_type definido en el perfil, detectar por extensión
+        settings = safe_profile_settings(profile)
+        file_type = settings.get('file_type', '').lower()
+
         if not file_type:
             if filename.lower().endswith('.xml'):
                 file_type = 'xml'
-                print("👉 Tipo de archivo detectado por extensión: XML")
             elif filename.lower().endswith(('.xls', '.xlsx')):
                 file_type = 'xlsx'
-                print("👉 Tipo de archivo detectado por extensión: Excel")
             else:
-                print("❌ No se pudo detectar el tipo de archivo")
                 return {"error": "No se pudo detectar el tipo de archivo. Extensión no soportada."}, 400
-        
+
         if file_type == 'xml':
-            print("👉 Archivo XML detectado")
-            try:
-                print(f"👉 Llamando normalize_xml_to_json con: {save_path}")
-                result = normalize_xml_to_json(save_path, profile.settings)
-                print(f"👉 Resultado de normalize_xml_to_json: {result}")
-                print(f"👉 Tipo de resultado: {type(result)}")
-                if result:
-                    print(f"👉 Claves en resultado: {list(result.keys())}")
-                    if 'match' in result:
-                        print(f"👉 Match info: {result['match']}")
-                    if 'events' in result:
-                        print(f"👉 Eventos encontrados: {len(result['events'])}")
-                        print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
-                else:
-                    print("👉 El resultado es None o vacío")
-            except Exception as xml_error:
-                print(f"👉 Error al procesar XML: {xml_error}")
-                import traceback
-                traceback.print_exc()
-                return {"error": f"Error procesando archivo XML: {str(xml_error)}"}, 500
+            result = normalize_xml_to_json(save_path, settings)
+            if not result or 'match' not in result or 'events' not in result:
+                return {"error": "Datos faltantes en archivo XML"}, 400
         elif file_type in ['xls', 'xlsx']:
-            print("👉 Archivo Excel detectado")
-            try:
-                print(f"👉 Llamando normalize_excel_to_json con: {save_path}")
-                result = normalize_excel_to_json(save_path, profile.settings)
-                print(f"👉 Resultado de normalize_excel_to_json: {result}")
-                print(f"👉 Tipo de resultado: {type(result)}")
-                if result:
-                    print(f"👉 Claves en resultado: {list(result.keys())}")
-                    if 'match' in result:
-                        print(f"👉 Match info: {result['match']}")
-                    if 'events' in result:
-                        print(f"👉 Eventos encontrados: {len(result['events'])}")
-                        print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
-                else:
-                    print("👉 El resultado es None o vacío")
-            except Exception as excel_error:
-                print(f"👉 Error al procesar Excel: {excel_error}")
-                import traceback
-                traceback.print_exc()
-                return {"error": f"Error procesando archivo Excel: {str(excel_error)}"}, 500
+            result = normalize_excel_to_json(save_path, settings)
         else:
-            print("❌ Tipo de archivo no soportado")
             return {"error": "Tipo de archivo no soportado"}, 400
 
-        print(f"👉 Resultado de normalización: {type(result)}, keys: {list(result.keys()) if result else 'None'}")
-        
-        if result is None:
-            print("👉 normalize_xml_to_json devolvió None - error en el procesamiento")
-            return {"error": "Error procesando el archivo XML. Verifique el formato del archivo."}, 500
-        
-        print(f"👉 Contenido del archivo después de normalización: {result}")
-        if result:
-            print(f"👉 Claves en el resultado: {list(result.keys())}")
-            if 'match' in result:
-                print(f"👉 Contenido de 'match': {result['match']}")
-            if 'events' in result:
-                print(f"👉 Número de eventos: {len(result['events'])}")
-                print(f"👉 Ejemplo de evento: {result['events'][0] if result['events'] else 'No hay eventos'}")
-        else:
-            print("👉 Resultado de normalización es None o vacío")
-
-        if not result or "match" not in result or "events" not in result:
-            print(f"👉 Resultado inválido - result: {bool(result)}, match: {'match' in result if result else False}, events: {'events' in result if result else False}")
-            return {"error": "Archivo inválido o sin datos"}, 400
-
-
-        match = result["match"]
-        events = result["events"]
-        event_types = sorted(set(str(ev.get("event_type", "Desconocido")) for ev in events))
-        players = sorted(set(str(ev.get("player")) for ev in events if ev.get("player")))
+        match = result.get('match')
+        events = result.get('events', [])
+        event_types = sorted(set(str(ev.get('event_type', 'Desconocido')) for ev in events))
+        players = sorted(set(str(ev.get('player')) for ev in events if ev.get('player')))
 
         response_data = {
-            "match_info": match,
-            "events": events,
-            "event_count": len(events),
-            "event_types": event_types,
-            "players": players
+            'match_info': match,
+            'events': events,
+            'event_count': len(events),
+            'event_types': event_types,
+            'players': players
         }
-        return Response(
-            json.dumps(convert_json_safe(response_data)),
-            mimetype='application/json'
-        ), 200
-
+        return Response(json.dumps(convert_json_safe(response_data)), mimetype='application/json'), 200
     except Exception as e:
         return {"error": str(e)}, 500
     finally:
@@ -809,37 +827,78 @@ def convert_json_safe(data):
 def save_match():
     print("👉 SAVE_MATCH: Iniciando importación")
     data = request.get_json()
-    print(f"👉 SAVE_MATCH: Datos recibidos - keys: {list(data.keys()) if data else 'None'}")
-    
-    if not data or "match" not in data or "events" not in data:
-        print("👉 SAVE_MATCH: Error - faltan datos básicos")
+
+    if not data or 'match' not in data or 'events' not in data:
         return jsonify({"error": "Faltan datos"}), 400
-    
-    profile_name = data.get("profile")
-    print(f"👉 SAVE_MATCH: Perfil solicitado: {profile_name}")
-    
+
+    profile_name = data.get('profile')
     if not profile_name:
-        print("👉 SAVE_MATCH: Error - falta el perfil")
         return jsonify({"error": "Falta el perfil"}), 400
 
     db = SessionLocal()
     try:
-        # Buscar el perfil en la base de datos
         profile = db.query(ImportProfile).filter_by(name=profile_name).first()
         if not profile:
-            print(f"👉 SAVE_MATCH: Error - perfil '{profile_name}' no encontrado")
             return jsonify({"error": f"Perfil '{profile_name}' no encontrado"}), 404
-        
-        print(f"👉 SAVE_MATCH: Perfil encontrado: {profile.name}")
-        print(f"👉 SAVE_MATCH: Configuración del perfil: {profile.settings}")
-        
-        # Llamar a la función con los datos y el perfil
-        print("👉 SAVE_MATCH: Llamando a import_match_from_json")
-        import_match_from_json(data, profile.settings)
-        print("👉 SAVE_MATCH: Importación completada exitosamente")
+
+        settings = safe_profile_settings(profile)
+        mapping = data.get('mapping') or settings.get('mapping')
+        events_to_import = data.get('events', [])
+
+        if mapping:
+            try:
+                events_mapped = apply_mapping_to_events_py(events_to_import, mapping)
+                data['events'] = events_mapped
+            except Exception as map_err:
+                return jsonify({"error": f"Error aplicando mapping: {str(map_err)}"}), 500
+
+        # Minimal validation: check time mapped
+        evs = data.get('events', [])
+        has_time = any((ev.get('timestamp_sec') is not None) or (ev.get('extra_data', {}) and ev.get('extra_data', {}).get('Game_Time')) for ev in evs)
+        if not has_time:
+            return jsonify({"error": "Falta mapeo de tiempo (timestamp_sec) en los eventos. Por favor mapea el campo de tiempo en la preview."}), 400
+
+        # Comprehensive validation for critical fields
+        validation_errors = []
+        for i, ev in enumerate(evs):
+            # Check event_type
+            if not ev.get('event_type') and not ev.get('CATEGORY'):
+                validation_errors.append(f"Evento {i+1}: Falta event_type o CATEGORY")
+            
+            # Check ADVANCE (critical for charts)
+            advance = ev.get('extra_data', {}).get('ADVANCE') or ev.get('ADVANCE')
+            if advance is None:
+                validation_errors.append(f"Evento {i+1}: Falta campo ADVANCE (requerido para gráficos)")
+            elif not isinstance(advance, str):
+                validation_errors.append(f"Evento {i+1}: ADVANCE debe ser string, no {type(advance)}")
+            
+            # Check PLAYER
+            player = ev.get('PLAYER')
+            if player is None:
+                validation_errors.append(f"Evento {i+1}: Falta campo PLAYER")
+            elif not isinstance(player, str):
+                validation_errors.append(f"Evento {i+1}: PLAYER debe ser string, no {type(player)}")
+            
+            # Check TEAM
+            team = ev.get('TEAM')
+            if team is None:
+                validation_errors.append(f"Evento {i+1}: Falta campo TEAM")
+            elif not isinstance(team, str):
+                validation_errors.append(f"Evento {i+1}: TEAM debe ser string, no {type(team)}")
+            
+            # Check timestamp_sec
+            timestamp = ev.get('timestamp_sec')
+            if timestamp is None:
+                validation_errors.append(f"Evento {i+1}: Falta timestamp_sec")
+            elif not isinstance(timestamp, (int, float)):
+                validation_errors.append(f"Evento {i+1}: timestamp_sec debe ser numérico, no {type(timestamp)}")
+
+        if validation_errors:
+            return jsonify({"error": "Errores de validación en eventos mapeados", "details": validation_errors[:10]}), 400  # Limit to first 10 errors
+
+        import_match_from_json(data, settings)
         return jsonify({"message": "Importación exitosa"}), 200
     except Exception as e:
-        print(f"👉 SAVE_MATCH: Error en save_match: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -883,7 +942,7 @@ def ensure_default_import_profile():
             profile = ImportProfile(name='Default', description='Perfil por defecto para Excel', settings=default_settings)
             db.add(profile)
         else:
-            default_existing.settings = default_settings
+            db.query(ImportProfile).filter_by(id=default_existing.id).update({"settings": default_settings})
         
         # Crear perfil para XML
         xml_existing = db.query(ImportProfile).filter_by(name='Importacion XML').first()
@@ -910,12 +969,76 @@ def ensure_default_import_profile():
             profile = ImportProfile(name='Importacion XML', description='Perfil para archivos XML', settings=xml_settings)
             db.add(profile)
         else:
-            xml_existing.settings = xml_settings
+            db.query(ImportProfile).filter_by(id=xml_existing.id).update({"settings": xml_settings})
         
         db.commit()
         print("✅ Perfiles por defecto creados/actualizados")
     finally:
         db.close()
+
+
+    def mmss_to_seconds_py(val):
+        try:
+            if val is None:
+                return None
+            if isinstance(val, (int, float)):
+                return float(val)
+            s = str(val).strip()
+            if ':' in s:
+                parts = s.split(':')
+                if len(parts) == 2:
+                    m = float(parts[0]) if parts[0] else 0
+                    sec = float(parts[1]) if parts[1] else 0
+                    return m * 60 + sec
+                # fallback
+                return float(parts[0])
+            return float(s)
+        except Exception:
+            return None
+
+
+    def read_path(ev, path):
+        # path examples: 'extra_data.AVANCE', 'extra_data.descriptors.AVANCE', 'PLAYER'
+        try:
+            if '.' not in path:
+                return ev.get(path)
+            parts = path.split('.')
+            cur = ev
+            for p in parts:
+                if cur is None:
+                    return None
+                if isinstance(cur, dict):
+                    cur = cur.get(p)
+                else:
+                    return None
+            return cur
+        except Exception:
+            return None
+
+
+    def write_path(ev, path, value):
+        try:
+            if '.' not in path:
+                ev[path] = value
+                return
+            parts = path.split('.')
+            cur = ev
+            for i, p in enumerate(parts):
+                if i == len(parts) - 1:
+                    # final
+                    if isinstance(cur, dict):
+                        cur[p] = value
+                    return
+                # intermediate
+                if isinstance(cur, dict):
+                    if p not in cur or cur[p] is None:
+                        cur[p] = {}
+                    cur = cur[p]
+                else:
+                    return
+        except Exception:
+            return
+
 
 ensure_default_import_profile()
 
@@ -934,7 +1057,8 @@ def create_or_update_profile():
         profile = db.query(ImportProfile).filter_by(name=name).first()
         if profile:
             profile.description = description
-            profile.settings = settings
+            # Use update to set JSON column safely
+            db.query(ImportProfile).filter_by(id=profile.id).update({"settings": settings})
             message = "Perfil actualizado"
         else:
             profile = ImportProfile(name=name, description=description, settings=settings)
@@ -969,7 +1093,7 @@ def debug_time_calculation():
             prof = db.query(ImportProfile).filter_by(name=profile_name).first()
             if not prof:
                 return jsonify({"error": f"Perfil '{profile_name}' no encontrado"}), 404
-            profile_data = prof.settings
+            profile_data = safe_profile_settings(prof)
         finally:
             db.close()
     
@@ -985,7 +1109,7 @@ def debug_time_calculation():
         try:
             profile = db.query(ImportProfile).filter_by(name='Default').first()
             if profile:
-                profile_data = profile.settings
+                profile_data = safe_profile_settings(profile)
         finally:
             db.close()
     # Migrar esquema de time_mapping legacy: renombrar 'period' a 'value' y establecer descriptor por defecto

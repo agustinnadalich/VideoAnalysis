@@ -18,6 +18,9 @@ const PreviewImport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [labelsWithoutGroup, setLabelsWithoutGroup] = useState(previewData?.labels_without_group || []);
   const [editedLabels, setEditedLabels] = useState<string[]>([]);
+  const [detectedFields, setDetectedFields] = useState<any[]>([]);
+  const [mapping, setMapping] = useState<any[]>([]);
+  const [mappedPreview, setMappedPreview] = useState<any[] | null>(null);
   
   // Estados para configuración de tiempos manuales
   const [manualTimes, setManualTimes] = useState<Record<string, number>>(() => {
@@ -171,6 +174,49 @@ const PreviewImport = () => {
     </Card>
   );
 
+  const detectFields = async () => {
+    // lazy-load util to avoid cycles
+    const { detectFieldsFromEvents } = await import("@/utils/importUtils");
+    const fields = detectFieldsFromEvents(events || []);
+    setDetectedFields(fields);
+    // initialize mapping defaults
+    const defaults = fields.map((f: any) => ({ source: f.path, target: f.path, transformer: 'none' }));
+    setMapping(defaults);
+  };
+
+  const updateMappingEntry = (index: number, key: string, value: any) => {
+    setMapping((prev: any[]) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [key]: value };
+      return copy;
+    });
+  };
+
+  const applyMappingPreview = async () => {
+    const { applyMappingToEvents } = await import("@/utils/importUtils");
+    const result = applyMappingToEvents(events || [], mapping || []);
+    setMappedPreview(result.slice(0, 30));
+  };
+
+  const saveProfile = async () => {
+    if (!mapping || mapping.length === 0) return;
+    const profilePayload = {
+      name: profile?.name || `Profile-${Date.now()}`,
+      description: profile?.description || 'Generated from preview',
+      settings: { mapping }
+    };
+
+    try {
+      const res = await fetch('http://localhost:5001/api/import/profiles', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profilePayload)
+      });
+      if (!res.ok) throw new Error('Error saving profile');
+      alert('Perfil guardado');
+    } catch (err: any) {
+      alert('Fallo al guardar perfil: ' + (err.message || err));
+    }
+  };
+
   if (!previewData) return <p>No hay datos para mostrar</p>;
 
   return (
@@ -313,6 +359,62 @@ const PreviewImport = () => {
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Campos detectados y mapeo */}
+      <Card className="mb-4">
+        <CardContent className="space-y-4 pt-6">
+          <h2 className="text-lg font-semibold">Campos detectados y mapeo</h2>
+          <p className="text-sm text-gray-500">Detecta automáticamente campos en los eventos y permite mapearlos a campos estándar.</p>
+          <div className="flex gap-2 mt-2">
+            <Button onClick={detectFields}>Detectar campos</Button>
+            <Button onClick={applyMappingPreview} disabled={mapping.length === 0}>Aplicar mapping (preview)</Button>
+            <Button onClick={saveProfile} variant="outline">Guardar perfil</Button>
+          </div>
+
+          {detectedFields.length === 0 ? (
+            <p className="text-sm text-gray-500 mt-3">No se detectaron campos aún.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {detectedFields.map((f: any, idx: number) => (
+                <div key={f.path} className="p-2 border rounded grid grid-cols-6 gap-2 items-center">
+                  <div className="col-span-2 font-mono text-sm">{f.path}</div>
+                  <div className="col-span-2 text-xs text-gray-600">Ej: {f.examples.join(' | ') || '—'}</div>
+                  <div className="col-span-1">
+                    <select value={mapping[idx]?.target || f.path} onChange={(e) => updateMappingEntry(idx, 'target', e.target.value)} className="w-full border p-1 rounded">
+                      <option value={f.path}>Mantener</option>
+                      <option value="event_type">event_type</option>
+                      <option value="PLAYER">PLAYER</option>
+                      <option value="TEAM">TEAM</option>
+                      <option value="extra_data.AVANCE">ADVANCE</option>
+                      <option value="extra_data.descriptors.AVANCE">ADVANCE (descriptor)</option>
+                      <option value="extra_data.JUGADOR">PLAYER (extra_data)</option>
+                      <option value="extra_data.EQUIPO">TEAM (extra_data)</option>
+                      <option value="timestamp_sec">timestamp_sec</option>
+                      <option value="extra_data.COORDINATE_X">COORDINATE_X</option>
+                      <option value="extra_data.COORDINATE_Y">COORDINATE_Y</option>
+                    </select>
+                  </div>
+                  <div className="col-span-1">
+                    <select value={mapping[idx]?.transformer || 'none'} onChange={(e) => updateMappingEntry(idx, 'transformer', e.target.value)} className="w-full border p-1 rounded">
+                      <option value="none">Ninguno</option>
+                      <option value="to_upper">To Upper</option>
+                      <option value="split_and_dedupe">Split & Dedupe</option>
+                      <option value="mmss_to_seconds">MM:SS → sec</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {mappedPreview && (
+            <div className="mt-4">
+              <h3 className="font-medium">Preview normalizado (primeros {mappedPreview.length})</h3>
+              <pre className="text-xs max-h-80 overflow-auto bg-gray-50 p-2 mt-2">{JSON.stringify(mappedPreview.slice(0, 20), null, 2)}</pre>
+            </div>
+          )}
         </CardContent>
       </Card>
 
