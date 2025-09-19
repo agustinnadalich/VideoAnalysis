@@ -179,9 +179,9 @@ const ChartsTabs = (_props: any) => {
           
           {/* Grid de gráficos - temporalmente solo con TacklesBarChart */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tackles por jugador (Todos los equipos - temporal) */}
+            {/* Tackles por jugador (Nuestro equipo - barras apiladas por avance) */}
             <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles por Jugador (Todos los equipos)</h4>
+              <h4 className="font-medium mb-2">Tackles por Jugador (Nuestro Equipo)</h4>
               <TacklesBarChart 
                 events={filteredEvents} 
                 onBarClick={(category, player) => {
