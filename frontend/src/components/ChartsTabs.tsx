@@ -107,6 +107,20 @@ const ChartsTabs = (_props: any) => {
       return filterDescriptors.every((filter) => {
         const { descriptor, value } = filter;
         
+        // Filtrado especial para grupos de tiempo
+        if (descriptor === "Quarter_Group") {
+          const timeInSeconds = event.timestamp_sec || event.Game_Time || 0;
+          let eventQuarterGroup;
+          
+          if (timeInSeconds < 1200) eventQuarterGroup = "0'- 20'";      // 0-20 minutos
+          else if (timeInSeconds < 2400) eventQuarterGroup = "20' - 40'";    // 20-40 minutos
+          else if (timeInSeconds < 3600) eventQuarterGroup = "40' - 60'";    // 40-60 minutos
+          else eventQuarterGroup = "60' - 80'";                        // 60+ minutos
+          
+          console.log("🔍 Checking event", event.id, "for Quarter_Group =", value, "-> calculated:", eventQuarterGroup);
+          return eventQuarterGroup === value;
+        }
+        
         // Buscar el valor en diferentes lugares del evento
         let eventValue = event[descriptor];
         

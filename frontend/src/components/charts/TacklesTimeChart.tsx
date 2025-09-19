@@ -115,15 +115,19 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
 
 
   const handleChartClick = (event, elements) => {
-      const chart = elements[0].element.$context.chart;
-      const timeGroups = [
-        "0'- 20'",
-        "20' - 40'",
-        "40' - 60'",
-        "60' - 80'"
-      ];
-      const timeGroupValue = timeGroups[elements[0].index];
-      onChartClick("time", timeGroupValue, "Time_Group"); 
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const timeGroups = [
+          "0'- 20'",
+          "20' - 40'",
+          "40' - 60'",
+          "60' - 80'"
+        ];
+        if (index >= 0 && index < timeGroups.length) {
+          const timeGroupValue = timeGroups[index];
+          onChartClick("time", timeGroupValue, "Quarter_Group"); 
+        }
+      }
   };
 
   const tacklesTimeChartOptions = {
