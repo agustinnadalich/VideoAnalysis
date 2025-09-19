@@ -52,7 +52,7 @@ const TriesTimeChart = ({ events, onChartClick }) => {
     responsive: true,
     plugins: {
       legend: {
-        position: 'top',
+        position: 'top' as const,
       },
       title: {
         display: true,
@@ -75,7 +75,7 @@ const TriesTimeChart = ({ events, onChartClick }) => {
           return hidden || value === 0 ? '' : value;
         },
         font: {
-          weight: 'bold',
+          weight: 700,
         },
       },
     },

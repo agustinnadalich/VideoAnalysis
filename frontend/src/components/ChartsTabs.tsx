@@ -6,9 +6,10 @@ import {
 } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import TacklesBarChart from "./charts/TacklesBarChart";
-// import MissedTacklesBarChart from "./charts/MissedTacklesBarChart";
-// import TacklesByTeamChart from "./charts/TacklesByTeamChart";
-// import TacklesEffectivityChart from "./charts/TacklesEffectivityChart";
+import MissedTacklesBarChart from "./charts/MissedTacklesBarChart";
+import TacklesByTeamChart from "./charts/TacklesByTeamChart";
+import TacklesEffectivityChart from "./charts/TacklesEffectivityChart";
+import TacklesTimeChart from "./charts/TacklesTimeChart";
 import AdvancePieChart from "./charts/AdvancePieChart";
 // import TimelineChart from "./charts/TimelineChart";
 // import ScatterChart from "./charts/ScatterChart";
@@ -38,8 +39,32 @@ const ChartsTabs = (_props: any) => {
   console.log("🔍 ChartsTabs - Tackle events:", filteredEvents?.filter(e => e.event_type === 'TACKLE').length || 0);
 
   // Función para manejar clicks en gráficos y agregar filtros
-  const handleChartClick = (chartType: string, value: string, descriptor: string) => {
-    console.log("🎯 handleChartClick called with:", { chartType, value, descriptor });
+  const handleChartClick = (...args: any[]) => {
+    let chartType: string, value: string, descriptor: string;
+    
+    // Detectar la firma del callback
+    if (args.length === 3 && typeof args[0] === 'string') {
+      // Firma simple: (chartType, value, descriptor)
+      [chartType, value, descriptor] = args;
+    } else if (args.length >= 6) {
+      // Firma completa: (event, elements, chart, chartType, tabId, additionalFilters)
+      const [, , , type, , additionalFilters] = args;
+      chartType = type;
+      
+      if (additionalFilters && additionalFilters.length > 0) {
+        const filter = additionalFilters[0];
+        descriptor = filter.descriptor;
+        value = filter.value;
+      } else {
+        console.warn("No additional filters provided in chart click");
+        return;
+      }
+    } else {
+      console.warn("Unexpected handleChartClick arguments:", args);
+      return;
+    }
+    
+    console.log("🎯 handleChartClick processed:", { chartType, value, descriptor });
     
     // Crear el nuevo filtro
     const newFilter = { descriptor, value };
@@ -177,7 +202,7 @@ const ChartsTabs = (_props: any) => {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Estadísticas de Tackles</h3>
           
-          {/* Grid de gráficos - temporalmente solo con TacklesBarChart */}
+          {/* Grid de gráficos - todos los gráficos de tackles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Tackles por jugador (Nuestro equipo - barras apiladas por avance) */}
             <div className="border rounded-lg p-4">
@@ -210,13 +235,59 @@ const ChartsTabs = (_props: any) => {
                 }}
               />
             </div>
-          </div>
 
-          {/* Nota temporal */}
-          <div className="border rounded-lg p-4 bg-yellow-50">
-            <p className="text-sm text-gray-600">
-              🚧 Próximamente: Tackles errados, efectividad y comparación por equipos
-            </p>
+            {/* Tackles por tiempo de juego */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-2">Tackles por Tiempo de Juego</h4>
+              <div className="h-80">
+                <TacklesTimeChart 
+                  events={filteredEvents} 
+                  onChartClick={(chartType, value, descriptor) => {
+                    handleChartClick(chartType, value, descriptor);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Tackles errados */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-2">Tackles Errados</h4>
+              <div className="h-80">
+                <MissedTacklesBarChart 
+                  events={filteredEvents} 
+                  onChartClick={(chartType, value, descriptor) => {
+                    handleChartClick(chartType, value, descriptor);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Efectividad de tackles */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-2">Efectividad de Tackles</h4>
+              <div className="h-80">
+                <TacklesEffectivityChart 
+                  events={filteredEvents}
+                  team="OUR_TEAM"
+                  onChartClick={(chartType, value, descriptor) => {
+                    handleChartClick(chartType, value, descriptor);
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Comparación por equipos */}
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-2">Tackles por Equipo</h4>
+              <div className="h-80">
+                <TacklesByTeamChart 
+                  events={filteredEvents} 
+                  onChartClick={(chartType, value, descriptor) => {
+                    handleChartClick(chartType, value, descriptor);
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </TabsContent>

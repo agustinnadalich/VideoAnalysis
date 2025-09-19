@@ -55,7 +55,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -76,7 +76,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>PIE</group>
@@ -126,7 +126,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -140,7 +140,7 @@
 <code>KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>PIE</group>
@@ -219,7 +219,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -265,7 +265,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -297,7 +297,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -365,7 +365,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -386,7 +386,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -497,7 +497,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -525,7 +525,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -549,7 +549,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -581,7 +581,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -661,7 +661,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -702,7 +702,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -784,7 +784,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -816,7 +816,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -830,7 +830,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -844,7 +844,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -869,7 +869,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -918,7 +918,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -973,7 +973,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1096,7 +1096,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1130,7 +1130,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1228,7 +1228,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1310,7 +1310,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1390,7 +1390,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -1422,7 +1422,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -1440,7 +1440,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1471,7 +1471,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1667,7 +1667,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1695,7 +1695,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1723,7 +1723,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1751,7 +1751,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1779,7 +1779,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1807,7 +1807,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -1839,7 +1839,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1867,7 +1867,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1971,7 +1971,7 @@
 <code>KICK OFF</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1981,7 +1981,7 @@
 <code>KICK OFF</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -1991,7 +1991,7 @@
 <code>KICK OFF</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2001,7 +2001,7 @@
 <code>KICK OFF</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2114,7 +2114,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2140,7 +2140,7 @@
 <code>MAUL</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -2250,7 +2250,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2291,7 +2291,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2305,7 +2305,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2332,7 +2332,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2404,7 +2404,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2422,7 +2422,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2593,7 +2593,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2625,7 +2625,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2682,7 +2682,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2696,7 +2696,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2720,7 +2720,7 @@
 <xy_shape>2</xy_shape>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>RESULTADO-LINE</group>
@@ -2791,7 +2791,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2823,7 +2823,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2880,7 +2880,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -2952,7 +2952,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -2998,7 +2998,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3132,7 +3132,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -3146,7 +3146,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -3164,7 +3164,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3194,7 +3194,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3222,7 +3222,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3250,7 +3250,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3264,7 +3264,7 @@
 <code>FREE-KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3274,7 +3274,7 @@
 <code>FREE-KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3302,7 +3302,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3342,7 +3342,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3373,7 +3373,7 @@
 <code>KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>PIE</group>
@@ -3397,7 +3397,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3449,7 +3449,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3484,7 +3484,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3500,7 +3500,7 @@
 <code>LINEOUT</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>JUGADOR</group>
@@ -3582,7 +3582,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3620,7 +3620,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3648,7 +3648,7 @@
 <code>PENALTY</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3687,7 +3687,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3701,7 +3701,7 @@
 <xy_shape>0</xy_shape>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <text>DA</text>
@@ -3736,7 +3736,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3764,7 +3764,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3856,7 +3856,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3884,7 +3884,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3902,7 +3902,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3926,7 +3926,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -3958,7 +3958,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -3986,7 +3986,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4039,7 +4039,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4094,7 +4094,7 @@
 <code>KICK OFF</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4197,7 +4197,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4303,7 +4303,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -4361,7 +4361,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -4379,7 +4379,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4442,7 +4442,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4536,7 +4536,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4560,7 +4560,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -4644,7 +4644,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4706,7 +4706,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4762,7 +4762,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -4826,7 +4826,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -4870,7 +4870,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -4929,7 +4929,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5048,7 +5048,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5066,7 +5066,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5113,7 +5113,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5149,7 +5149,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -5181,7 +5181,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -5195,7 +5195,7 @@
 <code>KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>JUGADOR</group>
@@ -5227,7 +5227,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5367,7 +5367,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5401,7 +5401,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5445,7 +5445,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -5568,7 +5568,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5688,7 +5688,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -5872,7 +5872,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -5904,7 +5904,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -5935,7 +5935,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -5987,7 +5987,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6054,7 +6054,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6088,7 +6088,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6102,7 +6102,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6132,7 +6132,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6156,7 +6156,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -6184,7 +6184,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6264,7 +6264,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6285,7 +6285,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6364,7 +6364,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6374,7 +6374,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -6406,7 +6406,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -6428,7 +6428,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6462,7 +6462,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6476,7 +6476,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6500,7 +6500,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -6528,7 +6528,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -6553,7 +6553,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6563,7 +6563,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -6667,7 +6667,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6789,7 +6789,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6833,7 +6833,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -6930,7 +6930,7 @@
 <xy_shape>0</xy_shape>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -7004,7 +7004,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7036,7 +7036,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7068,7 +7068,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7119,7 +7119,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7212,7 +7212,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7268,7 +7268,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7300,7 +7300,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7332,7 +7332,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7364,7 +7364,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7442,7 +7442,7 @@
 <code>RUCK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>VELOCIDAD-RUCK</group>
@@ -7502,7 +7502,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7593,7 +7593,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -7621,7 +7621,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -7684,7 +7684,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>RESULTADO-LINE</group>
@@ -7741,7 +7741,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7755,7 +7755,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7782,7 +7782,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -7848,7 +7848,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -7955,7 +7955,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8052,7 +8052,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8080,7 +8080,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8104,7 +8104,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -8215,7 +8215,7 @@
 <code>KICK</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>PIE</group>
@@ -8318,7 +8318,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8346,7 +8346,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8374,7 +8374,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8402,7 +8402,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8430,7 +8430,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8458,7 +8458,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8482,7 +8482,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -8514,7 +8514,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8571,7 +8571,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8595,7 +8595,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -8627,7 +8627,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8641,7 +8641,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8665,7 +8665,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -8693,7 +8693,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>
@@ -8725,7 +8725,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8753,7 +8753,7 @@
 </label>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 </instance>
 <instance>
@@ -8763,7 +8763,7 @@
 <code>TACKLE</code>
 <label>
 <group>EQUIPO</group>
-<text>RIVAL</text>
+<text>OPPONENT</text>
 </label>
 <label>
 <group>AVANCE</group>

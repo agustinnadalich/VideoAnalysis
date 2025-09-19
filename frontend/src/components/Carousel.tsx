@@ -66,18 +66,18 @@ const Carousel = forwardRef<any, CarouselProps>(
       }
     }, [filteredEvents]); // Se ejecuta cuando cambian los eventos filtrados
 
-    const hasSetPieces = filteredEvents.some(event => event.CATEGORY === "SCRUM" || event.CATEGORY === "LINEOUT");
-    const hasTackles = filteredEvents.some((event) => event.CATEGORY === "TACKLE");
-    const hasMissedTackles = filteredEvents.some((event) => event.CATEGORY === "MISSED-TACKLE");
-    const hasTeamTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "TACKLE");
-    const hasTeamMissedTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
-    const hasRivalTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "TACKLE");
-    const hasRivalMissedTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && event.CATEGORY === "MISSED-TACKLE");
+    const hasSetPieces = filteredEvents.some(event => event.CATEGORY === "SCRUM" || event.CATEGORY === "LINEOUT" || event.event_type === "SCRUM" || event.event_type === "LINEOUT");
+    const hasTackles = filteredEvents.some((event) => event.CATEGORY === "TACKLE" || event.event_type === "TACKLE");
+    const hasMissedTackles = filteredEvents.some((event) => event.CATEGORY === "MISSED-TACKLE" || event.event_type === "MISSED-TACKLE");
+    const hasTeamTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && (event.CATEGORY === "TACKLE" || event.event_type === "TACKLE"));
+    const hasTeamMissedTackles = filteredEvents.some((event) => event.TEAM !== "OPPONENT" && (event.CATEGORY === "MISSED-TACKLE" || event.event_type === "MISSED-TACKLE"));
+    const hasRivalTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && (event.CATEGORY === "TACKLE" || event.event_type === "TACKLE"));
+    const hasRivalMissedTackles = filteredEvents.some((event) => event.TEAM === "OPPONENT" && (event.CATEGORY === "MISSED-TACKLE" || event.event_type === "MISSED-TACKLE"));
 
-    const hasPenalties = filteredEvents.some((event) => event.CATEGORY === "PENALTY");
-    const hasPoints = filteredEvents.some((event) => event.CATEGORY === "POINTS");
-    const hasTries = filteredEvents.some((event) => event.CATEGORY === "POINTS" && event.POINTS === "TRY");
-    const hasTurnovers = filteredEvents.some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-");
+    const hasPenalties = filteredEvents.some((event) => event.CATEGORY === "PENALTY" || event.event_type === "PENALTY");
+    const hasPoints = filteredEvents.some((event) => event.CATEGORY === "POINTS" || event.event_type === "POINTS");
+    const hasTries = filteredEvents.some((event) => (event.CATEGORY === "POINTS" || event.event_type === "POINTS") && event.POINTS === "TRY");
+    const hasTurnovers = filteredEvents.some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-" || event.event_type === "TURNOVER+" || event.event_type === "TURNOVER-");
 
     return (
       <Tabs activeTab={activeTab} setActiveTab={setActiveTab} ref={ref}>

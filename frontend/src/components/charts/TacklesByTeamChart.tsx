@@ -1,11 +1,35 @@
 import React from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 const TacklesByTeamChart = ({ events, onChartClick }) => {
+  console.log("🎯 TacklesByTeamChart - Received events:", events?.length || 0);
+  console.log("🎯 TacklesByTeamChart - Sample event:", events?.[0]);
+  
   // Filtrar eventos de tackles
   const tackleEvents = events.filter((event) => 
     event.CATEGORY === "TACKLE" || event.event_type === "TACKLE"
   );
+
+  console.log("🎯 TacklesByTeamChart - Filtered TACKLE events:", tackleEvents.length);
 
   // Contar tackles por equipo
   const ourTeamTackles = tackleEvents.filter(event => event.TEAM !== "OPPONENT").length;
@@ -44,7 +68,7 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
+        position: 'top' as const,
       },
       title: {
         display: true,
@@ -63,7 +87,7 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
         color: 'grey',
         formatter: (value) => value > 0 ? value : '',
         font: {
-          weight: 'bold',
+          weight: 700,
         },
       },
     },
@@ -77,6 +101,13 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
     },
     onClick: handleChartClick,
   };
+
+  console.log("🎯 TacklesByTeamChart - Final data:", data);
+  console.log("🎯 TacklesByTeamChart - Team counts:", {
+    ourTeamTackles,
+    opponentTackles,
+    totalTackles: ourTeamTackles + opponentTackles
+  });
 
   return (
     <div className="w-full">

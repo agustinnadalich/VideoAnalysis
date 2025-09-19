@@ -62,7 +62,7 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
     plugins: {
       legend: {
         display: true,
-        position: 'top',
+        position: 'top' as const,
         onClick: (e, legendItem, legend) => {
           const index = legendItem.index;
           const chart = legend.chart;
@@ -115,7 +115,7 @@ const PenaltiesCausePieChart = ({ events, onChartClick }) => {
           return hidden || value === 0 ? '' : value;
         },
         font: {
-          weight: 'bold',
+          weight: 700,
         },
       },
     },
