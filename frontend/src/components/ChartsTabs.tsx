@@ -14,7 +14,7 @@ import AdvancePieChart from "./charts/AdvancePieChart";
 // import ScatterChart from "./charts/ScatterChart";
 // Aquí luego podrás importar los otros charts
 import { useFilterContext } from "../context/FilterContext";
-import { getTeamFromEvent, normalizeString, isOurTeam, computeTackleStatsAggregated } from "../utils/teamUtils";
+import { getTeamFromEvent, normalizeString, isOurTeam, computeTackleStatsAggregated, detectOurTeams } from "../utils/teamUtils";
 import type { MatchEvent } from "@/types";
 
 
@@ -38,12 +38,43 @@ const ChartsTabs = (_props: any) => {
   };
 
   // Funciones helper para determinar si los gráficos tienen datos para mostrar
-  const hasTacklesBarChartData = (events: MatchEvent[]) => {
-    const tackleEvents = events.filter((e) => 
-      (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE')
-    );
-    return tackleEvents.length > 0;
+  const hasTacklesBarChartData = (filteredEvts: MatchEvent[]) => {
+    if (!filteredEvts || filteredEvts.length === 0) return false;
+
+    // Determinar la lista de 'nuestros equipos' usando el contexto completo `events` (no el filtrado),
+    // para evitar detectar equipos incorrectos cuando `filteredEvents` contiene solo rivales.
+    const teamsToUse = (ourTeamsList && ourTeamsList.length > 0) ? ourTeamsList : detectOurTeams(events || []);
+    if (!teamsToUse || teamsToUse.length === 0) return false;
+
+    const normalizedOurTeams = teamsToUse
+      .map(t => normalizeString(t).toLowerCase())
+      .filter(t => t && !/^(unknown|desconocido|rival|opponent|our_team|opp|home|away|nuestro equipo|nuestro|equipo|team|oponente|rivales)$/i.test(t));
+    if (normalizedOurTeams.length === 0) return false;
+
+    // Comprobar si en los eventos filtrados hay al menos un TACKLE perteneciente a nuestros equipos
+    const tackleCount = filteredEvts.filter((e) => (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE')).length;
+    const ourTackleCount = filteredEvts.filter((e) => {
+      const isTackle = (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE');
+      if (!isTackle) return false;
+      const team = getTeamFromEvent(e);
+      if (!team) return false;
+      return normalizedOurTeams.includes(normalizeString(team).toLowerCase());
+    }).length;
+
+    // DEBUG: imprimir estado resumido (ver consola del navegador, no logs del servidor)
+    try {
+      // eslint-disable-next-line no-console
+      console.log('ChartsTabs.hasTacklesBarChartData:', { filteredEvents: filteredEvts.length, tackleCount, ourTackleCount, teamsToUse, normalizedOurTeams });
+    } catch (err) {
+      // ignore
+    }
+
+    return ourTackleCount > 0;
   };
+  
+  // DEBUG: imprimir resumen corto para ayudar a identificar por qué se muestra el chart
+  // (se dejará ligero para no llenar logs en producción)
+  // console.log('ChartsTabs - hasTacklesBarChartData - teamsToUse:', teamsToUse, 'normalized:', normalizedOurTeams);
 
   const hasMissedTacklesBarChartData = (events: MatchEvent[]) => {
     const missedTackleEvents = events.filter(

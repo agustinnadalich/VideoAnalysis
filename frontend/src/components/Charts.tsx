@@ -5,6 +5,7 @@ import EventsTable from "./EventsTable";
 import TacklesBarChart from "./charts/TacklesBarChart";
 import AdvancePieChart from "./charts/AdvancePieChart";
 import TacklesEffectivityChart from "./charts/TacklesEffectivityChart";
+import { getTeamFromEvent, detectOurTeams, normalizeString } from "../utils/teamUtils";
 
 interface ChartsProps {
   events?: any[];
@@ -25,13 +26,39 @@ const Charts: React.FC<ChartsProps> = ({
   currentTime = 0,
   setFilterDescriptors
 }) => {
-  const { filteredEvents: contextFilteredEvents } = useFilterContext();
+  const { filteredEvents: contextFilteredEvents, ourTeamsList } = useFilterContext();
   
   // Usar los eventos del contexto si están disponibles, sino usar los props
   const eventsToDisplay = contextFilteredEvents.length > 0 ? contextFilteredEvents : filteredEvents;
 
   console.log("Charts - Events to display:", eventsToDisplay.length);
   console.log("Charts - First few events:", eventsToDisplay.slice(0, 3));
+
+  // Función helper para determinar si hay datos de tackles de nuestros equipos
+  const hasTacklesBarChartData = (events: any[]) => {
+    if (!events || events.length === 0) return false;
+
+    // Determinar lista de "nuestros equipos" preferida: contexto si existe, sino detectarla a partir
+    // del conjunto completo de eventos (prop `events`) para evitar falsos positivos cuando se filtra.
+    let ourTeams = (ourTeamsList && ourTeamsList.length > 0) ? ourTeamsList : detectOurTeams(events || []);
+    if (!ourTeams || ourTeams.length === 0) return false;
+
+    // Normalizar nombres para comparaciones robustas y excluir placeholders
+    const normalizedOurTeams = ourTeams
+      .map(t => normalizeString(t).toLowerCase())
+      .filter(t => t && !/^(unknown|desconocido|rival|opponent|our_team|opponent|home|away|opp)$/i.test(t));
+
+    // Filtrar eventos de tipo TACKLE que pertenezcan a alguno de nuestros equipos
+    const ourTackleEvents = (events || []).filter((e) => {
+      const isTackle = (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE');
+      if (!isTackle) return false;
+      const team = getTeamFromEvent(e);
+      if (!team) return false;
+      return normalizedOurTeams.includes(normalizeString(team).toLowerCase());
+    });
+
+    return ourTackleEvents.length > 0;
+  };
 
   const handleChartClick = (event: any, elements: any, chart: any, chartType: string, tabId?: string, additionalFilters?: any[]) => {
     console.log("Chart clicked:", chartType, elements, additionalFilters);
@@ -63,15 +90,17 @@ const Charts: React.FC<ChartsProps> = ({
       <div className="statistics-section">
         <h2 className="text-xl font-semibold mb-4">Estadísticas del Partido</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="border rounded-lg p-4">
-            <TacklesBarChart
-              events={eventsToDisplay}
-              onBarClick={(category, player) => {
-                console.log("Tackles bar clicked:", category, player);
-                // Implementar filtrado por jugador/categoría
-              }}
-            />
-          </div>
+          {hasTacklesBarChartData(eventsToDisplay) && (
+            <div className="border rounded-lg p-4">
+              <TacklesBarChart
+                events={eventsToDisplay}
+                onBarClick={(category, player) => {
+                  console.log("Tackles bar clicked:", category, player);
+                  // Implementar filtrado por jugador/categoría
+                }}
+              />
+            </div>
+          )}
           
           <div className="border rounded-lg p-4">
             <AdvancePieChart
