@@ -754,7 +754,7 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
                 "players": None,
                 "x": None,
                 "y": None,
-                "team": descriptors.get('EQUIPO'),
+                "team": "OPPONENT" if descriptors.get('EQUIPO') == "RIVAL" else descriptors.get('EQUIPO'),
                 "period": control['period'],
                 "extra_data": {
                     "clip_start": abs_start,
@@ -829,7 +829,7 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
                 "players": None,
                 "x": x,
                 "y": y,
-                "team": descriptors.get('EQUIPO'),
+                "team": "OPPONENT" if descriptors.get('EQUIPO') == "RIVAL" else descriptors.get('EQUIPO'),
                 "period": period,
                 "extra_data": {
                     "clip_start": abs_start,

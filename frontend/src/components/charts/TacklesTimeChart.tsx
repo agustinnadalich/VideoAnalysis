@@ -26,12 +26,19 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
   useEffect(() => {
     console.log("🎯 TacklesTimeChart - Received events:", events?.length || 0);
     console.log("🎯 TacklesTimeChart - Sample event:", events?.[0]);
+    console.log("🎯 TacklesTimeChart - Event types in received events:", [...new Set(events?.map(e => e.event_type) || [])]);
     
+    // Usar los eventos ya filtrados en lugar de hacer filtrado propio
     const pointsEvents = events.filter(
-      (event) => event.event_type === "TACKLE"
+      (event) => event.event_type === "TACKLE" || event.CATEGORY === "TACKLE" || event.event_type === "MISSED-TACKLE"
     );
     
-    console.log("🎯 TacklesTimeChart - Filtered TACKLE events:", pointsEvents.length);
+    console.log("🎯 TacklesTimeChart - Filtered events by type:", {
+      successfulTackles: pointsEvents.filter(e => e.event_type === "TACKLE" || e.CATEGORY === "TACKLE").length,
+      missedTackles: pointsEvents.filter(e => e.event_type === "MISSED-TACKLE").length
+    });
+    
+    console.log("🎯 TacklesTimeChart - Filtered TACKLE events from filteredEvents:", pointsEvents.length);
     console.log("🎯 TacklesTimeChart - Sample TACKLE event:", pointsEvents?.[0]);
 
     const timeGroups = [
@@ -53,35 +60,39 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
       labels: timeGroups,
       datasets: [
       {
-        label: "Tackles by Game Time (Our Team)",
+        label: "Tackles Exitosos",
         data: timeGroups.map(group => {
         const groupEvents = pointsEvents.filter(event => {
           const timeInSeconds = event.timestamp_sec || event.Game_Time || 0;
           const eventTimeGroup = getTimeGroup(timeInSeconds);
-          return eventTimeGroup === group && event.TEAM !== "OPPONENT";
+          return eventTimeGroup === group && (event.event_type === "TACKLE" || event.CATEGORY === "TACKLE");
         });
         const totalTackles = groupEvents.length;
         return totalTackles;
         }),
         backgroundColor: "rgba(75, 192, 192, 0.6)",
+        borderColor: "rgba(75, 192, 192, 1)",
       },
       {
-        label: "Tackles by Game Time (Opponent)",
+        label: "Tackles Errados",
         data: timeGroups.map(group => {
         const groupEvents = pointsEvents.filter(event => {
           const timeInSeconds = event.timestamp_sec || event.Game_Time || 0;
           const eventTimeGroup = getTimeGroup(timeInSeconds);
-          return eventTimeGroup === group && event.TEAM === "OPPONENT";
+          return eventTimeGroup === group && event.event_type === "MISSED-TACKLE";
         });
         const totalTackles = groupEvents.length;
         return totalTackles;
         }),
         backgroundColor: "rgba(255, 99, 132, 0.6)",
+        borderColor: "rgba(255, 99, 132, 1)",
       },
       ],
     };
 
     console.log("🎯 TacklesTimeChart - Final data:", data);
+    console.log("🎯 TacklesTimeChart - Data labels:", data.labels);
+    console.log("🎯 TacklesTimeChart - Data values:", data.datasets[0].data);
     setTacklesTimeChartData(data);
   }, [events]);
 
@@ -139,7 +150,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Tackles by Game Time',
+        text: 'Tackles por Tiempo de Juego',
       },
       tooltip: {
         callbacks: {

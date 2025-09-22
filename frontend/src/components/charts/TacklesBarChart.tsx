@@ -6,12 +6,13 @@ type Props = {
 };
 
 export default function TacklesBarChart({ events, onBarClick }: Props) {
+  // Filtrar solo tackles del equipo propio (no del rival)
   const tackleEvents = events.filter((e) => 
-    e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE'
+    (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE') && e.TEAM !== 'OPPONENT'
   );
 
   console.log("TacklesBarChart - Total events:", events.length);
-  console.log("TacklesBarChart - Tackle events:", tackleEvents.length);
+  console.log("TacklesBarChart - Tackle events (own team only):", tackleEvents.length);
 
   const playerAdvanceMap: Record<string, Record<string, number>> = {};
 
@@ -32,17 +33,24 @@ export default function TacklesBarChart({ events, onBarClick }: Props) {
       }
     }
 
+    // Filtrar valores vacíos o null del array de jugadores
+    players = players.filter(player => player && typeof player === 'string' && player.trim() !== '');
+
     const advance = event.ADVANCE || event.advance_type || event.extra_data?.AVANCE || 'UNKNOWN';
 
     players.forEach((player) => {
-      if (!playerAdvanceMap[player]) {
-        playerAdvanceMap[player] = { NEGATIVE: 0, NEUTRAL: 0, POSITIVE: 0, UNKNOWN: 0 };
-      }
+      // Solo procesar si hay un jugador válido (no vacío, no null, no undefined)
+      const trimmedPlayer = player.trim();
+      if (trimmedPlayer !== '' && trimmedPlayer !== 'Unknown' && trimmedPlayer !== 'unknown') {
+        if (!playerAdvanceMap[trimmedPlayer]) {
+          playerAdvanceMap[trimmedPlayer] = { NEGATIVE: 0, NEUTRAL: 0, POSITIVE: 0, UNKNOWN: 0 };
+        }
 
-      if (['NEGATIVE', 'NEUTRAL', 'POSITIVE'].includes(advance)) {
-        playerAdvanceMap[player][advance]++;
-      } else {
-        playerAdvanceMap[player]['UNKNOWN']++;
+        if (['NEGATIVE', 'NEUTRAL', 'POSITIVE'].includes(advance)) {
+          playerAdvanceMap[trimmedPlayer][advance]++;
+        } else {
+          playerAdvanceMap[trimmedPlayer]['UNKNOWN']++;
+        }
       }
     });
   });

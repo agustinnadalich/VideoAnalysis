@@ -28,14 +28,29 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
     console.log("🎯 MissedTacklesBarChart - Sample event:", events?.[0]);
     
     const missedTackleEvents = events.filter(
-      (event) => event.event_type === "MISSED-TACKLE"
+      (event) => event.event_type === "MISSED-TACKLE" && event.TEAM !== "OPPONENT"
     );
     
     console.log("🎯 MissedTacklesBarChart - Filtered MISSED-TACKLE events:", missedTackleEvents.length);
     console.log("🎯 MissedTacklesBarChart - Sample MISSED-TACKLE event:", missedTackleEvents?.[0]);
 
     const playerLabels = [
-      ...new Set(missedTackleEvents.map((event) => event.PLAYER)),
+      ...new Set(missedTackleEvents.map((event) => {
+        let player = null;
+        if (event.PLAYER) {
+          player = Array.isArray(event.PLAYER) ? event.PLAYER[0] : event.PLAYER;
+        } else if (event.player_name) {
+          player = Array.isArray(event.player_name) ? event.player_name[0] : event.player_name;
+        } else if (event.extra_data?.JUGADOR) {
+          player = event.extra_data.JUGADOR;
+        }
+        
+        // Filtrar valores vacíos o inválidos
+        if (player && typeof player === 'string' && player.trim() !== '' && player !== 'Unknown' && player !== 'unknown') {
+          return player.trim();
+        }
+        return null;
+      })),
     ].filter(player => player != null).sort((a, b) => {
       const numA = typeof a === 'string' ? parseInt(a) || 0 : 0;
       const numB = typeof b === 'string' ? parseInt(b) || 0 : 0;
@@ -48,9 +63,17 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
         {
           label: "Missed Tackles",
           data: playerLabels.map((player) => {
-            const count = missedTackleEvents.filter(
-              (event) => event.PLAYER === player  && event.TEAM !== "OPPONENT"
-            ).length;
+            const count = missedTackleEvents.filter((event) => {
+              let eventPlayer = null;
+              if (event.PLAYER) {
+                eventPlayer = Array.isArray(event.PLAYER) ? event.PLAYER[0] : event.PLAYER;
+              } else if (event.player_name) {
+                eventPlayer = Array.isArray(event.player_name) ? event.player_name[0] : event.player_name;
+              } else if (event.extra_data?.JUGADOR) {
+                eventPlayer = event.extra_data.JUGADOR;
+              }
+              return eventPlayer === player && event.TEAM !== "OPPONENT";
+            }).length;
             return count;
           }),
           backgroundColor: "rgba(255, 99, 132, 0.6)",
@@ -69,8 +92,15 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
   });
 
   const handleChartClick = (event, elements) => {
-    const chart = elements[0].element.$context.chart;
-    onChartClick(event, elements, chart, "player", "tackles-tab"); 
+    if (elements.length > 0 && missedTacklesBarChartData) {
+      const index = elements[0].index;
+      const labels = missedTacklesBarChartData.labels;
+
+      if (index >= 0 && index < labels.length) {
+        const playerName = labels[index];
+        onChartClick("player", playerName, "JUGADOR");
+      }
+    }
   };
 
 

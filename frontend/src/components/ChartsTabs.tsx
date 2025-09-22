@@ -109,7 +109,7 @@ const ChartsTabs = (_props: any) => {
         
         // Filtrado especial para grupos de tiempo
         if (descriptor === "Quarter_Group") {
-          const timeInSeconds = event.timestamp_sec || event.Game_Time || 0;
+          const timeInSeconds = parseFloat(event.timestamp_sec || event.Game_Time || event.time || 0) || 0;
           let eventQuarterGroup;
           
           if (timeInSeconds < 1200) eventQuarterGroup = "0'- 20'";      // 0-20 minutos
@@ -117,7 +117,7 @@ const ChartsTabs = (_props: any) => {
           else if (timeInSeconds < 3600) eventQuarterGroup = "40' - 60'";    // 40-60 minutos
           else eventQuarterGroup = "60' - 80'";                        // 60+ minutos
           
-          console.log("🔍 Checking event", event.id, "for Quarter_Group =", value, "-> calculated:", eventQuarterGroup);
+          console.log("🔍 Checking event", event.id, "for Quarter_Group =", value, "-> time:", timeInSeconds, "(type:", typeof timeInSeconds, ") -> calculated:", eventQuarterGroup);
           return eventQuarterGroup === value;
         }
         
@@ -128,22 +128,41 @@ const ChartsTabs = (_props: any) => {
         if (eventValue === undefined && event.extra_data) {
           eventValue = event.extra_data[descriptor];
         }
-
-        console.log("🔍 Checking event", event.id, "for", descriptor, "=", value, "-> found:", eventValue);
         
-        // Si es un array, verificar si contiene el valor
+        // Para campos de jugador, buscar también en otros campos comunes
+        if ((descriptor === 'JUGADOR' || descriptor === 'PLAYER') && eventValue === undefined) {
+          // Buscar en campos alternativos de jugador
+          if (event.PLAYER !== undefined) {
+            eventValue = event.PLAYER;
+            console.log("🔍 Found player in event.PLAYER:", eventValue);
+          } else if (event.player_name !== undefined) {
+            eventValue = event.player_name;
+            console.log("🔍 Found player in event.player_name:", eventValue);
+          }
+        }
+
+        console.log("🔍 Checking event", event.id, "for", descriptor, "=", value, "-> found:", eventValue, "(type:", typeof eventValue + ")");
+        
+        // Si es un array, verificar si contiene el valor exactamente
         if (Array.isArray(eventValue)) {
-          return eventValue.includes(value);
+          const normalizedArray = eventValue.map(item => String(item || '').trim());
+          const normalizedSearchValue = String(value || '').trim();
+          const containsValue = normalizedArray.includes(normalizedSearchValue);
+          console.log("🔍 Exact array check:", normalizedArray, "contains exactly", normalizedSearchValue, "->", containsValue);
+          return containsValue;
         }
         
-        // Comparación normal
-        const matches = eventValue === value;
-        console.log("🔍 Match result:", matches);
+        // Comparación normal (convertir a strings y comparar exactamente)
+        const normalizedEventValue = String(eventValue || '').trim();
+        const normalizedSearchValue = String(value || '').trim();
+        const matches = normalizedEventValue === normalizedSearchValue;
+        console.log("🔍 Exact comparison:", normalizedEventValue, "===", normalizedSearchValue, "->", matches);
         return matches;
       });
     });
 
     console.log("🔄 Filtered result:", filtered.length, "events from", events.length);
+    console.log("🔄 Active filters:", filterDescriptors.map(f => `${f.descriptor}=${f.value}`));
     setFilteredEvents(filtered);
   }, [events, filterDescriptors, setFilteredEvents]);
 
