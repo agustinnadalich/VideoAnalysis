@@ -14,7 +14,7 @@ import AdvancePieChart from "./charts/AdvancePieChart";
 // import ScatterChart from "./charts/ScatterChart";
 // Aquí luego podrás importar los otros charts
 import { useFilterContext } from "../context/FilterContext";
-import { getTeamFromEvent, normalizeString, isOurTeam } from "../utils/teamUtils";
+import { getTeamFromEvent, normalizeString, isOurTeam, computeTackleStatsAggregated } from "../utils/teamUtils";
 import type { MatchEvent } from "@/types";
 
 
@@ -35,6 +35,57 @@ const ChartsTabs = (_props: any) => {
     setFilteredEvents: (events: any[]) => void;
     matchInfo?: any;
     ourTeamsList: string[];
+  };
+
+  // Funciones helper para determinar si los gráficos tienen datos para mostrar
+  const hasTacklesBarChartData = (events: MatchEvent[]) => {
+    const tackleEvents = events.filter((e) => 
+      (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE')
+    );
+    return tackleEvents.length > 0;
+  };
+
+  const hasMissedTacklesBarChartData = (events: MatchEvent[]) => {
+    const missedTackleEvents = events.filter(
+      (event) => event.event_type === "MISSED-TACKLE"
+    );
+    return missedTackleEvents.length > 0;
+  };
+
+  const hasTacklesByTeamChartData = (events: MatchEvent[]) => {
+    const statsByTeam = computeTackleStatsAggregated(events, ourTeamsList);
+    const ourStats = statsByTeam[0] || { successful: 0, missed: 0 };
+    const oppStats = statsByTeam[1] || { successful: 0, missed: 0 };
+    return (ourStats.successful + ourStats.missed + oppStats.successful + oppStats.missed) > 0;
+  };
+
+  const hasTacklesTimeChartData = (events: MatchEvent[]) => {
+    const tackleEvents = events.filter(
+      (event) => event.event_type === "TACKLE" || event.CATEGORY === "TACKLE" || event.event_type === "MISSED-TACKLE"
+    );
+    return tackleEvents.length > 0;
+  };
+
+  const hasAdvancePieChartData = (events: MatchEvent[]) => {
+    const advanceEvents = events.filter(
+      (event) => event.CATEGORY === "ADVANCE" || event.event_type === "ADVANCE"
+    );
+    const eventsWithAdvanceData = advanceEvents.filter(event => {
+      const advance = event.extra_data?.AVANCE || event.extra_data?.ADVANCE || event.AVANCE || event.ADVANCE;
+      return advance !== null && advance !== undefined && advance !== "";
+    });
+    return eventsWithAdvanceData.length > 0;
+  };
+
+  const hasTackleAdvanceData = (events: MatchEvent[]) => {
+    const tackleEvents = events.filter(
+      (event) => event.CATEGORY === "TACKLE" || event.event_type === "TACKLE"
+    );
+    const tacklesWithAdvanceData = tackleEvents.filter(event => {
+      const advance = event.extra_data?.AVANCE || event.extra_data?.ADVANCE || event.AVANCE || event.ADVANCE;
+      return advance !== null && advance !== undefined && advance !== "";
+    });
+    return tacklesWithAdvanceData.length > 0;
   };
   
 
@@ -314,84 +365,111 @@ const ChartsTabs = (_props: any) => {
           
           {/* Grid de gráficos - todos los gráficos de tackles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tackles por jugador (Nuestro equipo - barras apiladas por avance) */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles por Jugador (Nuestro Equipo)</h4>
-              <TacklesBarChart 
-                events={filteredEvents} 
-                onBarClick={(category, player) => {
-                  console.log("Clicked on player:", player);
-                  handleChartClick("player", player, "JUGADOR");
-                }}
-              />
-            </div>
+            {/* Tackles por jugador (Nuestro equipo - barras apiladas por avance) - solo mostrar si hay datos */}
+            {hasTacklesBarChartData(filteredEvents) && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">Tackles por Jugador</h4>
+                <TacklesBarChart 
+                  events={filteredEvents} 
+                  onBarClick={(category, player) => {
+                    console.log("Clicked on player:", player);
+                    handleChartClick("player", player, "JUGADOR");
+                  }}
+                />
+              </div>
+            )}
 
-            {/* Distribución de Avances en Tackles */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Distribución de Avances en Tackles</h4>
-              <AdvancePieChart 
-                events={filteredEvents} 
-                category="TACKLE" 
-                onChartClick={(event, elements, chart, chartType, tabId, additionalFilters) => {
-                  console.log("Advance pie clicked:", chartType, additionalFilters);
-                  console.log("Additional filters details:", additionalFilters?.[0]);
-                  if (additionalFilters && additionalFilters.length > 0) {
-                    const advanceFilter = additionalFilters.find(f => f.descriptor === "ADVANCE");
-                    if (advanceFilter) {
-                      console.log("Found advance filter:", advanceFilter);
-                      handleChartClick("advance", advanceFilter.value, "AVANCE"); // Usar AVANCE en español
+            {/* Distribución de Avances en Tackles - solo mostrar si hay datos */}
+            {hasTackleAdvanceData(filteredEvents) && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">Distribución de Avances en Tackles</h4>
+                <AdvancePieChart 
+                  events={filteredEvents} 
+                  category="TACKLE" 
+                  onChartClick={(event, elements, chart, chartType, tabId, additionalFilters) => {
+                    console.log("Advance pie clicked:", chartType, additionalFilters);
+                    console.log("Additional filters details:", additionalFilters?.[0]);
+                    if (additionalFilters && additionalFilters.length > 0) {
+                      const advanceFilter = additionalFilters.find(f => f.descriptor === "ADVANCE");
+                      if (advanceFilter) {
+                        console.log("Found advance filter:", advanceFilter);
+                        handleChartClick("advance", advanceFilter.value, "AVANCE"); // Usar AVANCE en español
+                      }
                     }
-                  }
-                }}
-              />
-            </div>
-
-            {/* Tackles por tiempo de juego */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles por Tiempo de Juego</h4>
-              <div className="h-80">
-                <TacklesTimeChart 
-                  events={filteredEvents} 
-                  onChartClick={(chartType, value, descriptor) => {
-                    handleChartClick(chartType, value, descriptor);
                   }}
                 />
               </div>
-            </div>
+            )}
 
-            {/* Tackles errados */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles Errados</h4>
-              <div className="h-80">
-                <MissedTacklesBarChart 
-                  events={filteredEvents} 
-                  onChartClick={(chartType, value, descriptor) => {
-                    handleChartClick(chartType, value, descriptor);
-                  }}
-                />
+            {/* Tackles por tiempo de juego - solo mostrar si hay datos */}
+            {hasTacklesTimeChartData(filteredEvents) && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">Tackles por Tiempo de Juego</h4>
+                <div className="h-80">
+                  <TacklesTimeChart 
+                    events={filteredEvents} 
+                    onChartClick={(chartType, value, descriptor) => {
+                      handleChartClick(chartType, value, descriptor);
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Comparación por equipos */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles por Equipo - Efectividad</h4>
-              <div className="h-80">
-                <TacklesByTeamChart 
-                  events={filteredEvents} 
-                  onChartClick={(chartType, value, descriptor) => {
-                    handleChartClick(chartType, value, descriptor);
-                  }}
-                />
+            {/* Tackles errados - solo mostrar si hay datos */}
+            {hasMissedTacklesBarChartData(filteredEvents) && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">Tackles Errados</h4>
+                <div className="h-80">
+                  <MissedTacklesBarChart 
+                    events={filteredEvents} 
+                    onChartClick={(chartType, value, descriptor) => {
+                      handleChartClick(chartType, value, descriptor);
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Comparación por equipos - solo mostrar si hay datos */}
+            {hasTacklesByTeamChartData(filteredEvents) && (
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">Tackles por Equipo - Efectividad</h4>
+                <div className="h-80">
+                  <TacklesByTeamChart 
+                    events={filteredEvents} 
+                    onChartClick={(chartType, value, descriptor) => {
+                      handleChartClick(chartType, value, descriptor);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Mensaje cuando no hay gráficos disponibles */}
+          {!hasTacklesBarChartData(filteredEvents) && 
+           !hasTackleAdvanceData(filteredEvents) && 
+           !hasTacklesTimeChartData(filteredEvents) && 
+           !hasMissedTacklesBarChartData(filteredEvents) && 
+           !hasTacklesByTeamChartData(filteredEvents) && (
+            <div className="text-center py-8 text-gray-500">
+              No hay datos de tackles disponibles para mostrar
+            </div>
+          )}
         </div>
       </TabsContent>
 
       <TabsContent value="advances">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Distribución de Avances</h3>
-          <AdvancePieChart events={filteredEvents} category="ADVANCE" />
+          {hasAdvancePieChartData(filteredEvents) ? (
+            <AdvancePieChart events={filteredEvents} category="ADVANCE" />
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No hay datos de avances disponibles para mostrar
+            </div>
+          )}
         </div>
       </TabsContent>
 

@@ -6,13 +6,13 @@ type Props = {
 };
 
 export default function TacklesBarChart({ events, onBarClick }: Props) {
-  // Filtrar solo tackles del equipo propio (no del rival)
+  // Usar todos los eventos de tackle que llegan (ya filtrados por el contexto)
   const tackleEvents = events.filter((e) => 
-    (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE') && e.TEAM !== 'OPPONENT'
+    (e.CATEGORY === 'TACKLE' || e.event_type === 'TACKLE')
   );
 
   console.log("TacklesBarChart - Total events:", events.length);
-  console.log("TacklesBarChart - Tackle events (own team only):", tackleEvents.length);
+  console.log("TacklesBarChart - Tackle events:", tackleEvents.length);
 
   const playerAdvanceMap: Record<string, Record<string, number>> = {};
 

@@ -28,7 +28,7 @@ const MissedTacklesBarChart = ({ events, onChartClick }) => {
     console.log("🎯 MissedTacklesBarChart - Sample event:", events?.[0]);
     
     const missedTackleEvents = events.filter(
-      (event) => event.event_type === "MISSED-TACKLE" && event.TEAM !== "OPPONENT"
+      (event) => event.event_type === "MISSED-TACKLE"
     );
     
     console.log("🎯 MissedTacklesBarChart - Filtered MISSED-TACKLE events:", missedTackleEvents.length);
