@@ -84,24 +84,29 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
 
 
   return (
-    <div className="w-full" style={{ maxWidth: "800px", margin: "0 auto" }}>
+    <div className="w-full" style={{ maxWidth: '100%', margin: '0 auto' }}>
       {isYouTube ? (
-        <YouTube
-          videoId={videoUrl.split("v=")[1]?.split("&")[0]}
-          onReady={(e) => (videoRef.current = e.target)}
-          onStateChange={handleTimeUpdate}
-          opts={{ playerVars: { autoplay: 0, controls: 1 } }}
-          className="w-full rounded shadow"
-        />
+        <div style={{ position: 'relative', paddingTop: '56.25%' }} className="rounded shadow overflow-hidden">
+          <YouTube
+            videoId={videoUrl.split('v=')[1]?.split('&')[0]}
+            onReady={(e) => (videoRef.current = e.target)}
+            onStateChange={handleTimeUpdate}
+            opts={{ playerVars: { autoplay: 0, controls: 1 } }}
+            className="w-full h-full"
+            iframeClassName="absolute top-0 left-0 w-full h-full"
+          />
+        </div>
       ) : videoUrl ? (
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          controls
-          className="w-full rounded shadow"
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={playNext} // Reproducir el siguiente evento al terminar
-        />
+        <div style={{ position: 'relative', paddingTop: '56.25%' }} className="rounded shadow overflow-hidden">
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            controls
+            className="absolute top-0 left-0 w-full h-full object-cover"
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={playNext} // Reproducir el siguiente evento al terminar
+          />
+        </div>
       ) : (
         <div className="w-full h-64 bg-gray-200 rounded shadow flex items-center justify-center">
           <p className="text-gray-500">No video available</p>
