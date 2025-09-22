@@ -50,7 +50,7 @@ const Tabs = forwardRef(({ children, activeTab, setActiveTab }, ref) => {
 });
 
 const Carousel = forwardRef<any, CarouselProps>(
-  ({ filteredEvents, handleChartClick, activeTab, setActiveTab }, ref) => {
+  ({ filteredEvents, allEvents, handleChartClick, activeTab, setActiveTab }, ref) => {
     useImperativeHandle(ref, () => ({
       setActiveTab: (tabId) => {
         setActiveTab(tabId);
@@ -172,16 +172,11 @@ const Carousel = forwardRef<any, CarouselProps>(
               />
             </div>
           )}
-          {hasTeamTackles || hasTeamMissedTackles ? (
+          {(hasTeamTackles || hasTeamMissedTackles || hasRivalTackles || hasRivalMissedTackles) && (
             <div className="chart-container">
-              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM !== "OPPONENT")} team={selectedTeam} onChartClick={handleChartClick} />
+              <TacklesEffectivityChart events={allEvents} onChartClick={handleChartClick} />
             </div>
-          ) : null}
-          {hasRivalTackles || hasRivalMissedTackles ? (
-            <div className="chart-container">
-              <TacklesEffectivityChart events={filteredEvents.filter(event => event.TEAM === "OPPONENT")} team="OPPONENT" onChartClick={handleChartClick} />
-            </div>
-          ) : null}
+          )}
           {hasTackles && (
             <div className="chart-container">
               <TacklesTimeChart

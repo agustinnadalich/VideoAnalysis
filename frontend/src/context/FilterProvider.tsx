@@ -9,6 +9,7 @@ const FilterProvider = ({ children }: { children: React.ReactNode }) => {
   const [filterCategory, setFilterCategory] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [matchInfo, setMatchInfo] = useState<any>(null); // ✅ NUEVO
+  const [ourTeamsList, setOurTeamsList] = useState<string[]>([]); // ✅ NUEVO: Lista de nuestros equipos
 
 
 
@@ -25,6 +26,8 @@ const FilterProvider = ({ children }: { children: React.ReactNode }) => {
     setSelectedTeam,
     matchInfo,       // ✅ NUEVO
     setMatchInfo,    // ✅ NUEVO
+    ourTeamsList,    // ✅ NUEVO
+    setOurTeamsList, // ✅ NUEVO
   };
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;

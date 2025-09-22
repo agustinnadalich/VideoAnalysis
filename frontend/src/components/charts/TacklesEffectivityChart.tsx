@@ -1,85 +1,128 @@
 import React from 'react';
+import { useFilterContext } from '@/context/FilterContext';
+import { computeTackleStatsAggregated, resolveTeamLabel } from '@/utils/teamUtils';
 import {
   Chart as ChartJS,
-  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-const TacklesEffectivityChart = ({ events, team, onChartClick }) => {
-  console.log("🎯 TacklesEffectivityChart - Received events:", events?.length || 0);
-  console.log("🎯 TacklesEffectivityChart - Team filter:", team);
-  console.log("🎯 TacklesEffectivityChart - Sample event:", events?.[0]);
+const TacklesEffectivityChart = ({ events, onChartClick }) => {
+  const { ourTeamsList, matchInfo } = useFilterContext();
   
-  const teamEvents = team === "OPPONENT" 
-    ? events.filter(event => event.TEAM === "OPPONENT")
-    : events.filter(event => event.TEAM !== "OPPONENT");
+  console.log("🎯 TacklesEffectivityChart - Received events:", events?.length || 0);
+  console.log("🎯 TacklesEffectivityChart - Our teams list:", ourTeamsList);
+  console.log("🎯 TacklesEffectivityChart - Sample event:", events?.[0]);
 
-  console.log("🎯 TacklesEffectivityChart - Filtered team events:", teamEvents.length);
+  // Usar stats agregados para multi-match: "Nuestros Equipos" vs "Rivales"
+  const statsByTeam = computeTackleStatsAggregated(events, ourTeamsList);
 
-  const successfulTackles = teamEvents.filter(event => event.event_type === "TACKLE").length; 
-  const missedTackles = teamEvents.filter(event => event.event_type === "MISSED-TACKLE").length;
+  const ourTeam = statsByTeam[0];
+  const opponent = statsByTeam[1];
 
-  const totalAttempts = successfulTackles + missedTackles;
-  const effectiveness = totalAttempts > 0 ? (successfulTackles / totalAttempts) * 100 : 0;
+  console.log("🎯 TacklesEffectivityChart - Our team:", ourTeam);
+  console.log("🎯 TacklesEffectivityChart - Opponent:", opponent);
 
-  const data = {
-    labels: ['Successful Tackles', 'Missed Tackles'],
+  const handleChartClick = (event: any, elements: any, chart: any) => {
+    // Firma estándar de Chart.js: (event, elements, chart)
+    if (!elements || elements.length === 0) return;
+
+    const el = elements[0];
+    const datasetIndex = el.datasetIndex ?? el.dataset?.datasetIndex ?? el.element?.$context?.datasetIndex ?? el.element?.datasetIndex;
+    const dataIndex = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex;
+
+    // Usar categorías agregadas para multi-match
+    const teamCategory = dataIndex === 0 ? 'OUR_TEAM' : 'Rival';
+    const tackleType = datasetIndex === 0 ? 'TACKLE' : 'MISSED-TACKLE';
+
+    console.log("🎯 TacklesEffectivityChart - Clicked:", { teamCategory, tackleType, datasetIndex, dataIndex });
+
+    // Enviar filtros con categorías agregadas
+    const filters: any[] = [{ descriptor: 'event_type', value: tackleType }];
+    filters.push({ descriptor: 'TEAM', value: teamCategory });
+
+    if (onChartClick) {
+      try {
+        onChartClick(event, elements, chart, 'tackles-effectivity', 'tackles-tab', filters);
+      } catch (err) {
+        // fallback: enviar firma (chartType, value, descriptor)
+        onChartClick('tackles-effectivity', tackleType, 'event_type');
+      }
+    }
+  };  const data = {
+    labels: [ourTeam.teamName || 'Nuestros Equipos', opponent.teamName || 'Rivales'],
     datasets: [
       {
-        data: [successfulTackles, missedTackles],
-        backgroundColor: ['#36A2EB', '#FF6384'],
-        hoverBackgroundColor: ['#36A2EB', '#FF6384'],
+        label: `Tackles Exitosos`,
+        data: [ourTeam.successful, opponent.successful],
+        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Tackles Errados',
+        data: [ourTeam.missed, opponent.missed],
+        backgroundColor: 'rgba(255, 99, 132, 0.8)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1,
       },
     ],
   };
 
-  console.log("🎯 TacklesEffectivityChart - Final data:", data);
-  console.log("🎯 TacklesEffectivityChart - Effectiveness:", effectiveness);
-  console.log("🎯 TacklesEffectivityChart - Total attempts:", totalAttempts);
-
-  const handleChartClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const label = chart.data.labels[elements[0].index];
-      const category = label === 'Successful Tackles' ? 'TACKLE' : 'MISSED-TACKLE';
-      onChartClick(event, elements, chart, category, "tackles-tab", [{ descriptor: "event_type", value: category }]);
-    }
-  };
-
-  const pieChartOptions = {
+  const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
         position: 'top' as const,
       },
       title: {
         display: true,
-        text: `${team} Tackles Effectivity`,
+        text: 'Efectividad de Tackles por Equipo',
       },
       tooltip: {
         callbacks: {
-          label: (context) => {
-            const label = context.label;
-            const value = context.raw;
-            return `${label}: ${value}`;
-          },
-        },
+          afterLabel: (context) => {
+            const teamIndex = context.dataIndex;
+            const teamStats = teamIndex === 0 ? ourTeam : opponent;
+            return `Efectividad: ${teamStats.effectiveness}% (${teamStats.total} intentos)`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: false,
+      },
+      y: {
+        stacked: false,
+        beginAtZero: true,
       },
     },
-    onClick: handleChartClick,
+    // No usar onClick directamente aquí para evitar discrepancias de tipos en react-chartjs-2;
+    // en su lugar, se puede pasar handleChartClick al wrapper si el componente lo soporta,
+    // pero la mayoría de los charts aceptan la firma (event, elements, chart) en options.onClick.
+    onClick: (event: any, elements: any, chart: any) => handleChartClick(event, elements, chart),
   };
 
   return (
-    <div>
-      <h3>{team} Tackles Effectivity: {effectiveness.toFixed(2)}%</h3>
-      <Pie data={data} options={pieChartOptions} style={{ maxHeight: '600px' }}/>
+    <div style={{ width: '100%', height: '100%' }}>
+      <Bar data={data} options={options} />
     </div>
   );
 };

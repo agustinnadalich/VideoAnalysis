@@ -8,13 +8,13 @@ import { useState, useEffect } from "react";
 import TacklesBarChart from "./charts/TacklesBarChart";
 import MissedTacklesBarChart from "./charts/MissedTacklesBarChart";
 import TacklesByTeamChart from "./charts/TacklesByTeamChart";
-import TacklesEffectivityChart from "./charts/TacklesEffectivityChart";
 import TacklesTimeChart from "./charts/TacklesTimeChart";
 import AdvancePieChart from "./charts/AdvancePieChart";
 // import TimelineChart from "./charts/TimelineChart";
 // import ScatterChart from "./charts/ScatterChart";
 // Aquí luego podrás importar los otros charts
 import { useFilterContext } from "../context/FilterContext";
+import { getTeamFromEvent, normalizeString, isOurTeam } from "../utils/teamUtils";
 import type { MatchEvent } from "@/types";
 
 
@@ -25,13 +25,18 @@ const ChartsTabs = (_props: any) => {
     filterDescriptors,
     setFilterDescriptors,
     setFilteredEvents,
+    matchInfo,
+    ourTeamsList,
   } = useFilterContext() as {
     events: MatchEvent[];
     filteredEvents: MatchEvent[];
     filterDescriptors: any[];
     setFilterDescriptors: (filters: any[]) => void;
     setFilteredEvents: (events: any[]) => void;
+    matchInfo?: any;
+    ourTeamsList: string[];
   };
+  
 
 
 
@@ -40,52 +45,120 @@ const ChartsTabs = (_props: any) => {
 
   // Función para manejar clicks en gráficos y agregar filtros
   const handleChartClick = (...args: any[]) => {
-    let chartType: string, value: string, descriptor: string;
-    
-    // Detectar la firma del callback
-    if (args.length === 3 && typeof args[0] === 'string') {
-      // Firma simple: (chartType, value, descriptor)
-      [chartType, value, descriptor] = args;
-    } else if (args.length >= 6) {
-      // Firma completa: (event, elements, chart, chartType, tabId, additionalFilters)
-      const [, , , type, , additionalFilters] = args;
-      chartType = type;
-      
-      if (additionalFilters && additionalFilters.length > 0) {
-        const filter = additionalFilters[0];
-        descriptor = filter.descriptor;
-        value = filter.value;
-      } else {
-        console.warn("No additional filters provided in chart click");
+    // Soportar varias firmas que usan los distintos charts:
+    // 1) (chartType: string, value: string, descriptor: string)
+    // 2) (event, elements, chart) -> firma nativa de Chart.js (react-chartjs-2)
+    // 3) (event, elements, chart, chartType, tabId, additionalFilters)
+    try {
+      // Caso 1: firma simple (chartType, value, descriptor)
+      if (args.length === 3 && typeof args[0] === 'string') {
+        const [chartType, value, descriptor] = args;
+        const newFilter = { descriptor, value };
+        const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+        if (existingIndex >= 0) {
+          setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
+          console.log('🔄 Filtro removido:', newFilter);
+        } else {
+          setFilterDescriptors([...filterDescriptors, newFilter]);
+          console.log('➕ Filtro agregado:', newFilter);
+        }
         return;
       }
-    } else {
-      console.warn("Unexpected handleChartClick arguments:", args);
-      return;
-    }
-    
-    console.log("🎯 handleChartClick processed:", { chartType, value, descriptor });
-    
-    // Crear el nuevo filtro
-    const newFilter = { descriptor, value };
-    
-    // Verificar si el filtro ya existe
-    const existingFilterIndex = filterDescriptors.findIndex(
-      (filter) => filter.descriptor === descriptor && filter.value === value
-    );
-    
-    if (existingFilterIndex >= 0) {
-      // Si el filtro ya existe, lo removemos (toggle)
-      const updatedFilters = filterDescriptors.filter(
-        (_, index) => index !== existingFilterIndex
-      );
-      setFilterDescriptors(updatedFilters);
-      console.log("🔄 Filtro removido:", newFilter);
-    } else {
-      // Si no existe, lo agregamos
-      const updatedFilters = [...filterDescriptors, newFilter];
-      setFilterDescriptors(updatedFilters);
-      console.log("➕ Filtro agregado:", newFilter);
+
+      // Caso 2a: firma Chart.js (event, elements) - algunos wrappers pasan sólo 2 args
+      if (args.length === 2) {
+        const [event, elements] = args;
+        const chart = undefined;
+        if (!elements || elements.length === 0) return;
+        const el = elements[0];
+        const datasetIndex = el.datasetIndex ?? el.dataset?.datasetIndex ?? el.element?.$context?.datasetIndex ?? el.element?.datasetIndex;
+        const dataIndex = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex;
+
+        // Normalizar team usando matchInfo cuando sea posible
+        let team = dataIndex === 0 ? 'OUR_TEAM' : 'OPPONENT';
+        if (matchInfo) {
+          const ourName = matchInfo.TEAM || matchInfo.team || matchInfo.home || matchInfo.team_name || null;
+          const oppName = matchInfo.OPPONENT || matchInfo.opponent || matchInfo.away || matchInfo.opponent_name || null;
+          if (team === 'OUR_TEAM' && ourName) team = ourName;
+          if (team === 'OPPONENT' && oppName) team = oppName;
+        }
+        const tackleType = datasetIndex === 0 ? 'TACKLE' : 'MISSED-TACKLE';
+
+        const hasEventType = filterDescriptors.some(f => f.descriptor === 'event_type' && f.value === tackleType);
+        const hasTeam = filterDescriptors.some(f => f.descriptor === 'TEAM' && f.value === team);
+
+        if (hasEventType && hasTeam) {
+          const updated = filterDescriptors.filter(f => !( (f.descriptor === 'event_type' && f.value === tackleType) || (f.descriptor === 'TEAM' && f.value === team) ));
+          setFilterDescriptors(updated);
+          console.log('🔄 Filtros removidos:', [{ descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }]);
+        } else {
+          const updated = [...filterDescriptors, { descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }];
+          setFilterDescriptors(updated);
+          console.log('➕ Filtros agregados:', [{ descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }]);
+        }
+        return;
+      }
+
+      // Caso 2b: firma Chart.js (event, elements, chart) - asumir cualquier llamada con 3 args
+      if (args.length === 3) {
+        const [event, elements, chart] = args;
+        if (!elements || elements.length === 0) return;
+        const el = elements[0];
+        // Elemento puede venir en distintas formas; intentar normalizar
+        const datasetIndex = el.datasetIndex ?? el.dataset?.datasetIndex ?? el.element?.$context?.datasetIndex ?? el.element?.datasetIndex;
+        const dataIndex = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex;
+
+        // Normalizar team usando matchInfo cuando sea posible
+        let team = dataIndex === 0 ? 'OUR_TEAM' : 'OPPONENT';
+        if (matchInfo) {
+          const ourName = matchInfo.TEAM || matchInfo.team || matchInfo.home || matchInfo.team_name || null;
+          const oppName = matchInfo.OPPONENT || matchInfo.opponent || matchInfo.away || matchInfo.opponent_name || null;
+          if (team === 'OUR_TEAM' && ourName) team = ourName;
+          if (team === 'OPPONENT' && oppName) team = oppName;
+        }
+        const tackleType = datasetIndex === 0 ? 'TACKLE' : 'MISSED-TACKLE';
+
+        // Toggle: si ambos filtros existen, los removemos; si no, los agregamos
+        const hasEventType = filterDescriptors.some(f => f.descriptor === 'event_type' && f.value === tackleType);
+        const hasTeam = filterDescriptors.some(f => f.descriptor === 'TEAM' && f.value === team);
+
+        if (hasEventType && hasTeam) {
+          const updated = filterDescriptors.filter(f => !( (f.descriptor === 'event_type' && f.value === tackleType) || (f.descriptor === 'TEAM' && f.value === team) ));
+          setFilterDescriptors(updated);
+          console.log('🔄 Filtros removidos:', [{ descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }]);
+        } else {
+          const updated = [...filterDescriptors, { descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }];
+          setFilterDescriptors(updated);
+          console.log('➕ Filtros agregados:', [{ descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: team }]);
+        }
+        return;
+      }
+
+      // Caso 3: firma extendida (event, elements, chart, chartType, tabId, additionalFilters)
+      if (args.length >= 6) {
+        const [, , , type, , additionalFilters] = args;
+        if (!additionalFilters || additionalFilters.length === 0) {
+          console.warn('No additional filters provided in chart click');
+          return;
+        }
+        const filter = additionalFilters[0];
+        const descriptor = filter.descriptor;
+        const value = filter.value;
+
+        const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+        if (existingIndex >= 0) {
+          setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
+          console.log('🔄 Filtro removido:', { descriptor, value });
+        } else {
+          setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
+          console.log('➕ Filtro agregado:', { descriptor, value });
+        }
+        return;
+      }
+
+      console.warn('Unexpected handleChartClick arguments:', args);
+    } catch (err) {
+      console.error('Error procesando handleChartClick:', err);
     }
   };
 
@@ -121,42 +194,46 @@ const ChartsTabs = (_props: any) => {
           return eventQuarterGroup === value;
         }
         
-        // Buscar el valor en diferentes lugares del evento
-        let eventValue = event[descriptor];
-        
-        // Si no está en el nivel principal, buscar en extra_data
-        if (eventValue === undefined && event.extra_data) {
-          eventValue = event.extra_data[descriptor];
-        }
-        
-        // Para campos de jugador, buscar también en otros campos comunes
-        if ((descriptor === 'JUGADOR' || descriptor === 'PLAYER') && eventValue === undefined) {
-          // Buscar en campos alternativos de jugador
-          if (event.PLAYER !== undefined) {
-            eventValue = event.PLAYER;
-            console.log("🔍 Found player in event.PLAYER:", eventValue);
-          } else if (event.player_name !== undefined) {
-            eventValue = event.player_name;
-            console.log("🔍 Found player in event.player_name:", eventValue);
+        // Filtrado especial para equipos (soporta categorías agregadas)
+        if (descriptor === 'TEAM') {
+          const eventTeam = getTeamFromEvent(event);
+          
+          // Normalizar el valor del filtro para aceptar diferentes variaciones
+          const normalizedValue = value.toUpperCase().trim();
+          
+          if (normalizedValue === 'OUR_TEAM' || normalizedValue === 'OUR_TEAMS') {
+            // Filtrar eventos de nuestros equipos
+            const matches = isOurTeam(eventTeam || '', ourTeamsList);
+            console.log("🔍 TEAM=OUR_TEAM/OUR_TEAMS check:", eventTeam, "in", ourTeamsList, "->", matches);
+            return matches;
+          } else if (normalizedValue === 'OPPONENTS' || normalizedValue === 'RIVAL' || normalizedValue === 'RIVALES') {
+            // Filtrar eventos de rivales
+            const matches = !isOurTeam(eventTeam || '', ourTeamsList);
+            console.log("🔍 TEAM=OPPONENTS/RIVAL/RIVALES check:", eventTeam, "not in", ourTeamsList, "->", matches);
+            return matches;
+          } else {
+            // Filtrado por nombre específico de equipo
+            const normalizedEventTeam = normalizeString(eventTeam);
+            const normalizedSearchValue = normalizeString(value);
+            const matches = normalizedEventTeam === normalizedSearchValue;
+            console.log("🔍 TEAM specific check:", normalizedEventTeam, "===", normalizedSearchValue, "->", matches);
+            return matches;
           }
         }
-
-        console.log("🔍 Checking event", event.id, "for", descriptor, "=", value, "-> found:", eventValue, "(type:", typeof eventValue + ")");
         
-        // Si es un array, verificar si contiene el valor exactamente
-        if (Array.isArray(eventValue)) {
-          const normalizedArray = eventValue.map(item => String(item || '').trim());
-          const normalizedSearchValue = String(value || '').trim();
-          const containsValue = normalizedArray.includes(normalizedSearchValue);
-          console.log("🔍 Exact array check:", normalizedArray, "contains exactly", normalizedSearchValue, "->", containsValue);
-          return containsValue;
+        // Filtrado especial para avances (manejar tanto ADVANCE como AVANCE)
+        if (descriptor === 'ADVANCE' || descriptor === 'AVANCE') {
+          const eventAdvance = event.extra_data?.AVANCE || event.extra_data?.advance || event.advance || event.extra_data?.ADVANCE;
+          const matches = eventAdvance === value;
+          console.log("🔍 ADVANCE/AVANCE check:", descriptor, "=", eventAdvance, "===", value, "->", matches);
+          return matches;
         }
         
-        // Comparación normal (convertir a strings y comparar exactamente)
-        const normalizedEventValue = String(eventValue || '').trim();
-        const normalizedSearchValue = String(value || '').trim();
-        const matches = normalizedEventValue === normalizedSearchValue;
-        console.log("🔍 Exact comparison:", normalizedEventValue, "===", normalizedSearchValue, "->", matches);
+        // Filtrado general por otros campos
+        // Buscar en event[field] o event.extra_data[field]
+        const eventValue = event[descriptor] || event.extra_data?.[descriptor] || event.extra_data?.[descriptor.toLowerCase()];
+        const matches = eventValue === value;
+        console.log("🔍 General filter check:", descriptor, "=", eventValue, "===", value, "->", matches);
         return matches;
       });
     });
@@ -164,7 +241,7 @@ const ChartsTabs = (_props: any) => {
     console.log("🔄 Filtered result:", filtered.length, "events from", events.length);
     console.log("🔄 Active filters:", filterDescriptors.map(f => `${f.descriptor}=${f.value}`));
     setFilteredEvents(filtered);
-  }, [events, filterDescriptors, setFilteredEvents]);
+  }, [events, filterDescriptors, setFilteredEvents, ourTeamsList]);
 
   // Mostrar mensaje de carga si no hay eventos
   if (!filteredEvents || filteredEvents.length === 0) {
@@ -295,23 +372,9 @@ const ChartsTabs = (_props: any) => {
               </div>
             </div>
 
-            {/* Efectividad de tackles */}
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Efectividad de Tackles</h4>
-              <div className="h-80">
-                <TacklesEffectivityChart 
-                  events={filteredEvents}
-                  team="OUR_TEAM"
-                  onChartClick={(chartType, value, descriptor) => {
-                    handleChartClick(chartType, value, descriptor);
-                  }}
-                />
-              </div>
-            </div>
-
             {/* Comparación por equipos */}
             <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Tackles por Equipo</h4>
+              <h4 className="font-medium mb-2">Tackles por Equipo - Efectividad</h4>
               <div className="h-80">
                 <TacklesByTeamChart 
                   events={filteredEvents} 

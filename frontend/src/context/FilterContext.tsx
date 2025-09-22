@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { detectOurTeams } from "../utils/teamUtils";
 
 export interface FilterContextType {
   matchInfo: any;
@@ -13,6 +14,8 @@ export interface FilterContextType {
   setFilterCategory: (categories: any[]) => void;
   selectedTeam: string | null;
   setSelectedTeam: (team: string | null) => void;
+  ourTeamsList: string[];
+  setOurTeamsList: (teams: string[]) => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -30,6 +33,7 @@ export const FilterProvider = ({
   const [filterDescriptors, setFilterDescriptors] = useState<any[]>([]);
   const [filterCategory, setFilterCategory] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [ourTeamsList, setOurTeamsList] = useState<string[]>([]);
 
   // Inicializar con datos si existen
   useEffect(() => {
@@ -43,6 +47,15 @@ export const FilterProvider = ({
       console.log("🔄 FilterProvider - No hay datos iniciales:", initialResponse);
     }
   }, [initialResponse]);
+
+  // Detectar equipos propios automáticamente cuando hay eventos
+  useEffect(() => {
+    if (events.length > 0 && ourTeamsList.length === 0) {
+      const detected = detectOurTeams(events);
+      console.log("🔄 FilterProvider - Equipos propios detectados:", detected);
+      setOurTeamsList(detected);
+    }
+  }, [events, ourTeamsList.length]);
 
   // Función para establecer eventos sin crear bucles
   const setEventsAndFilter = useCallback((newEvents: any[]) => {
@@ -72,6 +85,8 @@ export const FilterProvider = ({
     setFilterCategory,
     selectedTeam,
     setSelectedTeam,
+    ourTeamsList,
+    setOurTeamsList,
   };
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;

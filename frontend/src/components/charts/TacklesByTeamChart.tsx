@@ -1,4 +1,6 @@
 import React from 'react';
+import { useFilterContext } from '@/context/FilterContext';
+import { computeTackleStatsAggregated } from '@/utils/teamUtils';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,49 +23,57 @@ ChartJS.register(
 );
 
 const TacklesByTeamChart = ({ events, onChartClick }) => {
+  const { ourTeamsList } = useFilterContext();
+  
   console.log("🎯 TacklesByTeamChart - Received events:", events?.length || 0);
+  console.log("🎯 TacklesByTeamChart - Our teams list:", ourTeamsList);
   console.log("🎯 TacklesByTeamChart - Sample event:", events?.[0]);
   
-  // Filtrar eventos de tackles
-  const tackleEvents = events.filter((event) => 
-    event.CATEGORY === "TACKLE" || event.event_type === "TACKLE"
-  );
+  // Usar stats agregados para multi-match: "Nuestros Equipos" vs "Rivales"
+  const statsByTeam = computeTackleStatsAggregated(events, ourTeamsList);
 
-  console.log("🎯 TacklesByTeamChart - Filtered TACKLE events:", tackleEvents.length);
+  const ourStats = statsByTeam[0] || { successful: 0, missed: 0, effectiveness: 0 };
+  const oppStats = statsByTeam[1] || { successful: 0, missed: 0, effectiveness: 0 };
 
-  // Contar tackles por equipo
-  const ourTeamTackles = tackleEvents.filter(event => event.TEAM !== "OPPONENT").length;
-  const opponentTackles = tackleEvents.filter(event => event.TEAM === "OPPONENT").length;
+  const ourTeamEffectiveness = ourStats.effectiveness;
+  const opponentEffectiveness = oppStats.effectiveness;
 
   const data = {
-    labels: ['Nuestro Equipo', 'Rival'],
+    labels: [statsByTeam[0]?.teamName || 'Nuestros Equipos', statsByTeam[1]?.teamName || 'Rivales'],
     datasets: [
       {
-        label: 'Tackles por Equipo',
-        data: [ourTeamTackles, opponentTackles],
-        backgroundColor: [
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(255, 99, 132, 0.6)',
-        ],
-        borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
-        ],
+        label: `Tackles Exitosos (${ourTeamEffectiveness}% efectividad)`,
+        data: [ourStats.successful, oppStats.successful],
+        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: `Tackles Errados (${opponentEffectiveness}% efectividad rival)`,
+        data: [ourStats.missed, oppStats.missed],
+        backgroundColor: 'rgba(255, 99, 132, 0.8)',
+        borderColor: 'rgba(255, 99, 132, 1)',
         borderWidth: 1,
       },
     ],
   };
 
-  const handleChartClick = (event, elements) => {
-    if (elements.length > 0 && onChartClick) {
-      const chart = elements[0].element.$context.chart;
-      const index = elements[0].index;
-      const teamName = index === 0 ? 'OUR_TEAM' : 'OPPONENT';
-      onChartClick(event, elements, chart, 'team_tackles', 'tackles-tab');
-    }
-  };
+  const handleChartClick = (event: any, elements: any, chart: any) => {
+    if (!elements || elements.length === 0 || !onChartClick) return;
+    const el = elements[0];
+    const chartRef = el.element?.$context?.chart ?? chart;
+    const index = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex;
+    const datasetIndex = el.datasetIndex ?? el.dataset?.datasetIndex ?? el.element?.$context?.datasetIndex;
 
-  const options = {
+    // Usar categorías agregadas para multi-match
+    const teamCategory = index === 0 ? 'OUR_TEAM' : 'Rival';
+
+    // Enviar filtros adicionales: tipo de tackle según dataset, y equipo según categoría agregada
+    const tackleType = datasetIndex === 0 ? 'TACKLE' : 'MISSED-TACKLE';
+    const additionalFilters = [{ descriptor: 'event_type', value: tackleType }, { descriptor: 'TEAM', value: teamCategory }];
+
+    onChartClick(event, elements, chartRef, 'team_tackles', 'tackles-tab', additionalFilters);
+  };  const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -72,24 +82,18 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
       },
       title: {
         display: true,
-        text: 'Tackles por Equipo',
+        text: 'Tackles por Equipo - Efectividad',
       },
       tooltip: {
         callbacks: {
-          label: (context) => {
-            const label = context.dataset.label;
-            const value = context.raw;
-            return `${label}: ${value}`;
-          },
-        },
-      },
-      datalabels: {
-        color: 'grey',
-        formatter: (value) => value > 0 ? value : '',
-        font: {
-          weight: 700,
-        },
-      },
+          afterLabel: (context) => {
+            const teamIndex = context.dataIndex;
+            const teamName = teamIndex === 0 ? 'Nuestro Equipo' : 'Rival';
+            const effectiveness = teamIndex === 0 ? ourTeamEffectiveness : opponentEffectiveness;
+            return `Efectividad: ${effectiveness}%`;
+          }
+        }
+      }
     },
     scales: {
       y: {
@@ -99,14 +103,13 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
         },
       },
     },
-    onClick: handleChartClick,
+    onClick: (event: any, elements: any, chart: any) => handleChartClick(event, elements, chart),
   };
 
   console.log("🎯 TacklesByTeamChart - Final data:", data);
-  console.log("🎯 TacklesByTeamChart - Team counts:", {
-    ourTeamTackles,
-    opponentTackles,
-    totalTackles: ourTeamTackles + opponentTackles
+  console.log("🎯 TacklesByTeamChart - Team stats:", {
+    ourTeam: { successful: ourStats.successful, missed: ourStats.missed, effectiveness: ourTeamEffectiveness },
+    opponent: { successful: oppStats.successful, missed: oppStats.missed, effectiveness: opponentEffectiveness }
   });
 
   return (

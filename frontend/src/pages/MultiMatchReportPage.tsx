@@ -125,8 +125,6 @@ const MultiMatchReportPage = () => {
           filterDescriptors={filterDescriptors}
           setFilterDescriptors={setFilterDescriptors}
           onEventClick={handleEventClick}
-          onApplyFilter={handleApplyFilter}
-          onClearFilters={handleClearFilters}
         />
       </div>
     </div>

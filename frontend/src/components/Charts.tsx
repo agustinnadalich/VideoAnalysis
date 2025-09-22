@@ -4,6 +4,7 @@ import TimelineChart from "./charts/TimelineChart";
 import EventsTable from "./EventsTable";
 import TacklesBarChart from "./charts/TacklesBarChart";
 import AdvancePieChart from "./charts/AdvancePieChart";
+import TacklesEffectivityChart from "./charts/TacklesEffectivityChart";
 
 interface ChartsProps {
   events?: any[];
@@ -21,7 +22,8 @@ const Charts: React.FC<ChartsProps> = ({
   filteredEvents = [],
   onEventClick = () => {},
   onPlayFilteredEvents = () => {},
-  currentTime = 0
+  currentTime = 0,
+  setFilterDescriptors
 }) => {
   const { filteredEvents: contextFilteredEvents } = useFilterContext();
   
@@ -32,8 +34,12 @@ const Charts: React.FC<ChartsProps> = ({
   console.log("Charts - First few events:", eventsToDisplay.slice(0, 3));
 
   const handleChartClick = (event: any, elements: any, chart: any, chartType: string, tabId?: string, additionalFilters?: any[]) => {
-    console.log("Chart clicked:", chartType, elements);
-    // Aquí puedes implementar la lógica de filtrado basada en el click del chart
+    console.log("Chart clicked:", chartType, elements, additionalFilters);
+    
+    if (additionalFilters && additionalFilters.length > 0 && setFilterDescriptors) {
+      // Aplicar filtros adicionales desde el chart
+      setFilterDescriptors(additionalFilters);
+    }
   };
 
   return (
@@ -56,7 +62,7 @@ const Charts: React.FC<ChartsProps> = ({
       
       <div className="statistics-section">
         <h2 className="text-xl font-semibold mb-4">Estadísticas del Partido</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="border rounded-lg p-4">
             <TacklesBarChart
               events={eventsToDisplay}
@@ -71,6 +77,13 @@ const Charts: React.FC<ChartsProps> = ({
             <AdvancePieChart
               events={eventsToDisplay}
               category="TACKLE"
+              onChartClick={handleChartClick}
+            />
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <TacklesEffectivityChart
+              events={events}
               onChartClick={handleChartClick}
             />
           </div>
