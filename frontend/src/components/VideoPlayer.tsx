@@ -157,7 +157,7 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
           borderRadius: 8,
           boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
           overflow: 'hidden',
-        } : { position: 'relative', paddingTop: '56.25%', width: '100%', maxWidth: '100%', maxHeight: '500px' }}
+  } : { position: 'relative', width: '100%', maxWidth: 'calc(500px * (16/9))', maxHeight: 500, aspectRatio: '16/9' }}
         className={isPiP ? 'rounded shadow' : 'rounded shadow overflow-hidden'}
         onMouseDown={isPiP ? onPipMouseDown : undefined}
         onTouchStart={isPiP ? onPipMouseDown : undefined}
@@ -176,15 +176,15 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
             onReady={(e) => (videoRef.current = e.target)}
             onStateChange={handleTimeUpdate}
             opts={{ playerVars: { autoplay: 0, controls: 1 } }}
-            className={isPiP ? 'w-full h-full' : 'w-full h-full'}
-            iframeClassName={isPiP ? 'absolute top-0 left-0 w-full h-full' : 'absolute top-0 left-0 w-full max-h-[500px]'}
+            className='w-full h-full'
+            iframeClassName={isPiP ? 'absolute top-0 left-0 w-full h-full' : 'w-full h-full'}
           />
         ) : videoUrl ? (
           <video
             ref={videoRef}
             src={videoUrl}
             controls
-            className={isPiP ? 'w-full h-full object-cover' : 'absolute top-0 left-0 w-full h-full object-contain'}
+            className={isPiP ? 'w-full h-full object-cover' : 'w-full h-full object-contain'}
             onTimeUpdate={handleTimeUpdate}
             onEnded={playNext} // Reproducir el siguiente evento al terminar
           />
