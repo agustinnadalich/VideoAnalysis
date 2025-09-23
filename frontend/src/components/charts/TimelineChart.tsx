@@ -191,11 +191,14 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       // En mobile, inicializar mostrando hasta los primeros 20 minutos (1200s) como rango visible
       const mobileCap = 1200; // 20 minutos en segundos
       const baseRange = isMobile ? Math.min(mobileCap, maxSecond) : maxSecond;
-      const visibleRange = baseRange / zoomFactor;
+      const visibleRange = baseRange / zoomFactor; // initial calculation uses current zoomFactor
       const start = 0;
       setXDomain([start, start + visibleRange]);
     }
-  }, [filteredEvents, maxSecond, zoomFactor]);
+    // Nota: no incluimos zoomFactor en las dependencias para evitar que un cambio de zoom
+    // inmediato sobrescriba el xDomain calculado por handleZoomChange. El handler actual
+    // actualiza el xDomain directamente y también actualiza zoomFactor.
+  }, [filteredEvents, maxSecond]);
 
   useEffect(() => {
     if (filteredEvents.length > 0) {
@@ -213,17 +216,39 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   }, [filteredEvents]);
 
   const handleZoomChange = (zoomIn: boolean) => {
+    // Calculamos el nuevo factor de zoom de forma acumulativa
     const zoomFactorChange = zoomIn ? 1.5 : 1 / 1.5;
-    const visibleRange = (xDomain[1] - xDomain[0]) / zoomFactorChange;
+    const newZoomFactor = zoomFactor * zoomFactorChange;
 
-    const center = (currentTime >= initialXDomain[0] && currentTime <= initialXDomain[1])
-      ? currentTime
-      : (xDomain[0] + xDomain[1]) / 2;
+    // Calculamos el rango visible relativo al dominio completo (initialXDomain)
+    const totalRange = initialXDomain[1] - initialXDomain[0];
+    const newVisibleRange = Math.max(1, totalRange / newZoomFactor);
 
-    const start = Math.max(initialXDomain[0], center - visibleRange / 2);
-    const end = Math.min(initialXDomain[1], center + visibleRange / 2);
+  // Clamp visible range entre 5 minutos (300s) y 100 minutos (6000s)
+  const MIN_VISIBLE = 300; // 5 minutos
+  const MAX_VISIBLE = 6000; // 100 minutos
+  const clampedVisibleRange = Math.min(Math.max(newVisibleRange, MIN_VISIBLE), MAX_VISIBLE);
+  // Recalcular el factor de zoom real usando el rango clampeado
+  const adjustedZoomFactor = totalRange / clampedVisibleRange;
+
+    // Centrar el zoom en el centro actual de la vista (más predecible que usar currentTime)
+    const center = (xDomain[0] + xDomain[1]) / 2;
+
+    let start = center - newVisibleRange / 2;
+    let end = center + newVisibleRange / 2;
+
+    // Clamp dentro del dominio inicial
+    if (start < initialXDomain[0]) {
+      start = initialXDomain[0];
+      end = start + newVisibleRange;
+    }
+    if (end > initialXDomain[1]) {
+      end = initialXDomain[1];
+      start = end - newVisibleRange;
+    }
 
     setXDomain([start, end]);
+    setZoomFactor(adjustedZoomFactor);
   };
 
   const handleScroll = (direction: "left" | "right") => {
@@ -245,6 +270,47 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
 
     setXDomain([newStart, newEnd]);
   };
+
+  // Handler para restablecer zoom y el factor de zoom
+  const handleResetZoom = () => {
+    setXDomain(initialXDomain);
+    setZoomFactor(1);
+  };
+
+  // Efectos de debug: mostrar cambios de xDomain y zoomFactor en consola para diagnóstico
+  useEffect(() => {
+    // noop in production
+  }, [xDomain]);
+
+  useEffect(() => {
+    // noop in production
+  }, [zoomFactor]);
+
+  // Deshabilitar botones si alcanzamos límites
+  const totalRange = initialXDomain[1] - initialXDomain[0];
+  const currentVisibleRange = xDomain[1] - xDomain[0];
+  const MIN_VISIBLE = 300; // 5 minutos
+  const MAX_VISIBLE = 6000; // 100 minutos
+  const canZoomIn = currentVisibleRange > MIN_VISIBLE + 1; // permitir si aún podemos reducir
+  const canZoomOut = currentVisibleRange < MAX_VISIBLE - 1; // permitir si aún podemos ampliar
+
+  // Mantener la línea de tiempo visible: si currentTime sale del xDomain, desplazamos la ventana
+  useEffect(() => {
+    if (typeof currentTime !== 'number' || isNaN(currentTime)) return;
+
+    const [start, end] = xDomain;
+    if (currentTime < start || currentTime > end) {
+      const range = end - start;
+      // Centrar el currentTime dentro de la ventana
+      let newStart = Math.max(initialXDomain[0], currentTime - range / 2);
+      let newEnd = newStart + range;
+      if (newEnd > initialXDomain[1]) {
+        newEnd = initialXDomain[1];
+        newStart = Math.max(initialXDomain[0], newEnd - range);
+      }
+      setXDomain([newStart, newEnd]);
+    }
+  }, [currentTime, xDomain, initialXDomain]);
 
   const handleCategoryClick = (category: string) => {
     if (filterCategory.includes(category)) {
@@ -315,9 +381,9 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       <div className="px-4 py-2 flex items-center gap-4 flex-wrap">
         <label className="text-sm">Zoom:</label>
         <div className="controls">
-          <Button variant="secondary" onClick={() => handleZoomChange(true)}>+</Button>
-          <Button variant="secondary" onClick={() => handleZoomChange(false)}>-</Button>
-          <Button variant="secondary" onClick={() => setXDomain(initialXDomain)}>Restablecer Zoom</Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(true)} disabled={!canZoomIn}>+</Button>
+          <Button variant="secondary" onClick={() => handleZoomChange(false)} disabled={!canZoomOut}>-</Button>
+          <Button variant="secondary" onClick={handleResetZoom}>Restablecer Zoom</Button>
         </div>
         <span>{zoomFactor}x</span>
         <Button variant="secondary" onClick={() => handleScroll("left")}>←</Button>

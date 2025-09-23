@@ -79,6 +79,29 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
     }
   };
 
+  // Polling para mantener currentTime actualizado mientras se reproduce
+  useEffect(() => {
+    let timer: number | null = null;
+    // Solo iniciar polling si hay un player y está reproduciendo
+    if (isPlaying && videoRef.current) {
+      // Para YouTube necesitamos consultar getCurrentTime() periódicamente
+      timer = window.setInterval(() => {
+        try {
+          handleTimeUpdate();
+        } catch (e) {
+          // ignore
+        }
+      }, 250);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+  }, [isPlaying, isYouTube]);
+
     // Manejar reproducción/pausa
   const handlePlayPause = () => {
     if (!videoRef.current) return;
@@ -174,7 +197,21 @@ const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
           <YouTube
             videoId={videoUrl.split('v=')[1]?.split('&')[0]}
             onReady={(e) => (videoRef.current = e.target)}
-            onStateChange={handleTimeUpdate}
+            onStateChange={(e: any) => {
+              // e.data: -1(unstarted),0(ended),1(playing),2(paused),3(buffering),5(video cued)
+              const state = e.data;
+              if (state === 1) {
+                setIsPlaying(true);
+              } else if (state === 2 || state === 0) {
+                setIsPlaying(false);
+              }
+              // Actualizar tiempo una vez por cambio de estado
+              try {
+                handleTimeUpdate();
+              } catch (err) {
+                // noop
+              }
+            }}
             opts={{ playerVars: { autoplay: 0, controls: 1 } }}
             className='w-full h-full'
             iframeClassName={isPiP ? 'absolute top-0 left-0 w-full h-full' : 'w-full h-full'}
