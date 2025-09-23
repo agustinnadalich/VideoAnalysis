@@ -81,7 +81,7 @@ const AnalysisPageContent = () => {
 
       {/* Main content */}
       <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "ml-64" : "")}>
-        <div className="p-4">
+        <div className="p-0 sm:p-4">
           <div className="mb-4 flex items-center">
             {/* Botón de mostrar sidebar */}
             {!sidebarOpen && (

@@ -55,6 +55,12 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     return [0, 600] as [number, number];
   }, [filteredEvents]);
 
+  // Detectar mobile (ssr-safe)
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768;
+  }, []);
+
   const categories = useMemo(() => Array.from(new Set(filteredEvents.map(ev => ev.event_type || "Otro"))).filter(cat => cat !== "END"), [filteredEvents]);
 
   const maxSecond = useMemo(() => {
@@ -182,7 +188,10 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       const padding = 10;
       setXDomain([Math.max(0, start - padding), end + padding]);
     } else {
-      const visibleRange = maxSecond / zoomFactor;
+      // En mobile, inicializar mostrando hasta los primeros 20 minutos (1200s) como rango visible
+      const mobileCap = 1200; // 20 minutos en segundos
+      const baseRange = isMobile ? Math.min(mobileCap, maxSecond) : maxSecond;
+      const visibleRange = baseRange / zoomFactor;
       const start = 0;
       setXDomain([start, start + visibleRange]);
     }
@@ -193,7 +202,13 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       const padding = 60;
       const start = Math.max(0, Math.min(...filteredEvents.map(e => e.timestamp_sec ?? 0)) - padding);
       const end = Math.max(...filteredEvents.map(e => (e.timestamp_sec ?? 0) + (e.extra_data?.DURATION ?? 0))) + padding;
-      setXDomain([start, end]);
+      // Si estamos en mobile, limitar el dominio inicial a los primeros 20 minutos para no mostrar todo tan comprimido
+      if (isMobile) {
+        const mobileEnd = Math.min(end, 1200);
+        setXDomain([0, mobileEnd]);
+      } else {
+        setXDomain([start, end]);
+      }
     }
   }, [filteredEvents]);
 
@@ -212,17 +227,20 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   };
 
   const handleScroll = (direction: "left" | "right") => {
-    const shift = (xDomain[1] - xDomain[0]) / 4;
-    let newStart = direction === "right" ? xDomain[0] + shift : xDomain[0] - shift;
-    let newEnd = direction === "right" ? xDomain[1] + shift : xDomain[1] - shift;
+    // Shift by a fixed 10 minutes (600 seconds) per click
+    const SHIFT_SECONDS = 600; // 10 minutes
+    const range = xDomain[1] - xDomain[0];
+    let newStart = direction === "right" ? xDomain[0] + SHIFT_SECONDS : xDomain[0] - SHIFT_SECONDS;
+    let newEnd = newStart + range;
 
+    // Clamp to initial domain bounds
     if (newStart < initialXDomain[0]) {
       newStart = initialXDomain[0];
-      newEnd = initialXDomain[0] + (xDomain[1] - xDomain[0]);
+      newEnd = initialXDomain[0] + range;
     }
     if (newEnd > initialXDomain[1]) {
       newEnd = initialXDomain[1];
-      newStart = initialXDomain[1] - (xDomain[1] - xDomain[0]);
+      newStart = initialXDomain[1] - range;
     }
 
     setXDomain([newStart, newEnd]);
@@ -243,7 +261,7 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     <div className="w-full">
       <div ref={chartRef} className="overflow-x-auto" style={{ height: `${chartHeight}px` }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
+          <ScatterChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
             <CartesianGrid />
             <XAxis dataKey="timestamp_sec" type="number" domain={xDomain} tickFormatter={(tick) => secondsToGameClock(tick)} />
             <YAxis
