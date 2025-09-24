@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFilterContext } from '@/context/FilterContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,16 +23,43 @@ ChartJS.register(
 
 const TacklesTimeChart = ({ events, onChartClick }) => {
   const [tacklesTimeChartData, setTacklesTimeChartData] = useState(null);
+  const { filterDescriptors } = useFilterContext();
 
   useEffect(() => {
     console.log("🎯 TacklesTimeChart - Received events:", events?.length || 0);
     console.log("🎯 TacklesTimeChart - Sample event:", events?.[0]);
     console.log("🎯 TacklesTimeChart - Event types in received events:", [...new Set(events?.map(e => e.event_type) || [])]);
     
-    // Usar los eventos ya filtrados en lugar de hacer filtrado propio
-    const pointsEvents = events.filter(
+  // Aplicar filtros contextuales adicionales (ADVANCE/AVANCE) si existen
+
+    // helper: extraer valor de avance de un evento en varias ubicaciones
+    const extractAdvance = (event: any) => {
+      return (
+        event.extra_data?.descriptors?.AVANCE ||
+        event.extra_data?.AVANCE ||
+        event.extra_data?.advance ||
+        event.extra_data?.advance_type ||
+        event.advance ||
+        event.ADVANCE ||
+        event.AVANCE ||
+        null
+      );
+    };
+
+    // Base: solo eventos de tipo TACKLE/MISSED-TACKLE
+    let pointsEvents = events.filter(
       (event) => event.event_type === "TACKLE" || event.CATEGORY === "TACKLE" || event.event_type === "MISSED-TACKLE"
     );
+
+    // Si hay filtros de ADVANCE/AVANCE activos en el contexto, aplicarlos
+    const advanceFilters = (filterDescriptors || []).filter((f: any) => f.descriptor === 'ADVANCE' || f.descriptor === 'AVANCE').map((f: any) => f.value);
+    if (advanceFilters.length > 0) {
+      pointsEvents = pointsEvents.filter((ev) => {
+        const adv = extractAdvance(ev);
+        if (Array.isArray(adv)) return adv.some(a => advanceFilters.includes(a));
+        return adv !== null && advanceFilters.includes(adv);
+      });
+    }
     
     console.log("🎯 TacklesTimeChart - Filtered events by type:", {
       successfulTackles: pointsEvents.filter(e => e.event_type === "TACKLE" || e.CATEGORY === "TACKLE").length,
@@ -90,7 +118,7 @@ const TacklesTimeChart = ({ events, onChartClick }) => {
       ],
     };
 
-    console.log("🎯 TacklesTimeChart - Final data:", data);
+  console.log("🎯 TacklesTimeChart - Final data:", data);
     console.log("🎯 TacklesTimeChart - Data labels:", data.labels);
     console.log("🎯 TacklesTimeChart - Data values:", data.datasets[0].data);
     setTacklesTimeChartData(data);

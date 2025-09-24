@@ -112,7 +112,7 @@ const Charts: React.FC<ChartsProps> = ({
 
           <div className="border rounded-lg p-4">
             <TacklesEffectivityChart
-              events={events}
+              events={eventsToDisplay}
               onChartClick={handleChartClick}
             />
           </div>

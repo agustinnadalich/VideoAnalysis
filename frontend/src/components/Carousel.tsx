@@ -174,7 +174,7 @@ const Carousel = forwardRef<any, CarouselProps>(
           )}
           {(hasTeamTackles || hasTeamMissedTackles || hasRivalTackles || hasRivalMissedTackles) && (
             <div className="chart-container">
-              <TacklesEffectivityChart events={allEvents} onChartClick={handleChartClick} />
+              <TacklesEffectivityChart events={filteredEvents} onChartClick={handleChartClick} />
             </div>
           )}
           {hasTackles && (

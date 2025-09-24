@@ -306,10 +306,26 @@ const ChartsTabs = (_props: any) => {
           }
         }
         
-        // Filtrado especial para avances (manejar tanto ADVANCE como AVANCE)
+        // Filtrado especial para avances (manejar tanto ADVANCE como AVANCE y advance_type)
         if (descriptor === 'ADVANCE' || descriptor === 'AVANCE') {
-          const eventAdvance = event.extra_data?.AVANCE || event.extra_data?.advance || event.advance || event.extra_data?.ADVANCE;
-          const matches = eventAdvance === value;
+          // Soportar múltiples ubicaciones y variantes donde puede aparecer el dato de avance
+          const eventAdvance =
+            event.extra_data?.descriptors?.AVANCE ||
+            event.extra_data?.AVANCE ||
+            event.extra_data?.advance ||
+            event.extra_data?.advance_type ||
+            event.advance ||
+            event.ADVANCE ||
+            event.AVANCE ||
+            null;
+
+          let matches = false;
+          if (Array.isArray(eventAdvance)) {
+            matches = eventAdvance.includes(value);
+          } else {
+            matches = eventAdvance === value;
+          }
+
           console.log("🔍 ADVANCE/AVANCE check:", descriptor, "=", eventAdvance, "===", value, "->", matches);
           return matches;
         }

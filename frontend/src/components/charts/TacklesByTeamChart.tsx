@@ -30,7 +30,33 @@ const TacklesByTeamChart = ({ events, onChartClick }) => {
   console.log("🎯 TacklesByTeamChart - Sample event:", events?.[0]);
   
   // Usar stats agregados para multi-match: "Nuestros Equipos" vs "Rivales"
-  const statsByTeam = computeTackleStatsAggregated(events, ourTeamsList);
+  // Aplicar filtros por ADVANCE/AVANCE si existen en el contexto antes de computar stats
+  const { filterDescriptors } = useFilterContext();
+
+  const extractAdvance = (event: any) => {
+    return (
+      event.extra_data?.descriptors?.AVANCE ||
+      event.extra_data?.AVANCE ||
+      event.extra_data?.advance ||
+      event.extra_data?.advance_type ||
+      event.advance ||
+      event.ADVANCE ||
+      event.AVANCE ||
+      null
+    );
+  };
+
+  let eventsToUse = events || [];
+  const advanceFilters = (filterDescriptors || []).filter((f: any) => f.descriptor === 'ADVANCE' || f.descriptor === 'AVANCE').map((f: any) => f.value);
+  if (advanceFilters.length > 0) {
+    eventsToUse = eventsToUse.filter(ev => {
+      const adv = extractAdvance(ev);
+      if (Array.isArray(adv)) return adv.some(a => advanceFilters.includes(a));
+      return adv !== null && advanceFilters.includes(adv);
+    });
+  }
+
+  const statsByTeam = computeTackleStatsAggregated(eventsToUse, ourTeamsList);
 
   const ourStats = statsByTeam[0] || { successful: 0, missed: 0, effectiveness: 0 };
   const oppStats = statsByTeam[1] || { successful: 0, missed: 0, effectiveness: 0 };
