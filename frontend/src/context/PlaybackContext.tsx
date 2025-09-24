@@ -112,3 +112,5 @@ export const usePlayback = () => {
   }
   return context;
 };
+
+export { PlaybackContext };

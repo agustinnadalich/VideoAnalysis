@@ -2,7 +2,7 @@ import React, { useContext, useMemo, useCallback, useEffect, useState } from 're
 import { Scatter } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import FilterContext from "../../context/FilterContext";
+import { useFilterContext } from "../../context/FilterContext";
 
 Chart.register(...registerables);
 Chart.register(ChartDataLabels);
@@ -23,7 +23,7 @@ const backgroundImagePlugin = {
 Chart.register(backgroundImagePlugin);
 
 const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, selectedEvents, onEventClick }) => {
-  const { filterDescriptors, setFilterDescriptors } = useContext(FilterContext);
+  const { filterDescriptors, setFilterDescriptors } = useFilterContext();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {

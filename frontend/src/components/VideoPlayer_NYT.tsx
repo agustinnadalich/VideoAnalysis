@@ -1,12 +1,12 @@
-import React, { useEffect, forwardRef, useImperativeHandle, useRef, useContext } from 'react';
+import React, { useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import FilterContext from "../context/FilterContext";
+import { useFilterContext } from "../context/FilterContext";
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
 const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents }, ref) => {
   const videoRef = useRef(null);
-  const { filteredEvents } = useContext(FilterContext);
+  const { filteredEvents } = useFilterContext();
 
   useImperativeHandle(ref, () => ({
     get current() {

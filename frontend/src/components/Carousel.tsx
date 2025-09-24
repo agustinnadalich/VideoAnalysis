@@ -11,7 +11,7 @@ import PenaltiesCausePieChart from './charts/PenaltiesCausePieChart';
 import TurnoversPlayerBarChart from './charts/TurnoversPlayerBarChart';
 import TurnoversTypePieChart from './charts/TurnoversTypePieChart';
 import TurnoversTimeChart from './charts/TurnoversTimeChart';
-import FilterContext from '../context/FilterContext';
+import { useFilterContext } from '../context/FilterContext';
 import PlayerPointsChart from './charts/PlayerPointsChart';
 import PointsTimeChart from './charts/PointsTimeChart';
 import PointsTypeChart from './charts/PointsTypeChart';
@@ -57,7 +57,7 @@ const Carousel = forwardRef<any, CarouselProps>(
       },
     }));
 
-    const { selectedTeam } = useContext(FilterContext);
+  const { selectedTeam } = useFilterContext();
 
     useEffect(() => {
       const tabButton = document.querySelector(`.tab-button[aria-controls="${activeTab}"]`);

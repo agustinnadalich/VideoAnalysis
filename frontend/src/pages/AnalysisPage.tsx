@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TimelineChart from "@/components/charts/TimelineChart";
 import VideoPlayer from "@/components/VideoPlayer";
 import ChartsTabs from "@/components/ChartsTabs";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useEvents } from "@/hooks/useEvents";
 import { FilterProvider, useFilterContext } from "@/context/FilterContext";
 import { PlaybackProvider, usePlayback } from "@/context/PlaybackContext";
@@ -58,7 +59,8 @@ const AnalysisPageContent = () => {
     );
   }
 
-  const videoUrl = data?.match_info?.VIDEO_URL || data?.match_info?.video || "";
+  const matchInfoAny: any = data?.match_info;
+  const videoUrl = matchInfoAny?.VIDEO_URL || matchInfoAny?.video || "";
 
   return (
     <Layout>
@@ -98,14 +100,18 @@ const AnalysisPageContent = () => {
             <div className="flex flex-col gap-4">
               <VideoPlayer videoUrl={videoUrl} />
 
-              <TimelineChart
-              filteredEvents={filteredEvents}
-              onEventClick={playEvent}
-              />
-              <ChartsTabs
-              onEventClick={setSelectedEvent}
-              currentTime={currentTime}
-              />
+              <ErrorBoundary>
+                <TimelineChart
+                  filteredEvents={filteredEvents}
+                  onEventClick={playEvent}
+                />
+              </ErrorBoundary>
+              <ErrorBoundary>
+                <ChartsTabs
+                  onEventClick={setSelectedEvent}
+                  currentTime={currentTime}
+                />
+              </ErrorBoundary>
             </div>
         </div>
       </div>

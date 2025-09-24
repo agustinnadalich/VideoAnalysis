@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
-import FilterContext from '../context/FilterContext';
+import React from 'react';
+import { useFilterContext } from '../context/FilterContext';
 import './Header.css'; // Asegúrate de importar el archivo CSS
 
 const Header = () => {
-  const { matchInfo } = useContext(FilterContext);
+  const { matchInfo } = useFilterContext();
 
   if (!matchInfo) return null;
 

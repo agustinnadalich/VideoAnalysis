@@ -13,6 +13,7 @@ import { FiX } from "react-icons/fi";
 const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSidebarOpen: (open: boolean) => void }) => {
   const {
     events,
+    filteredEvents,
     filterDescriptors,
     setFilterDescriptors,
     filterCategory,
@@ -57,7 +58,7 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
   const camposExtra = ["TRY_ORIGIN", "Time_Group", "player_name", "player_position"];
 
 
-  const filteredEvents = useMemo(() => {
+  const computedFilteredEvents = useMemo(() => {
     let result = [...events];
 
 
@@ -111,11 +112,11 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
   const allDescriptors = useMemo(() => (
     Array.from(
       new Set([
-        ...filteredEvents.flatMap(ev => ev.extra_data ? Object.keys(ev.extra_data) : []),
-        ...camposExtra.filter(key => filteredEvents.some(ev => ev[key] !== undefined && ev[key] !== null))
+        ...computedFilteredEvents.flatMap(ev => ev.extra_data ? Object.keys(ev.extra_data) : []),
+        ...camposExtra.filter(key => computedFilteredEvents.some(ev => ev[key] !== undefined && ev[key] !== null))
       ])
     )
-  ), [filteredEvents, camposExtra]);
+  ), [computedFilteredEvents, camposExtra]);
 
   const [selectedDescriptor, setSelectedDescriptor] = useState<string>("");
   // console.log("Selected Descriptor:", selectedDescriptor);
@@ -143,7 +144,7 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     if (!selectedDescriptor) return [];
     return Array.from(
       new Set(
-        filteredEvents
+        computedFilteredEvents
           .flatMap(ev => {
             const value = ev.extra_data && selectedDescriptor in ev.extra_data
               ? ev.extra_data[selectedDescriptor]
@@ -159,7 +160,7 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
           .filter(v => v !== undefined && v !== null && v !== "None")
       )
     );
-  }, [filteredEvents, selectedDescriptor]);
+  }, [computedFilteredEvents, selectedDescriptor]);
 
   useEffect(() => {
     let result = [...events];
@@ -211,7 +212,26 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     result.sort((a, b) => (a.timestamp_sec ?? 0) - (b.timestamp_sec ?? 0));
 
     // Actualizar el estado global de eventos filtrados
-    setFilteredEvents(result);
+    // Comparación ligera antes de setState para evitar re-render innecesario
+    try {
+      if (Array.isArray(computedFilteredEvents) && computedFilteredEvents.length === result.length) {
+        const firstPrev = computedFilteredEvents[0];
+        const lastPrev = computedFilteredEvents[computedFilteredEvents.length - 1];
+        const firstNew = result[0];
+        const lastNew = result[result.length - 1];
+        const equalFirst = (firstPrev?.id ?? firstPrev?.timestamp_sec) === (firstNew?.id ?? firstNew?.timestamp_sec);
+        const equalLast = (lastPrev?.id ?? lastPrev?.timestamp_sec) === (lastNew?.id ?? lastNew?.timestamp_sec);
+        if (equalFirst && equalLast) {
+          // No cambiar si parecen iguales
+        } else {
+          setFilteredEvents(result);
+        }
+      } else {
+        setFilteredEvents(result);
+      }
+    } catch (err) {
+      setFilteredEvents(result);
+    }
   }, [events, filterCategory, filterDescriptors, selectedTeam, myTeams, setFilteredEvents]);
 
   const applyFilter = () => {

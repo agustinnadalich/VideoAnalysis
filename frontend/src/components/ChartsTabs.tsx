@@ -253,7 +253,10 @@ const ChartsTabs = (_props: any) => {
 
     if (filterDescriptors.length === 0) {
       console.log("🔄 No filters, showing all events");
-      setFilteredEvents(events);
+      // Evitar setState innecesario
+      if (!Array.isArray(filteredEvents) || filteredEvents.length !== events.length || filteredEvents[0]?.id !== events[0]?.id || filteredEvents[filteredEvents.length - 1]?.id !== events[events.length - 1]?.id) {
+        setFilteredEvents(events);
+      }
       return;
     }
 
@@ -322,7 +325,10 @@ const ChartsTabs = (_props: any) => {
 
     console.log("🔄 Filtered result:", filtered.length, "events from", events.length);
     console.log("🔄 Active filters:", filterDescriptors.map(f => `${f.descriptor}=${f.value}`));
-    setFilteredEvents(filtered);
+    // Evitar setState innecesario comparando primer/último evento y longitud
+    if (!Array.isArray(filteredEvents) || filteredEvents.length !== filtered.length || filteredEvents[0]?.id !== filtered[0]?.id || filteredEvents[filteredEvents.length - 1]?.id !== filtered[filtered.length - 1]?.id) {
+      setFilteredEvents(filtered);
+    }
   }, [events, filterDescriptors, setFilteredEvents, ourTeamsList]);
 
   // Mostrar mensaje de carga si no hay eventos

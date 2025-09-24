@@ -163,11 +163,18 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   };
 
   useEffect(() => {
-    if (chartRef.current) {
-      const rect = chartRef.current.getBoundingClientRect();
-      setChartWidth(rect.width);
-    }
-  }, [chartRef.current]);
+    // Use a stable resize listener instead of depending on the mutable ref.current
+    const updateSize = () => {
+      if (chartRef.current) {
+        const rect = chartRef.current.getBoundingClientRect();
+        setChartWidth(rect.width);
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   useEffect(() => {
     if (filteredEvents.length === 1) {
@@ -186,14 +193,14 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
 
       const end = start + duration;
       const padding = 10;
-      setXDomain([Math.max(0, start - padding), end + padding]);
+  requestAnimationFrame(() => setXDomain([Math.max(0, start - padding), end + padding]));
     } else {
       // En mobile, inicializar mostrando hasta los primeros 20 minutos (1200s) como rango visible
       const mobileCap = 1200; // 20 minutos en segundos
       const baseRange = isMobile ? Math.min(mobileCap, maxSecond) : maxSecond;
       const visibleRange = baseRange / zoomFactor; // initial calculation uses current zoomFactor
       const start = 0;
-      setXDomain([start, start + visibleRange]);
+  requestAnimationFrame(() => setXDomain([start, start + visibleRange]));
     }
     // Nota: no incluimos zoomFactor en las dependencias para evitar que un cambio de zoom
     // inmediato sobrescriba el xDomain calculado por handleZoomChange. El handler actual
@@ -208,9 +215,9 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       // Si estamos en mobile, limitar el dominio inicial a los primeros 20 minutos para no mostrar todo tan comprimido
       if (isMobile) {
         const mobileEnd = Math.min(end, 1200);
-        setXDomain([0, mobileEnd]);
+        requestAnimationFrame(() => setXDomain([0, mobileEnd]));
       } else {
-        setXDomain([start, end]);
+        requestAnimationFrame(() => setXDomain([start, end]));
       }
     }
   }, [filteredEvents]);
@@ -247,8 +254,11 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       start = end - newVisibleRange;
     }
 
-    setXDomain([start, end]);
-    setZoomFactor(adjustedZoomFactor);
+    // Use raf to avoid synchronous updates while Recharts may be notifying subscribers
+    requestAnimationFrame(() => {
+      setXDomain([start, end]);
+      setZoomFactor(adjustedZoomFactor);
+    });
   };
 
   const handleScroll = (direction: "left" | "right") => {
@@ -268,13 +278,16 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       newStart = initialXDomain[1] - range;
     }
 
-    setXDomain([newStart, newEnd]);
+  // Deferir para evitar actualizaciones sincrónicas que puedan disparar suscripciones
+  requestAnimationFrame(() => setXDomain([newStart, newEnd]));
   };
 
   // Handler para restablecer zoom y el factor de zoom
   const handleResetZoom = () => {
-    setXDomain(initialXDomain);
-    setZoomFactor(1);
+    requestAnimationFrame(() => {
+      setXDomain(initialXDomain);
+      setZoomFactor(1);
+    });
   };
 
   // Efectos de debug: mostrar cambios de xDomain y zoomFactor en consola para diagnóstico
@@ -308,7 +321,8 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
         newEnd = initialXDomain[1];
         newStart = Math.max(initialXDomain[0], newEnd - range);
       }
-      setXDomain([newStart, newEnd]);
+      // Deferimos el setState para evitar actualizaciones sincrónicas durante el commit
+      requestAnimationFrame(() => setXDomain([newStart, newEnd]));
     }
   }, [currentTime, xDomain, initialXDomain]);
 
