@@ -44,6 +44,8 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   const [zoomFactor, setZoomFactor] = useState<number>(1);
   const { filterCategory, setFilterCategory } = useFilterContext();
   const { setSelectedEvent, playEvent, currentTime } = usePlayback();
+  // Track last user interaction (zoom/scroll/reset) to avoid auto-centering immediately after
+  const lastUserActionRef = useRef<number>(0);
 
   const initialXDomain = useMemo(() => {
     if (filteredEvents.length > 0) {
@@ -229,7 +231,7 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
 
     // Calculamos el rango visible relativo al dominio completo (initialXDomain)
     const totalRange = initialXDomain[1] - initialXDomain[0];
-    const newVisibleRange = Math.max(1, totalRange / newZoomFactor);
+  const newVisibleRange = Math.max(1, totalRange / newZoomFactor);
 
   // Clamp visible range entre 5 minutos (300s) y 100 minutos (6000s)
   const MIN_VISIBLE = 300; // 5 minutos
@@ -241,20 +243,23 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     // Centrar el zoom en el centro actual de la vista (más predecible que usar currentTime)
     const center = (xDomain[0] + xDomain[1]) / 2;
 
-    let start = center - newVisibleRange / 2;
-    let end = center + newVisibleRange / 2;
+  // Use the clamped visible range when computing the new window so xDomain matches the actual zoom factor
+  let start = center - clampedVisibleRange / 2;
+  let end = center + clampedVisibleRange / 2;
 
     // Clamp dentro del dominio inicial
     if (start < initialXDomain[0]) {
       start = initialXDomain[0];
-      end = start + newVisibleRange;
+      end = start + clampedVisibleRange;
     }
     if (end > initialXDomain[1]) {
       end = initialXDomain[1];
-      start = end - newVisibleRange;
+      start = end - clampedVisibleRange;
     }
 
     // Use raf to avoid synchronous updates while Recharts may be notifying subscribers
+    // record user action to suppress auto-centering
+    lastUserActionRef.current = Date.now();
     requestAnimationFrame(() => {
       setXDomain([start, end]);
       setZoomFactor(adjustedZoomFactor);
@@ -278,12 +283,16 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       newStart = initialXDomain[1] - range;
     }
 
+  // record user action to suppress auto-centering
+  lastUserActionRef.current = Date.now();
   // Deferir para evitar actualizaciones sincrónicas que puedan disparar suscripciones
   requestAnimationFrame(() => setXDomain([newStart, newEnd]));
   };
 
   // Handler para restablecer zoom y el factor de zoom
   const handleResetZoom = () => {
+    // record user action to suppress auto-centering
+    lastUserActionRef.current = Date.now();
     requestAnimationFrame(() => {
       setXDomain(initialXDomain);
       setZoomFactor(1);
@@ -310,6 +319,9 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
   // Mantener la línea de tiempo visible: si currentTime sale del xDomain, desplazamos la ventana
   useEffect(() => {
     if (typeof currentTime !== 'number' || isNaN(currentTime)) return;
+    // Avoid auto-centering immediately after a user interaction (zoom/scroll/reset)
+    const SUPPRESS_MS = 900; // ms
+    if (Date.now() - lastUserActionRef.current < SUPPRESS_MS) return;
 
     const [start, end] = xDomain;
     if (currentTime < start || currentTime > end) {
