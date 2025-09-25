@@ -78,9 +78,29 @@ export const PlaybackProvider = ({ children }: { children: ReactNode }) => {
         currentTime: event.timestamp_sec ?? 0,
         isPlaying: true,
       });
-    } else {
-      console.warn("El evento no se encontró en filteredEvents.");
+      return;
     }
+
+    // Fallback: intentar encontrar por timestamp y tipo si no coincide match_id u otros campos
+    const fallbackIndex = filteredEvents.findIndex(
+      (e) => e.timestamp_sec === event.timestamp_sec && e.event_type === event.event_type
+    );
+
+    if (fallbackIndex !== -1) {
+      setSelectedEvent(filteredEvents[fallbackIndex]);
+      setCurrentIndex(fallbackIndex);
+      setCurrentTime(filteredEvents[fallbackIndex]?.timestamp_sec ?? 0);
+      setIsPlaying(true);
+      console.log("Fallback match por timestamp/event_type gevonden:", fallbackIndex);
+      return;
+    }
+
+    // Último recurso: aunque no esté en filteredEvents, seleccionar y saltar al tiempo del evento
+    console.warn("El evento no se encontró en filteredEvents. Aplicando fallback directo.");
+    setSelectedEvent(event);
+    setCurrentIndex(-1);
+    setCurrentTime(event.timestamp_sec ?? 0);
+    setIsPlaying(true);
   }, [filteredEvents]);
 
   return (

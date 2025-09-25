@@ -65,7 +65,11 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
 
 
     if (filterCategory.length > 0) {
-      result = result.filter((ev) => filterCategory.includes(ev.event_type));
+      const normalizedFilters = filterCategory.map((c: any) => (c || "").toString().trim().toUpperCase());
+      result = result.filter((ev) => {
+        const evType = (ev.event_type || ev.CATEGORY || "").toString().trim().toUpperCase();
+        return normalizedFilters.includes(evType);
+      });
     }
     if (filterDescriptors.length > 0) {
       result = result.filter((ev) =>
@@ -167,7 +171,11 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
 
     // Filtrar por categoría
     if (filterCategory.length > 0) {
-      result = result.filter((ev) => filterCategory.includes(ev.event_type));
+      const normalizedFilters = filterCategory.map((c: any) => (c || "").toString().trim().toUpperCase());
+      result = result.filter((ev) => {
+        const evType = (ev.event_type || ev.CATEGORY || "").toString().trim().toUpperCase();
+        return normalizedFilters.includes(evType);
+      });
     }
 
     // Filtrar por descriptores
@@ -212,11 +220,14 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
     result.sort((a, b) => (a.timestamp_sec ?? 0) - (b.timestamp_sec ?? 0));
 
     // Actualizar el estado global de eventos filtrados
-    // Comparación ligera antes de setState para evitar re-render innecesario
+    // Comparación ligera antes de setState para evitar re-render innecesario.
+    // IMPORTANTE: comparar contra el estado previo (`filteredEvents`) del contexto,
+    // no contra `computedFilteredEvents` (que es la misma lógica que `result`),
+    // porque esa comparación siempre resulta igual y evita la actualización.
     try {
-      if (Array.isArray(computedFilteredEvents) && computedFilteredEvents.length === result.length) {
-        const firstPrev = computedFilteredEvents[0];
-        const lastPrev = computedFilteredEvents[computedFilteredEvents.length - 1];
+      if (Array.isArray(filteredEvents) && filteredEvents.length === result.length) {
+        const firstPrev = filteredEvents[0];
+        const lastPrev = filteredEvents[filteredEvents.length - 1];
         const firstNew = result[0];
         const lastNew = result[result.length - 1];
         const equalFirst = (firstPrev?.id ?? firstPrev?.timestamp_sec) === (firstNew?.id ?? firstNew?.timestamp_sec);
@@ -262,10 +273,12 @@ const Sidebar = React.memo(({ sidebarOpen, setSidebarOpen }: { sidebarOpen: bool
   
 
   const toggleCategory = (category: string) => {
-    if (filterCategory.includes(category)) {
-      setFilterCategory(filterCategory.filter((c) => c !== category));
+    const normalized = (category || "").toString().trim().toUpperCase();
+    const normalizedList = (filterCategory || []).map((c: any) => (c || "").toString().trim().toUpperCase());
+    if (normalizedList.includes(normalized)) {
+      setFilterCategory((filterCategory || []).filter((c: any) => (c || "").toString().trim().toUpperCase() !== normalized));
     } else {
-      setFilterCategory([...filterCategory, category]);
+      setFilterCategory([...(filterCategory || []), category]);
     }
   };
 

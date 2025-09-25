@@ -14,7 +14,6 @@ import { usePlayback } from "@/context/PlaybackContext";
 import { useFilterContext } from "../../context/FilterContext";
 import type { MatchEvent } from "@/types";
 import { Button } from "@/components/ui/button";
-import { scaleLinear } from "d3-scale";
 
 const secondsToGameClock = (sec: number): string => {
   const minutes = Math.floor(sec / 60);
@@ -57,6 +56,33 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     return [0, 600] as [number, number];
   }, [filteredEvents]);
 
+  // Helper: compare numeric domain arrays to avoid redundant updates
+  const domainsEqual = (a: [number, number], b: [number, number]) => {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    return Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+  };
+
+  // Debounce/coalesce domain updates coming from filteredEvents changes
+  const domainTimeoutRef = useRef<number | null>(null);
+  const scheduleSetDomain = (target: [number, number], reason = "unknown") => {
+    // Clear previous scheduled update
+    if (domainTimeoutRef.current) {
+      window.clearTimeout(domainTimeoutRef.current as number);
+      domainTimeoutRef.current = null;
+    }
+
+    // Short debounce to coalesce multiple rapid updates (e.g., many charts firing)
+    domainTimeoutRef.current = window.setTimeout(() => {
+      domainTimeoutRef.current = null;
+      if (!domainsEqual(xDomain, target)) {
+        // Debug log to help diagnose looping behaviour
+        // eslint-disable-next-line no-console
+        console.log(`TimelineChart - scheduleSetDomain applying (${reason}):`, target, "prev:", xDomain);
+        requestAnimationFrame(() => setXDomain(target));
+      }
+    }, 45);
+  };
+
   // Detectar mobile (ssr-safe)
   const isMobile = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -79,8 +105,6 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     }), 60);
     return max + 5;
   }, [filteredEvents]);
-
-  const minSecond = useMemo(() => Math.min(...filteredEvents.map(ev => ev.timestamp_sec ?? 0), 0), [filteredEvents]);
 
   const colors = useMemo(() => {
     const map: Record<string, string> = {};
@@ -130,7 +154,7 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       }
 
       // Obtener otros descriptores no null
-      const otherDescriptors = [];
+      const otherDescriptors: string[] = [];
       if (event.extra_data) {
         for (const [key, value] of Object.entries(event.extra_data)) {
           if (key !== 'JUGADOR' && key !== 'duration' && key !== 'DURATION' &&
@@ -195,14 +219,16 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
 
       const end = start + duration;
       const padding = 10;
-  requestAnimationFrame(() => setXDomain([Math.max(0, start - padding), end + padding]));
+      const target: [number, number] = [Math.max(0, start - padding), end + padding];
+      scheduleSetDomain(target, 'single-event');
     } else {
       // En mobile, inicializar mostrando hasta los primeros 20 minutos (1200s) como rango visible
       const mobileCap = 1200; // 20 minutos en segundos
       const baseRange = isMobile ? Math.min(mobileCap, maxSecond) : maxSecond;
       const visibleRange = baseRange / zoomFactor; // initial calculation uses current zoomFactor
       const start = 0;
-  requestAnimationFrame(() => setXDomain([start, start + visibleRange]));
+      const target: [number, number] = [start, start + visibleRange];
+      scheduleSetDomain(target, 'filtered-events-default');
     }
     // Nota: no incluimos zoomFactor en las dependencias para evitar que un cambio de zoom
     // inmediato sobrescriba el xDomain calculado por handleZoomChange. El handler actual
@@ -217,9 +243,11 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       // Si estamos en mobile, limitar el dominio inicial a los primeros 20 minutos para no mostrar todo tan comprimido
       if (isMobile) {
         const mobileEnd = Math.min(end, 1200);
-        requestAnimationFrame(() => setXDomain([0, mobileEnd]));
+        const target: [number, number] = [0, mobileEnd];
+        scheduleSetDomain(target, 'initial-mobile');
       } else {
-        requestAnimationFrame(() => setXDomain([start, end]));
+        const target: [number, number] = [start, end];
+        scheduleSetDomain(target, 'initial');
       }
     }
   }, [filteredEvents]);
@@ -231,21 +259,21 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
 
     // Calculamos el rango visible relativo al dominio completo (initialXDomain)
     const totalRange = initialXDomain[1] - initialXDomain[0];
-  const newVisibleRange = Math.max(1, totalRange / newZoomFactor);
+    const newVisibleRange = Math.max(1, totalRange / newZoomFactor);
 
-  // Clamp visible range entre 5 minutos (300s) y 100 minutos (6000s)
-  const MIN_VISIBLE = 300; // 5 minutos
-  const MAX_VISIBLE = 6000; // 100 minutos
-  const clampedVisibleRange = Math.min(Math.max(newVisibleRange, MIN_VISIBLE), MAX_VISIBLE);
-  // Recalcular el factor de zoom real usando el rango clampeado
-  const adjustedZoomFactor = totalRange / clampedVisibleRange;
+    // Clamp visible range entre 5 minutos (300s) y 100 minutos (6000s)
+    const MIN_VISIBLE = 300; // 5 minutos
+    const MAX_VISIBLE = 6000; // 100 minutos
+    const clampedVisibleRange = Math.min(Math.max(newVisibleRange, MIN_VISIBLE), MAX_VISIBLE);
+    // Recalcular el factor de zoom real usando el rango clampeado
+    const adjustedZoomFactor = totalRange / clampedVisibleRange;
 
     // Centrar el zoom en el centro actual de la vista (más predecible que usar currentTime)
     const center = (xDomain[0] + xDomain[1]) / 2;
 
-  // Use the clamped visible range when computing the new window so xDomain matches the actual zoom factor
-  let start = center - clampedVisibleRange / 2;
-  let end = center + clampedVisibleRange / 2;
+    // Use the clamped visible range when computing the new window so xDomain matches the actual zoom factor
+    let start = center - clampedVisibleRange / 2;
+    let end = center + clampedVisibleRange / 2;
 
     // Clamp dentro del dominio inicial
     if (start < initialXDomain[0]) {
@@ -257,7 +285,7 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       start = end - clampedVisibleRange;
     }
 
-    // Use raf to avoid synchronous updates while Recharts may be notifying subscribers
+    // Use raf to avoid asynchronous updates while Recharts may be notifying subscribers
     // record user action to suppress auto-centering
     lastUserActionRef.current = Date.now();
     requestAnimationFrame(() => {
@@ -283,10 +311,10 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       newStart = initialXDomain[1] - range;
     }
 
-  // record user action to suppress auto-centering
-  lastUserActionRef.current = Date.now();
-  // Deferir para evitar actualizaciones sincrónicas que puedan disparar suscripciones
-  requestAnimationFrame(() => setXDomain([newStart, newEnd]));
+    // record user action to suppress auto-centering
+    lastUserActionRef.current = Date.now();
+    // Deferir para evitar actualizaciones sincrónicas que puedan disparar suscripciones
+    requestAnimationFrame(() => setXDomain([newStart, newEnd]));
   };
 
   // Handler para restablecer zoom y el factor de zoom
@@ -333,16 +361,26 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
         newEnd = initialXDomain[1];
         newStart = Math.max(initialXDomain[0], newEnd - range);
       }
-      // Deferimos el setState para evitar actualizaciones sincrónicas durante el commit
-      requestAnimationFrame(() => setXDomain([newStart, newEnd]));
+      const target: [number, number] = [newStart, newEnd];
+      if (!domainsEqual(xDomain, target)) {
+        // Deferimos el setState para evitar actualizaciones sincrónicas durante el commit
+        requestAnimationFrame(() => setXDomain(target));
+      }
     }
   }, [currentTime, xDomain, initialXDomain]);
 
   const handleCategoryClick = (category: string) => {
-    if (filterCategory.includes(category)) {
-      setFilterCategory(filterCategory.filter(c => c !== category));
+    // record user action to avoid immediate auto-centering while interacting
+    lastUserActionRef.current = Date.now();
+    // Normalize category for comparison but store the original string so UI select matches
+    const normalized = (category || "").toString().trim().toUpperCase();
+    const normalizedList = (filterCategory || []).map((c: any) => (c || "").toString().trim().toUpperCase());
+    if (normalizedList.includes(normalized)) {
+      // remove entries whose normalized form matches
+      setFilterCategory((filterCategory || []).filter((c: any) => (c || "").toString().trim().toUpperCase() !== normalized));
     } else {
-      setFilterCategory([...filterCategory, category]);
+      // add the original category value (preserve casing used in options)
+      setFilterCategory([...(filterCategory || []), category]);
     }
   };
 
@@ -369,7 +407,7 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
                     textAnchor="end"
                     fill="#333"
                     fontSize={10}
-                    style={{ textDecoration: filterCategory.includes(payload.value) ? "underline" : "none" }}
+                    style={{ textDecoration: (filterCategory || []).map((c:any)=>(c||"").toString().trim().toUpperCase()).includes((payload.value||"").toString().trim().toUpperCase()) ? "underline" : "none" }}
                     onClick={() => handleCategoryClick(payload.value)}
                   >
                     {payload.value}
@@ -393,7 +431,11 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
                     height={dynamicHeight}
                     fill={payload.color}
                     rx={1}
-                    onClick={() => onEventClick(payload)}
+                    onClick={() => {
+                      // Mark user action to suppress auto-centering and avoid click interruption
+                      lastUserActionRef.current = Date.now();
+                      onEventClick(payload);
+                    }}
                     style={{ cursor: "pointer" }}
                   />
                 );
