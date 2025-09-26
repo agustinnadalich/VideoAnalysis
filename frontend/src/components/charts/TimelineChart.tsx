@@ -139,45 +139,61 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
     if (active && payload && payload.length > 0) {
       const event = payload[0].payload;
 
-      // Obtener información del jugador
-      let playerInfo = "N/A";
-      if (event.extra_data?.JUGADOR) {
-        if (Array.isArray(event.extra_data.JUGADOR)) {
-          playerInfo = event.extra_data.JUGADOR.join(", ");
+      // Obtener información del jugador (omitir placeholders como 'unknown')
+      let playerInfo: string | null = null;
+      const placeholderNames = new Set(['unknown', 'Unknown', 'UNKNOWN', 'N/A', 'n/a', 'None', 'null']);
+      const rawPlayer = event.extra_data?.JUGADOR ?? event.player_name ?? event.player ?? null;
+      if (rawPlayer) {
+        if (Array.isArray(rawPlayer)) {
+          const joined = rawPlayer.join(', ');
+          playerInfo = placeholderNames.has(joined) ? null : joined;
         } else {
-          playerInfo = event.extra_data.JUGADOR;
+          const s = String(rawPlayer).trim();
+          playerInfo = placeholderNames.has(s) ? null : s;
         }
-      } else if (event.player_name) {
-        playerInfo = event.player_name;
-      } else if (event.player) {
-        playerInfo = event.player;
       }
 
-      // Obtener otros descriptores no null
+      // Obtener otros descriptores relevantes, filtrando claves/valores redundantes
       const otherDescriptors: string[] = [];
+      // Claves que no tienen sentido en el tooltip (insensible a mayúsculas)
+      const excludedKeysList = [
+        'JUGADOR', 'duration', 'DURATION', 'clip_start', 'clip_end',
+        'Time_Group', 'TIME_GROUP', 'time_group', 'PERIOD', 'Period', 'period',
+        'Game_Time', 'GAME_TIME', 'game_time', 'Start', 'End', 'TIME', 'Time',
+        // Campos generados por el normalizador/enricher que no aportan en tooltip
+        'Original_start', 'Original_end', 'original_start', 'original_end',
+        'original_start_seconds', 'original_end_seconds', 'detected_period', 'detected_periods', 'detectedPeriod', 'detected_period_name'
+      ];
+      const excludedKeys = new Set(excludedKeysList.map(k => k.toLowerCase()));
+      const excludedValues = new Set(['unknown', 'Unknown', 'UNKNOWN', 'N/A', 'n/a', 'null', 'None']);
       if (event.extra_data) {
         for (const [key, value] of Object.entries(event.extra_data)) {
-          if (key !== 'JUGADOR' && key !== 'duration' && key !== 'DURATION' &&
-              key !== 'clip_start' && key !== 'clip_end' && value !== null && value !== "") {
-            if (Array.isArray(value)) {
-              otherDescriptors.push(`${key}: ${value.join(", ")}`);
-            } else {
-              otherDescriptors.push(`${key}: ${value}`);
-            }
+          if (excludedKeys.has(String(key).toLowerCase())) continue;
+          if (value === null || value === "") continue;
+          if (typeof value === 'string' && excludedValues.has(value)) continue;
+          if (Array.isArray(value)) {
+            const cleaned = value.filter(v => !(typeof v === 'string' && excludedValues.has(v)));
+            if (cleaned.length === 0) continue;
+            otherDescriptors.push(`${key}: ${cleaned.join(', ')}`);
+          } else {
+            otherDescriptors.push(`${key}: ${value}`);
           }
         }
       }
+      // Limitar la cantidad de detalles mostrados para no saturar el tooltip
+      const MAX_DETAILS = 5;
+      const displayedDetails = otherDescriptors.slice(0, MAX_DETAILS);
 
       return (
         <div className="rounded bg-white p-2 shadow-md border border-gray-200 text-sm max-w-xs">
-          <div><strong>Jugador:</strong> {playerInfo}</div>
+          {playerInfo && <div><strong>Jugador:</strong> {playerInfo}</div>}
           <div><strong>Tiempo:</strong> {secondsToGameClock(event.SECOND)}</div>
           <div><strong>Duración:</strong> {Math.round(event.DURATION * 10) / 10}s</div>
           <div><strong>Categoría:</strong> {event.category}</div>
-          {otherDescriptors.length > 0 && (
+          {displayedDetails.length > 0 && (
             <div className="mt-2 pt-2 border-t border-gray-200">
               <div><strong>Detalles:</strong></div>
-              {otherDescriptors.map((desc, idx) => (
+              {displayedDetails.map((desc, idx) => (
                 <div key={idx} className="text-xs text-gray-600 ml-2">• {desc}</div>
               ))}
             </div>
@@ -220,7 +236,26 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
       const end = start + duration;
       const padding = 10;
       const target: [number, number] = [Math.max(0, start - padding), end + padding];
-      scheduleSetDomain(target, 'single-event');
+      // Si el single-event fue provocado por un click reciente del usuario,
+      // evitamos centrar automáticamente para que no haya animaciones bruscas.
+  const SUPPRESS_MS_AFTER_CLICK = 2000; // ms
+      if (Date.now() - lastUserActionRef.current > SUPPRESS_MS_AFTER_CLICK) {
+        scheduleSetDomain(target, 'single-event');
+      } else {
+        // Si el evento no está visible en la ventana actual, hacer un ajuste suave
+        // sin disparar la animación programada (setXDomain directo).
+        const currentlyInside = start >= xDomain[0] && end <= xDomain[1];
+        if (!currentlyInside) {
+          const visibleRange = xDomain[1] - xDomain[0];
+          let newStart = Math.max(initialXDomain[0], start - visibleRange / 2);
+          let newEnd = newStart + visibleRange;
+          if (newEnd > initialXDomain[1]) {
+            newEnd = initialXDomain[1];
+            newStart = Math.max(initialXDomain[0], newEnd - visibleRange);
+          }
+          requestAnimationFrame(() => setXDomain([newStart, newEnd]));
+        }
+      }
     } else {
       // En mobile, inicializar mostrando hasta los primeros 20 minutos (1200s) como rango visible
       const mobileCap = 1200; // 20 minutos en segundos
@@ -422,22 +457,48 @@ const TimelineChart = ({ filteredEvents, onEventClick }: { filteredEvents: Match
               data={data.filter(ev => ev.SECOND >= xDomain[0] && ev.SECOND <= xDomain[1])}
               shape={(props: any) => {
                 const { cx, cy, payload } = props;
-                const width = (payload.DURATION / (xDomain[1] - xDomain[0])) * chartWidth;
+                const width = Math.max((payload.DURATION / (xDomain[1] - xDomain[0])) * chartWidth, 4);
+                const x = cx;
+                const y = cy - dynamicHeight / 2.1;
+                const isOpp = Boolean(payload.IS_OPPONENT || payload.extra_data?.OPPONENT || String(payload.extra_data?.EQUIPO ?? payload.TEAM ?? '').toUpperCase().includes('OPPONENT') || String(payload.extra_data?.EQUIPO ?? payload.TEAM ?? '').toUpperCase().includes('AWAY'));
+                // compute luminance to pick contrasting hatch color
+                const colorToRgb = (hex: string) => {
+                  try {
+                    const h = hex.replace('#', '');
+                    const bigint = parseInt(h.length === 3 ? h.split('').map(c=>c+c).join('') : h, 16);
+                    const r = (bigint >> 16) & 255;
+                    const g = (bigint >> 8) & 255;
+                    const b = bigint & 255;
+                    return { r, g, b };
+                  } catch (e) {
+                    return { r: 50, g: 50, b: 50 };
+                  }
+                };
+                const rgb = colorToRgb(payload.color || '#3498db');
+                const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+                const hatchStroke = luminance > 0.6 ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.6)';
+                const strokeColor = isOpp ? (luminance > 0.6 ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.35)') : 'rgba(0,0,0,0.12)';
+                const patternId = `hatch-${Math.abs(String(payload.id ?? payload.ID ?? '').split('').reduce((a,b)=>a+b.charCodeAt(0),0))}`;
+                const triangleSize = Math.max(6, Math.min(14, dynamicHeight * 0.8));
+
                 return (
-                  <rect
-                    x={cx}
-                    y={cy - dynamicHeight / 2.1}
-                    width={Math.max(width, 4)}
-                    height={dynamicHeight}
-                    fill={payload.color}
-                    rx={1}
-                    onClick={() => {
-                      // Mark user action to suppress auto-centering and avoid click interruption
-                      lastUserActionRef.current = Date.now();
-                      onEventClick(payload);
-                    }}
-                    style={{ cursor: "pointer" }}
-                  />
+                  <svg x={x} y={y} width={width} height={dynamicHeight} style={{ overflow: 'visible', cursor: 'pointer' }} onClick={() => { lastUserActionRef.current = Date.now(); onEventClick(payload); }}>
+                    <defs>
+                      <pattern id={patternId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                        <rect width="6" height="6" fill="none" />
+                        <path d="M0 0 L0 6" stroke={hatchStroke} strokeWidth="1.2" />
+                      </pattern>
+                    </defs>
+                    {/* Base fill */}
+                    <rect x={0} y={0} width={width} height={dynamicHeight} rx={1} fill={payload.color} stroke={strokeColor} strokeWidth={isOpp ? 1.4 : 0.6} />
+                    {/* If opponent, overlay stronger hatch and a small triangle marker on the right */}
+                    {isOpp && (
+                      <>
+                        <rect x={0} y={0} width={width} height={dynamicHeight} rx={1} fill={`url(#${patternId})`} />
+                        <polygon points={`${width - triangleSize},0 ${width},${dynamicHeight/2} ${width - triangleSize},${dynamicHeight}`} fill={hatchStroke} opacity={0.9} />
+                      </>
+                    )}
+                  </svg>
                 );
               }}
             />
