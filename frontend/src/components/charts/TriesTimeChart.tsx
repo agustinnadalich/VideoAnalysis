@@ -25,56 +25,65 @@ const TriesTimeChart = ({ events, onChartClick }) => {
       return pt && pt.includes('TRY');
     });
 
-    // Usar Time_Group real o mapear a grupos estándar
-    const getTimeGroup = (event: any) => {
-      // Preferir Time_Group de extra_data
-      const timeGroup = event.extra_data?.Time_Group || event.Time_Group;
-      if (timeGroup) return timeGroup;
-      
-      // Fallback a cálculo manual
-      const gameTime = event.Game_Time || event.game_time;
-      if (!gameTime) return "Sin tiempo";
-      
-      const [minutes] = gameTime.split(':').map(Number);
-      if (minutes < 20) return "Primer cuarto";
-      if (minutes < 40) return "Segundo cuarto"; 
-      if (minutes < 60) return "Tercer cuarto";
-      return "Cuarto cuarto";
+    // Usar Time_Group real o mapear a grupos estándar (canonical)
+    const normalizeGroupLabel = (s: string) => String(s || '').replace(/\s+/g, ' ').replace(/\s?-\s?/, ' - ').trim();
+    const mapAliasToGroup = (raw: any) => {
+      if (raw === null || raw === undefined) return '';
+      const s = String(raw).toLowerCase().trim();
+      if (s.includes('primer') || s.includes('1º') || s === 'q1' || s === '1q' || /^q\s*1/i.test(s)) return "0'- 20'";
+      if (s.includes('segundo') || s.includes('2º') || s === 'q2' || s === '2q' || /^q\s*2/i.test(s)) return "20' - 40'";
+      if (s.includes('tercer') || s.includes('terc') || s.includes('3º') || s === 'q3' || s === '3q' || /^q\s*3/i.test(s)) return "40' - 60'";
+      if (s.includes('cuarto') || s.includes('4º') || s === 'q4' || s === '4q' || /^q\s*4/i.test(s)) return "60' - 80'";
+      // English
+      if (s.includes('first') || s.includes('1st') || s.includes('q1')) return "0'- 20'";
+      if (s.includes('second') || s.includes('2nd') || s.includes('q2')) return "20' - 40'";
+      if (s.includes('third') || s.includes('3rd') || s.includes('q3')) return "40' - 60'";
+      if (s.includes('fourth') || s.includes('4th') || s.includes('q4')) return "60' - 80'";
+      const normalized = normalizeGroupLabel(raw);
+      return normalized;
     };
 
-    // Obtener grupos únicos de los datos reales
-  const uniqueGroups = [...new Set(triesEvents.map(getTimeGroup))].sort();
+    const getTimeGroupCanonical = (event: any) => {
+      const tgRaw = event.extra_data?.Time_Group ?? event.Time_Group ?? null;
+      if (tgRaw) return mapAliasToGroup(tgRaw);
+      const gameTime = event.Game_Time || event.game_time;
+      if (!gameTime) return null;
+      const [minutes] = String(gameTime).split(':').map(Number);
+      if (isNaN(minutes)) return null;
+      if (minutes < 20) return "0'- 20'";
+      if (minutes < 40) return "20' - 40'";
+      if (minutes < 60) return "40' - 60'";
+      return "60' - 80'";
+    };
+
+    // canonical ordered groups
+    const canonicalGroups = ["0'- 20'","20' - 40'","40' - 60'","60' - 80'"];
+
+    const teamCounts = canonicalGroups.map(group => {
+      return triesEvents.filter(event => {
+        const g = getTimeGroupCanonical(event);
+        const team = event.team || event.TEAM || event.extra_data?.EQUIPO || event.extra_data?.TEAM;
+        return g === group && team && !/OPPONENT|RIVAL|RIVALES|AWAY|OPPONENTS/i.test(String(team));
+      }).length;
+    });
+
+    const oppCounts = canonicalGroups.map(group => {
+      return triesEvents.filter(event => {
+        const g = getTimeGroupCanonical(event);
+        const team = event.team || event.TEAM || event.extra_data?.EQUIPO || event.extra_data?.TEAM;
+        return g === group && team && /OPPONENT|RIVAL|RIVALES|AWAY|OPPONENTS/i.test(String(team));
+      }).length;
+    });
+
+    // Only include groups that have any events to keep chart compact (but keep order)
+    const labels = canonicalGroups.filter((g, i) => (teamCounts[i] + oppCounts[i]) > 0);
 
     const data = {
-      labels: uniqueGroups,
+      labels,
       datasets: [
-        {
-          label: "Tries por tiempo de juego (Equipo)",
-          data: uniqueGroups.map(group => {
-            const groupEvents = triesEvents.filter(event => {
-              const eventGroup = getTimeGroup(event);
-              const team = event.team || event.TEAM || event.extra_data?.EQUIPO;
-              return eventGroup === group && team !== "OPPONENT" && team !== "RIVAL";
-            });
-            
-            return groupEvents.length;
-            }),
-            backgroundColor: "rgba(75, 192, 192, 0.6)",
-          },
-          {
-            label: "Tries por tiempo de juego (Opponent)",
-            data: uniqueGroups.map(group => {
-            const groupEvents = triesEvents.filter(event => {
-              const eventGroup = getTimeGroup(event);
-              const team = event.team || event.TEAM || event.extra_data?.EQUIPO;
-              return eventGroup === group && (team === "OPPONENT" || team === "RIVAL");
-            });
-            
-            return groupEvents.length;
-          }),
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-        },
-      ],
+        { label: "Tries por tiempo de juego (Equipo)", data: labels.map(l => teamCounts[canonicalGroups.indexOf(l)]), backgroundColor: "rgba(75, 192, 192, 0.6)" },
+        { label: "Tries por tiempo de juego (Opponent)", data: labels.map(l => oppCounts[canonicalGroups.indexOf(l)]), backgroundColor: "rgba(255, 99, 132, 0.6)" },
+      ]
     };
 
     setTriesTimeChartData(data);

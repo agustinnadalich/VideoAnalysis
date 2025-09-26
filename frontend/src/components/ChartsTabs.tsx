@@ -240,11 +240,40 @@ const ChartsTabs = (_props: any) => {
     // 2) (event, elements, chart) -> firma nativa de Chart.js (react-chartjs-2)
     // 3) (event, elements, chart, chartType, tabId, additionalFilters)
     try {
+      // Helper local: normalize descriptor and value for consistent filtering
+      const normalizeFilterDescriptor = (rawDescriptor: string, rawValue: any) => {
+        let descriptor = rawDescriptor;
+        let value = rawValue;
+
+        // Map some alias descriptors
+        if (descriptor === 'Quarter_Group') descriptor = 'Time_Group';
+
+        // Normalize Time_Group values (accept spanish 'primer cuarto', 'Cuarto cuarto', or minute ranges)
+        if (descriptor === 'Time_Group' || descriptor === 'time_group' || descriptor === 'Time-Group') {
+          const normalizeGroupLabel = (s: string) => String(s || '').replace(/\s+/g, ' ').replace(/\s?-\s?/, ' - ').trim();
+          const mapAliasToGroup = (raw: string) => {
+            if (raw === null || raw === undefined) return '';
+            const s = String(raw).toLowerCase().trim();
+            if (s.includes('primer') || s.includes('1º') || s === 'q1' || s === '1q' || s.match(/^q\s*1/i)) return "0'- 20'";
+            if (s.includes('segundo') || s.includes('2º') || s === 'q2' || s === '2q' || s.match(/^q\s*2/i)) return "20' - 40'";
+            if (s.includes('tercer') || s.includes('terc') || s.includes('3º') || s === 'q3' || s === '3q' || s.match(/^q\s*3/i)) return "40' - 60'";
+            if (s.includes('cuarto') || s.includes('4º') || s === 'q4' || s === '4q' || s.match(/^q\s*4/i)) return "60' - 80'";
+            // If it already looks like a minute-range label, normalize and return
+            const normalized = normalizeGroupLabel(raw);
+            if (/([0-9]+)'\s?-\s?[0-9]+/.test(normalized) || normalized.includes("'")) return normalized;
+            return normalized;
+          };
+          value = normalizeGroupLabel(mapAliasToGroup(String(rawValue || '')));
+        }
+
+        return { descriptor, value };
+      };
+
       // Caso 1: firma simple (chartType, value, descriptor)
       if (args.length === 3 && typeof args[0] === 'string') {
         const [chartType, value, descriptor] = args;
-        const newFilter = { descriptor, value };
-        const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+        const newFilter = normalizeFilterDescriptor(descriptor, value);
+        const existingIndex = filterDescriptors.findIndex(f => f.descriptor === newFilter.descriptor && f.value === newFilter.value);
         if (existingIndex >= 0) {
           setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
           console.log('🔄 Filtro removido:', newFilter);
@@ -333,9 +362,8 @@ const ChartsTabs = (_props: any) => {
         if (additionalFilters && additionalFilters.length > 0) {
           // Support multiple filters provided by the chart (e.g. CATEGORY + TRY_ORIGIN)
           const normalizedFilters = additionalFilters.map((f: any) => {
-            let descriptor = f.descriptor;
-            if (descriptor === 'Quarter_Group') descriptor = 'Time_Group';
-            return { descriptor, value: f.value };
+            const norm = normalizeFilterDescriptor(f.descriptor, f.value);
+            return { descriptor: norm.descriptor, value: norm.value };
           });
 
           // If all provided filters already exist, remove them all; otherwise add the missing ones
@@ -367,13 +395,14 @@ const ChartsTabs = (_props: any) => {
             else descriptor = String(chartType).toUpperCase();
 
             const value = label;
-            const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+            const normalized = normalizeFilterDescriptor(descriptor, value);
+            const existingIndex = filterDescriptors.findIndex(f => f.descriptor === normalized.descriptor && f.value === normalized.value);
             if (existingIndex >= 0) {
               setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
-              console.log('🔄 Filtro removido:', { descriptor, value });
+              console.log('🔄 Filtro removido:', normalized);
             } else {
-              setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
-              console.log('➕ Filtro agregado:', { descriptor, value });
+              setFilterDescriptors([...filterDescriptors, normalized]);
+              console.log('➕ Filtro agregado:', normalized);
             }
           } catch (err) {
             console.warn('handleChartClick: error extrayendo label desde chart/elements', err);
