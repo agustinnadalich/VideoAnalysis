@@ -615,6 +615,99 @@ def calculate_game_time_from_zero(events, match_info=None, profile=None):
     return enriched_events
 
 
+def calculate_try_origin_and_phases(events):
+    """
+    Calcula el origen y fases de cada try analizando la secuencia de eventos previos.
+    
+    Args:
+        events: Lista de eventos ya normalizados y enriquecidos
+        
+    Returns:
+        Lista de eventos con TRY_ORIGIN y TRY_PHASES añadidos en extra_data
+    """
+    if not events:
+        return events
+    
+    # Categorías que pueden iniciar una secuencia ofensiva
+    origin_categories = ["TURNOVER", "SCRUM", "LINEOUT", "KICKOFF", "PENALTY"]
+    
+    # Función para detectar si un evento es un try
+    def is_try_event(event):
+        if event.get('event_type', '').upper() != 'POINTS':
+            return False
+        
+        # Buscar tipo de punto en varios campos
+        points_type = (event.get('POINTS') or 
+                      event.get('extra_data', {}).get('TIPO-PUNTOS') or
+                      event.get('extra_data', {}).get('TIPO_PUNTOS') or
+                      event.get('extra_data', {}).get('POINTS_TYPE'))
+        
+        return points_type and str(points_type).upper() == 'TRY'
+    
+    # Función para encontrar el evento de origen más cercano
+    def find_origin_event(try_event, all_events):
+        try_time = try_event.get('timestamp_sec', 0)
+        try_team = try_event.get('team', '')
+        
+        # Buscar eventos de origen previos del mismo equipo
+        candidates = []
+        for event in all_events:
+            if (event.get('event_type', '').upper() in origin_categories and
+                event.get('timestamp_sec', 0) < try_time and
+                event.get('team', '') == try_team):
+                candidates.append(event)
+        
+        if not candidates:
+            return None
+        
+        # Retornar el evento más cercano al try
+        return max(candidates, key=lambda x: x.get('timestamp_sec', 0))
+    
+    # Función para contar fases (rucks + 1) entre origen y try
+    def count_phases(try_event, origin_event, all_events):
+        if not origin_event:
+            return 1
+        
+        try_time = try_event.get('timestamp_sec', 0)
+        origin_time = origin_event.get('timestamp_sec', 0)
+        try_team = try_event.get('team', '')
+        
+        # Contar eventos RUCK entre origen y try del mismo equipo
+        ruck_count = 0
+        for event in all_events:
+            event_time = event.get('timestamp_sec', 0)
+            if (event.get('event_type', '').upper() == 'RUCK' and
+                origin_time < event_time < try_time and
+                event.get('team', '') == try_team):
+                ruck_count += 1
+        
+        return ruck_count + 1  # Fases = rucks + 1
+    
+    # Procesar todos los eventos
+    for event in events:
+        if is_try_event(event):
+            # Encontrar origen
+            origin_event = find_origin_event(event, events)
+            
+            # Calcular fases
+            phases = count_phases(event, origin_event, events)
+            
+            # Añadir datos calculados a extra_data
+            if 'extra_data' not in event:
+                event['extra_data'] = {}
+            
+            if origin_event:
+                event['extra_data']['TRY_ORIGIN'] = origin_event.get('event_type', '').upper()
+                print(f"DEBUG: Try en {event.get('timestamp_sec'):.1f}s - origen: {origin_event.get('event_type')} en {origin_event.get('timestamp_sec'):.1f}s, fases: {phases}")
+            else:
+                event['extra_data']['TRY_ORIGIN'] = 'UNKNOWN'
+                print(f"DEBUG: Try en {event.get('timestamp_sec'):.1f}s - sin origen identificado, fases: {phases}")
+            
+            event['extra_data']['TRY_PHASES'] = phases
+    
+    return events
+
+
 def enrich_events(events, match_info, profile=None):
     """
     Función principal de enriquecimiento.
@@ -641,5 +734,9 @@ def enrich_events(events, match_info, profile=None):
         
         # Limpiar evento
         event_dict = clean_row(event_dict)
+    
+    # Calcular origen y fases de tries DESPUÉS de todo el procesamiento
+    print("DEBUG: Calculando origen y fases de tries...")
+    enriched = calculate_try_origin_and_phases(enriched)
     
     return enriched

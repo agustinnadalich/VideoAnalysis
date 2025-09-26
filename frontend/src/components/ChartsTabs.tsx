@@ -16,6 +16,7 @@ import PointsTypeChart from "./charts/PointsTypeChart";
 import TriesPlayerChart from "./charts/TriesPlayerChart";
 import TriesTimeChart from "./charts/TriesTimeChart";
 import TriesOriginChart from "./charts/TriesOriginChart";
+import TriesPhasesChart from "./charts/TriesPhasesChart";
 import PenaltiesPlayerBarChart from "./charts/PenaltiesPlayerBarChart";
 import PenaltiesTimeChart from "./charts/PenaltiesTimeChart";
 import PenaltiesCausePieChart from "./charts/PenaltiesCausePieChart";
@@ -51,7 +52,60 @@ const ChartsTabs = (_props: any) => {
     ourTeamsList: string[];
   };
 
-  // Funciones helper para determinar si los gráficos tienen datos para mostrar
+    // Devuelve el estado de origen de tries:
+    // 'calculated' = al menos un try tiene un origen real distinto de OTROS/RC
+    // 'present_but_generic' = hay clave TRY_ORIGIN/ORIGIN pero todos son OTROS/RC o vacíos
+    // 'absent' = no se encontraron try events con campos de origen
+    const getTriesOriginStatus = (events: MatchEvent[]): 'calculated' | 'present_but_generic' | 'absent' => {
+      const getPointType = (event: any) => {
+        if (!event) return '';
+        if (event.POINTS) return String(event.POINTS).toUpperCase();
+        const ed = event.extra_data || {};
+        const candidates = [ed['TIPO-PUNTOS'], ed['TIPO_PUNTOS'], ed['tipo_puntos'], ed['TIPO-PUNTO'], ed['TIPO'], ed['type_of_points'], ed['type']];
+        for (const c of candidates) {
+          if (c !== undefined && c !== null) {
+            const s = String(c).trim();
+            if (s.length > 0) return s.toUpperCase();
+          }
+        }
+        return '';
+      };
+
+      const triesEvents = events.filter(event => {
+        const pt = getPointType(event);
+        return pt && pt.includes('TRY');
+      });
+
+      let anyWithKey = false;
+      let anyRealOrigin = false;
+      const originValuesCount: any = {};
+      const extraDataKeys = new Set<string>();
+
+      triesEvents.forEach(tryEvent => {
+        if (tryEvent.extra_data && typeof tryEvent.extra_data === 'object') {
+          Object.keys(tryEvent.extra_data).forEach(k => extraDataKeys.add(k));
+        }
+        const raw = tryEvent.TRY_ORIGIN ?? tryEvent.extra_data?.TRY_ORIGIN ?? tryEvent.extra_data?.ORIGIN ?? tryEvent.ORIGIN;
+        if (raw !== undefined && raw !== null) {
+          anyWithKey = true;
+          const s = String(raw).toUpperCase().trim();
+          originValuesCount[s] = (originValuesCount[s] || 0) + 1;
+          if (s && s !== 'OTROS' && s !== 'RC') anyRealOrigin = true;
+        }
+      });
+
+      try {
+        console.log('getTriesOriginStatus debug: triesEvents=', triesEvents.length, 'extra_data_keys=', Array.from(extraDataKeys).slice(0,10));
+        console.log('getTriesOriginStatus debug: originValuesCount=', originValuesCount);
+        console.log('getTriesOriginStatus debug: sample tries:', triesEvents.slice(0,3).map(e => ({ id: e.id, TRY_ORIGIN: e.TRY_ORIGIN, extra_data: e.extra_data && Object.keys(e.extra_data).slice(0,5) })));
+      } catch (err) {}
+
+      if (anyRealOrigin) return 'calculated';
+      if (anyWithKey) return 'present_but_generic';
+      return 'absent';
+    };
+
+  // Función helper para detectar tries
   const hasTacklesBarChartData = (filteredEvts: MatchEvent[]) => {
     if (!filteredEvts || filteredEvts.length === 0) return false;
 
@@ -140,8 +194,41 @@ const ChartsTabs = (_props: any) => {
   console.log("🔍 ChartsTabs - Tackle events:", filteredEvents?.filter(e => e.event_type === 'TACKLE').length || 0);
 
   // Quick booleans for presence of data in new tabs
-  const hasPoints = (filteredEvents || []).some((event) => event.CATEGORY === "POINTS" || event.event_type === "POINTS");
-  const hasTries = (filteredEvents || []).some((event) => (event.CATEGORY === "POINTS" || event.event_type === "POINTS") && (event.POINTS === "TRY" || event.POINTS === 'TRY'));
+  // Use filteredEvents when available, otherwise fallback to original events so tabs can be enabled during debug
+  const eventsForPresence = (filteredEvents && filteredEvents.length > 0) ? filteredEvents : (events || []);
+  const hasPoints = (eventsForPresence || []).some((event) => event.CATEGORY === "POINTS" || event.event_type === "POINTS");
+
+  const extractPointType = (event: any) => {
+    // Prefer top-level POINTS, then check common extra_data keys
+    if (!event) return '';
+    const candidates = [] as any[];
+    if (event.POINTS !== undefined && event.POINTS !== null) candidates.push(event.POINTS);
+    const ed = event.extra_data || {};
+    // possible backend keys
+    candidates.push(ed['TIPO-PUNTOS']);
+    candidates.push(ed['TIPO_PUNTOS']);
+    candidates.push(ed['tipo_puntos']);
+    candidates.push(ed['TIPO-PUNTO']);
+    candidates.push(ed['type_of_points']);
+    candidates.push(ed['type']);
+    // Flatten and normalize
+    for (const c of candidates) {
+      if (c === undefined || c === null) continue;
+      const s = String(c).trim();
+      if (s.length === 0) continue;
+      return s.toUpperCase();
+    }
+    return '';
+  };
+
+  const hasTries = (eventsForPresence || []).some((event) => {
+    if (!(event.CATEGORY === 'POINTS' || event.event_type === 'POINTS')) return false;
+    const pt = extractPointType(event);
+    // accept 'TRY' or strings that include TRY
+    return pt === 'TRY' || pt.includes('TRY');
+  });
+  const triesOriginStatus = getTriesOriginStatus(eventsForPresence || []);
+  const hasOriginData = triesOriginStatus === 'calculated';
   const hasPenalties = (filteredEvents || []).some((event) => event.CATEGORY === "PENALTY" || event.event_type === "PENALTY");
   const hasTurnovers = (filteredEvents || []).some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-" || event.event_type === "TURNOVER+" || event.event_type === "TURNOVER-");
   const hasSetPieces = (filteredEvents || []).some((event) => event.CATEGORY === "SCRUM" || event.CATEGORY === "LINEOUT" || event.event_type === "SCRUM" || event.event_type === "LINEOUT");
@@ -244,18 +331,24 @@ const ChartsTabs = (_props: any) => {
 
         // Si el chart ya nos pasó filtros adicionales, respetarlos (ej. PointsTypeChart)
         if (additionalFilters && additionalFilters.length > 0) {
-          const filter = additionalFilters[0];
-          let descriptor = filter.descriptor;
-          const value = filter.value;
-          // Normalizar alias: algunos charts emiten Quarter_Group, unificar a Time_Group
-          if (descriptor === 'Quarter_Group') descriptor = 'Time_Group';
-          const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
-          if (existingIndex >= 0) {
-            setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
-            console.log('🔄 Filtro removido:', { descriptor, value });
+          // Support multiple filters provided by the chart (e.g. CATEGORY + TRY_ORIGIN)
+          const normalizedFilters = additionalFilters.map((f: any) => {
+            let descriptor = f.descriptor;
+            if (descriptor === 'Quarter_Group') descriptor = 'Time_Group';
+            return { descriptor, value: f.value };
+          });
+
+          // If all provided filters already exist, remove them all; otherwise add the missing ones
+          const allExist = normalizedFilters.every((nf: any) => filterDescriptors.some(fd => fd.descriptor === nf.descriptor && fd.value === nf.value));
+          if (allExist) {
+            const remaining = filterDescriptors.filter(fd => !normalizedFilters.some((nf: any) => nf.descriptor === fd.descriptor && nf.value === fd.value));
+            setFilterDescriptors(remaining);
+            console.log('🔄 Filtros removidos:', normalizedFilters);
           } else {
-            setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
-            console.log('➕ Filtro agregado:', { descriptor, value });
+            // Add those filters that aren't already present
+            const toAdd = normalizedFilters.filter((nf: any) => !filterDescriptors.some(fd => fd.descriptor === nf.descriptor && fd.value === nf.value));
+            setFilterDescriptors([...filterDescriptors, ...toAdd]);
+            console.log('➕ Filtros agregados:', toAdd);
           }
           return;
         }
@@ -357,6 +450,14 @@ const ChartsTabs = (_props: any) => {
           return calculated === expectedValue;
         }
         
+        // Filtrado especial para CATEGORY (soporta event_type como alias)
+        if (descriptor === 'CATEGORY') {
+          const evCat = event.CATEGORY ?? event.event_type ?? event.category ?? event.eventType ?? event.extra_data?.CATEGORY ?? '';
+          const matches = String(evCat || '').toUpperCase() === String(value || '').toUpperCase();
+          console.log("🔍 CATEGORY check:", evCat, "expected->", value, "->", matches);
+          return matches;
+        }
+        
         // Filtrado especial para equipos (soporta categorías agregadas)
         if (descriptor === 'TEAM') {
           const eventTeam = getTeamFromEvent(event);
@@ -407,6 +508,31 @@ const ChartsTabs = (_props: any) => {
           console.log("🔍 ADVANCE/AVANCE check:", descriptor, "=", eventAdvance, "===", value, "->", matches);
           return matches;
         }
+
+        // Filtrado especial para origen de tries (TRY_ORIGIN)
+        if (descriptor === 'TRY_ORIGIN' || descriptor === 'ORIGEN_TRY' || descriptor === 'ORIGEN') {
+          const rawOrigin = event.TRY_ORIGIN ?? event.extra_data?.TRY_ORIGIN ?? event.extra_data?.ORIGIN ?? event.ORIGIN;
+          const v = rawOrigin === undefined || rawOrigin === null ? '' : String(rawOrigin).toUpperCase().trim();
+          const target = String(value).toUpperCase().trim();
+          const matches = v === target || (v === '' && target === '(<NONE>)');
+          console.log("🔍 TRY_ORIGIN check:", rawOrigin, "->", v, "expected->", target, "->", matches);
+          return matches;
+        }
+
+        // Filtrado especial para fases de try (TRY_PHASES) - comparar por número (aproximado)
+        if (descriptor === 'TRY_PHASES' || descriptor === 'FASES_TRY') {
+          const rawPh = event.extra_data?.TRY_PHASES ?? event.TRY_PHASES ?? null;
+          const n = rawPh !== null && rawPh !== undefined ? Number(rawPh) : NaN;
+          if (!isFinite(n)) {
+            console.log("🔍 TRY_PHASES check: event has no numeric TRY_PHASES -> false");
+            return false;
+          }
+          const targetNum = Number(value);
+          // Aceptar igualdad o cercanía (por si el chart emite un promedio redondeado)
+          const matches = Number.isFinite(targetNum) ? Math.round(n) === Math.round(targetNum) : String(Math.round(n)) === String(value);
+          console.log("🔍 TRY_PHASES check:", n, "target->", value, "->", matches);
+          return matches;
+        }
         
         // Filtrado general por otros campos
         // Buscar en event[field] o event.extra_data[field] con varias normalizaciones
@@ -442,12 +568,15 @@ const ChartsTabs = (_props: any) => {
     }
   }, [events, filterDescriptors, setFilteredEvents, ourTeamsList]);
 
-  // Mostrar mensaje de carga si no hay eventos
-  if (!filteredEvents || filteredEvents.length === 0) {
+  // Durante debug, permitir abrir las pestañas aunque `filteredEvents` esté vacío
+  // Usar `events` como fallback para permitir inspección; revertir esta lógica en QA final
+  const effectiveEvents = (filteredEvents && filteredEvents.length > 0) ? filteredEvents : (events || []);
+
+  if (!effectiveEvents || effectiveEvents.length === 0) {
     return (
       <div className="w-full mt-4 p-4 border rounded">
         <p className="text-gray-500">Cargando eventos...</p>
-        <p className="text-sm text-gray-400">Eventos encontrados: {filteredEvents?.length || 0}</p>
+        <p className="text-sm text-gray-400">Eventos encontrados: {effectiveEvents?.length || 0}</p>
       </div>
     );
   }
@@ -465,7 +594,8 @@ const ChartsTabs = (_props: any) => {
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="overview">Resumen</TabsTrigger>
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="tackles">Tackles</TabsTrigger>
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="points" disabled={!hasPoints}>Points</TabsTrigger>
-          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="tries" disabled={!hasTries}>Tries</TabsTrigger>
+          {/* Temporarily always-enable Tries tab for debug/inspection; revert after QA */}
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="tries">Tries</TabsTrigger>
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="penalties" disabled={!hasPenalties}>Penalties</TabsTrigger>
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="turnovers" disabled={!hasTurnovers}>Turnovers</TabsTrigger>
           <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="setpieces" disabled={!hasSetPieces}>Set Pieces</TabsTrigger>
@@ -512,11 +642,11 @@ const ChartsTabs = (_props: any) => {
       )}
       
 
-      <TabsContent value="overview">
+          <TabsContent value="overview">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Resumen del partido</h3>
-          <p>Eventos totales: {filteredEvents.length}</p>
-          <p>Debug: {JSON.stringify(filteredEvents.slice(0, 2), null, 2)}</p>
+          <p>Eventos totales: {effectiveEvents.length}</p>
+          <p>Debug: {JSON.stringify(effectiveEvents.slice(0, 2), null, 2)}</p>
         </div>
       </TabsContent>
 
@@ -643,15 +773,15 @@ const ChartsTabs = (_props: any) => {
             {/* moved console.log out of JSX to avoid TSX expression type issues */}
               <div className="border rounded-lg p-4 h-80">
                 <h4 className="font-medium mb-2">Puntos por Jugador</h4>
-                <PlayerPointsChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                <PlayerPointsChart events={effectiveEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
               </div>
               <div className="border rounded-lg p-4 h-80">
                 <h4 className="font-medium mb-2">Puntos por Tiempo</h4>
-                <PointsTimeChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                <PointsTimeChart events={effectiveEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
               </div>
               <div className="border rounded-lg p-4 h-80">
                 <h4 className="font-medium mb-2">Tipo de Puntos</h4>
-                <PointsTypeChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                <PointsTypeChart events={effectiveEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
               </div>
             </div>
           ) : (
@@ -664,10 +794,36 @@ const ChartsTabs = (_props: any) => {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Tries</h3>
           {hasTries ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TriesPlayerChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
-              <TriesTimeChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
-              <TriesOriginChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+            <div className="space-y-6">
+              {/* Gráficos básicos de tries (siempre mostrar) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <TriesPlayerChart events={effectiveEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS'))} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                <TriesTimeChart events={effectiveEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS'))} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                <TriesPhasesChart events={effectiveEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS'))} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              </div>
+
+              {/* Diagnóstico eliminado en esta versión de UI */}
+              
+              {/* Gráfico de origen (solo si hay datos de origen calculados) */}
+              {triesOriginStatus === 'calculated' ? (
+                <div className="grid grid-cols-1 gap-6">
+                  <TriesOriginChart events={effectiveEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS'))} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+                </div>
+              ) : triesOriginStatus === 'present_but_generic' ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800">
+                    <strong>Datos de origen presentes pero genéricos:</strong> Se detectaron campos de origen en los eventos, pero todos están en estado genérico ("OTROS" o "RC").
+                    El gráfico de origen no muestra información diferenciada hasta que el enricher calcule orígenes específicos.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800">
+                    <strong>Gráfico de origen no disponible:</strong> Los datos de origen de tries no han sido calculados. 
+                    Esto se debe a que el análisis de secuencias de juego aún no está implementado en el proceso de importación.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">No hay datos de Tries para mostrar</div>

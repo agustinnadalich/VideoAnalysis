@@ -5,17 +5,42 @@ const TriesPlayerChart = ({ events, onChartClick }: any) => {
   const [triesPlayerChartData, setTriesPlayerChartData] = useState(null);
 
   useEffect(() => {
-    const triesEvents = events.filter(
-      (event) => event.POINTS === "TRY"
-    );
+    const getPointType = (event: any) => {
+      if (!event) return '';
+      if (event.POINTS) return String(event.POINTS).toUpperCase();
+      const ed = event.extra_data || {};
+      const candidates = [ed['TIPO-PUNTOS'], ed['TIPO_PUNTOS'], ed['tipo_puntos'], ed['TIPO-PUNTO'], ed['TIPO'], ed['type_of_points'], ed['type']];
+      for (const c of candidates) {
+        if (c !== undefined && c !== null) {
+          const s = String(c).trim();
+          if (s.length > 0) return s.toUpperCase();
+        }
+      }
+      return '';
+    };
+
+    const triesEvents = events.filter((event) => {
+      const pt = getPointType(event);
+      return pt && pt.includes('TRY');
+    });
+
+    // Función para obtener el jugador del evento
+    const getPlayerName = (event: any) => {
+      return event.player_name || 
+             event.JUGADOR || 
+             event.extra_data?.JUGADOR || 
+             event.extra_data?.PLAYER || 
+             event.PLAYER;
+    };
 
     const playerLabels = [
-      ...new Set(triesEvents.map((event) => event.PLAYER).filter(player => player && player !== 'none')),
+      ...new Set(triesEvents.map(getPlayerName).filter(player => player && player !== 'none')),
     ].sort((a: any, b: any) => {
       if (typeof a === 'number' && typeof b === 'number') return a - b;
       if (typeof a === 'string' && typeof b === 'string') return a.localeCompare(b);
       return String(a).localeCompare(String(b));
     });
+    
 
     const data = {
       labels: playerLabels,
@@ -24,7 +49,11 @@ const TriesPlayerChart = ({ events, onChartClick }: any) => {
       label: "Tries por jugador",
       data: playerLabels.map((player) => {
       const totalTries = triesEvents
-        .filter((event) => event.PLAYER === player && event.TEAM !== "OPPONENT")
+        .filter((event) => {
+          const playerName = getPlayerName(event);
+          const team = event.team || event.TEAM || event.extra_data?.EQUIPO;
+          return playerName === player && team !== "OPPONENT" && team !== "RIVAL";
+        })
         .length;
       return totalTries;
       }),
@@ -37,15 +66,34 @@ const TriesPlayerChart = ({ events, onChartClick }: any) => {
   }, [events]);
 
   const handleChartClick = (event, elements) => {
+    if (!elements || elements.length === 0) return;
     const chart = elements[0].element.$context.chart;
-    onChartClick(event, elements, chart, "player", "tries-tab"); 
+    const el = elements[0];
+    const dataIndex = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex;
+    const label = triesPlayerChartData?.labels?.[dataIndex];
+    
+    const getPlayerName = (event: any) => {
+      return event.player_name || 
+             event.JUGADOR || 
+             event.extra_data?.JUGADOR || 
+             event.extra_data?.PLAYER || 
+             event.PLAYER;
+    };
+    
+    const filteredEvents = events.filter(ev => getPlayerName(ev) === label);
+    const additionalFilters = label ? [{ descriptor: 'JUGADOR', value: label }] : [];
+    onChartClick(event, elements, chart, 'player', 'tries-tab', additionalFilters, filteredEvents);
   };
 
+  // Decide orientation based on number of players to avoid label overlap
+  const horizontal = (triesPlayerChartData?.labels?.length || 0) > 8;
+
   const triesPlayerChartOptions = {
+    indexAxis: horizontal ? 'y' as const : 'x' as const,
     responsive: true,
     plugins: {
       legend: {
-        position: 'top',
+        position: 'top' as const,
       },
       title: {
         display: true,
@@ -53,7 +101,7 @@ const TriesPlayerChart = ({ events, onChartClick }: any) => {
       },
       tooltip: {
         callbacks: {
-          label: (context) => {
+          label: (context: any) => {
             const label = context.dataset.label;
             const value = context.raw;
             return `${label}: ${value}`;
@@ -62,30 +110,39 @@ const TriesPlayerChart = ({ events, onChartClick }: any) => {
       },
       datalabels: {
         color: 'grey',
-        formatter: (value, context) => {
-          const meta = context.chart.getDatasetMeta(context.datasetIndex);
-          const hidden = meta.data[context.dataIndex].hidden;
-          return hidden || value === 0 ? '' : value;
+        formatter: (value: any, context: any) => {
+          try {
+            const meta = context?.chart?.getDatasetMeta(context.datasetIndex);
+            if (!meta || !meta.data) return '';
+            const point = meta.data[context.dataIndex];
+            const hidden = point?.hidden;
+            return hidden || value === 0 ? '' : value;
+          } catch (e) {
+            return '';
+          }
         },
         font: {
-          weight: 'bold',
+          weight: 'bold' as const,
         },
       },
     },
     scales: {
-      x: {
-        stacked: true,
-      },
-      y: {
-        stacked: true,
-      },
+      x: horizontal ? { stacked: true } : { stacked: true, ticks: { maxRotation: 45, autoSkip: true } },
+      y: horizontal ? { stacked: true, ticks: { autoSkip: true, maxTicksLimit: 12 } } : { stacked: true },
     },
     maintainAspectRatio: false,
     onClick: handleChartClick,
   };
 
+  // Provide a container with min/max height to avoid overlap with surrounding UI
+  const containerStyle: React.CSSProperties = horizontal
+    ? { minHeight: '300px', maxHeight: '640px' }
+    : { minHeight: '260px', maxHeight: '420px' };
+
   return triesPlayerChartData ? (
-    <Bar data={triesPlayerChartData} options={triesPlayerChartOptions as any} style={{minHeight: '300px' }} />
+    <div style={containerStyle}>
+      <Bar data={triesPlayerChartData} options={triesPlayerChartOptions as any} />
+    </div>
   ) : null;
 };
 

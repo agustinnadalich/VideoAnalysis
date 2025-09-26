@@ -123,6 +123,93 @@ def calcular_origen_tries(df):
     return df
 
 
+def calcular_origen_tries_xml(events_list):
+    """
+    Calcula origen de tries para eventos procesados con enricher (XML/JSON).
+    Los eventos están en formato de lista de diccionarios, no DataFrame.
+    """
+    if not events_list:
+        return events_list
+    
+    # Categorías de eventos que pueden iniciar una secuencia ofensiva
+    origin_categories = ["TURNOVER", "SCRUM", "LINEOUT", "KICKOFF", "PENALTY"]
+    
+    def get_try_origin(try_event):
+        try_time = try_event.get('timestamp_sec', 0)
+        try_team = try_event.get('team', '')
+        
+        # Buscar eventos de origen previos al try del mismo equipo
+        relevant_events = []
+        for ev in events_list:
+            if (ev.get('event_type', '').upper() in origin_categories and 
+                ev.get('timestamp_sec', 0) < try_time and
+                ev.get('team', '') == try_team):
+                relevant_events.append(ev)
+        
+        if relevant_events:
+            # Tomar el evento de origen más cercano al try
+            closest_event = max(relevant_events, key=lambda x: x.get('timestamp_sec', 0))
+            return closest_event.get('event_type', '').upper()
+        
+        return None
+    
+    def count_phases(try_event):
+        """Cuenta las fases (rucks + 1) desde el origen hasta el try"""
+        try_time = try_event.get('timestamp_sec', 0)
+        try_team = try_event.get('team', '')
+        
+        # Encontrar el origen del try
+        origin_event = None
+        for ev in events_list:
+            if (ev.get('event_type', '').upper() in origin_categories and 
+                ev.get('timestamp_sec', 0) < try_time and
+                ev.get('team', '') == try_team):
+                if not origin_event or ev.get('timestamp_sec', 0) > origin_event.get('timestamp_sec', 0):
+                    origin_event = ev
+        
+        if not origin_event:
+            return 1  # Al menos 1 fase si no hay origen identificado
+        
+        origin_time = origin_event.get('timestamp_sec', 0)
+        
+        # Contar rucks entre origen y try del mismo equipo
+        ruck_count = 0
+        for ev in events_list:
+            if (ev.get('event_type', '').upper() == 'RUCK' and
+                origin_time <= ev.get('timestamp_sec', 0) < try_time and
+                ev.get('team', '') == try_team):
+                ruck_count += 1
+        
+        return ruck_count + 1  # Fases = rucks + 1
+    
+    # Procesar eventos de tries
+    for event in events_list:
+        # Verificar si es un try - puede estar en diferentes ubicaciones
+        is_try = False
+        if event.get('event_type', '').upper() == 'POINTS':
+            points_type = (event.get('POINTS') or 
+                          event.get('extra_data', {}).get('TIPO-PUNTOS') or 
+                          event.get('extra_data', {}).get('POINTS_TYPE'))
+            if points_type and str(points_type).upper() == 'TRY':
+                is_try = True
+        
+        if is_try:
+            origin = get_try_origin(event)
+            phases = count_phases(event)
+            
+            # Añadir a extra_data
+            if 'extra_data' not in event:
+                event['extra_data'] = {}
+            
+            if origin:
+                event['extra_data']['TRY_ORIGIN'] = origin
+            event['extra_data']['TRY_PHASES'] = phases
+            
+            print(f"DEBUG: Try calculado - tiempo: {event.get('timestamp_sec')}, origen: {origin}, fases: {phases}")
+    
+    return events_list
+
+
 # @match_events_bp.route('/matches/<int:match_id>/events', methods=['GET'])  # COMENTADO PARA EVITAR DUPLICADO
 def get_match_events_deprecated(match_id):
     print("🚨🚨🚨 DEBUG: get_match_events LLAMADA PARA match_id:", match_id)
@@ -288,11 +375,14 @@ def get_match_events_deprecated(match_id):
 
         # Procesar DataFrame solo si se usó el método legacy
         if profile is None:
+            print("DEBUG: Usando método legacy (Excel) - calculando origen con DataFrame")
             df = calcular_origen_tries(df)
             final_data = df.to_dict(orient='records')
         else:
-            # Cuando se usa enricher, final_data ya está listo
-            pass
+            print("DEBUG: Usando enricher (XML/JSON) - calculando origen con función específica")
+            print(f"DEBUG: final_data antes de calcular origen: {len(final_data)} eventos")
+            final_data = calcular_origen_tries_xml(final_data)
+            print(f"DEBUG: final_data después de calcular origen: {len(final_data)} eventos")
 
         # Si se usó el enricher, mover Game_Time/Time_Group/TIME(VIDEO) de extra_data al nivel superior
         print(f"DEBUG: profile is not None: {profile is not None}, final_data length: {len(final_data)}")
