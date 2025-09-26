@@ -105,7 +105,7 @@ const TriesOriginChart = ({ events, onChartClick }) => {
   };
 
   return triesOriginChartData ? (
-    <Bar data={triesOriginChartData} options={triesOriginChartOptions} />
+    <Bar data={triesOriginChartData} options={triesOriginChartOptions as any} />
   ) : null;
 };
 

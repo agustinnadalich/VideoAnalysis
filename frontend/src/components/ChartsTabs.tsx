@@ -10,6 +10,20 @@ import MissedTacklesBarChart from "./charts/MissedTacklesBarChart";
 import TacklesByTeamChart from "./charts/TacklesByTeamChart";
 import TacklesTimeChart from "./charts/TacklesTimeChart";
 import AdvancePieChart from "./charts/AdvancePieChart";
+import PlayerPointsChart from "./charts/PlayerPointsChart";
+import PointsTimeChart from "./charts/PointsTimeChart";
+import PointsTypeChart from "./charts/PointsTypeChart";
+import TriesPlayerChart from "./charts/TriesPlayerChart";
+import TriesTimeChart from "./charts/TriesTimeChart";
+import TriesOriginChart from "./charts/TriesOriginChart";
+import PenaltiesPlayerBarChart from "./charts/PenaltiesPlayerBarChart";
+import PenaltiesTimeChart from "./charts/PenaltiesTimeChart";
+import PenaltiesCausePieChart from "./charts/PenaltiesCausePieChart";
+import TurnoversPlayerBarChart from "./charts/TurnoversPlayerBarChart";
+import TurnoversTypePieChart from "./charts/TurnoversTypePieChart";
+import TurnoversTimeChart from "./charts/TurnoversTimeChart";
+import ScrumEffectivityChart from "./charts/ScrumEffectivityChart";
+import LineoutEffectivityChart from "./charts/LineoutEffectivityChart";
 // import TimelineChart from "./charts/TimelineChart";
 // import ScatterChart from "./charts/ScatterChart";
 // Aquí luego podrás importar los otros charts
@@ -125,6 +139,13 @@ const ChartsTabs = (_props: any) => {
   console.log("🔍 ChartsTabs - Total events:", filteredEvents?.length || 0);
   console.log("🔍 ChartsTabs - Tackle events:", filteredEvents?.filter(e => e.event_type === 'TACKLE').length || 0);
 
+  // Quick booleans for presence of data in new tabs
+  const hasPoints = (filteredEvents || []).some((event) => event.CATEGORY === "POINTS" || event.event_type === "POINTS");
+  const hasTries = (filteredEvents || []).some((event) => (event.CATEGORY === "POINTS" || event.event_type === "POINTS") && (event.POINTS === "TRY" || event.POINTS === 'TRY'));
+  const hasPenalties = (filteredEvents || []).some((event) => event.CATEGORY === "PENALTY" || event.event_type === "PENALTY");
+  const hasTurnovers = (filteredEvents || []).some((event) => event.CATEGORY === "TURNOVER+" || event.CATEGORY === "TURNOVER-" || event.event_type === "TURNOVER+" || event.event_type === "TURNOVER-");
+  const hasSetPieces = (filteredEvents || []).some((event) => event.CATEGORY === "SCRUM" || event.CATEGORY === "LINEOUT" || event.event_type === "SCRUM" || event.event_type === "LINEOUT");
+
   // Función para manejar clicks en gráficos y agregar filtros
   const handleChartClick = (...args: any[]) => {
     // Soportar varias firmas que usan los distintos charts:
@@ -217,23 +238,55 @@ const ChartsTabs = (_props: any) => {
       }
 
       // Caso 3: firma extendida (event, elements, chart, chartType, tabId, additionalFilters)
-      if (args.length >= 6) {
-        const [, , , type, , additionalFilters] = args;
-        if (!additionalFilters || additionalFilters.length === 0) {
-          console.warn('No additional filters provided in chart click');
+      // Algunos charts pasan 4 o 5 argumentos: (event, elements, chart, chartType, tabId)
+      if (args.length >= 4 && typeof args[3] === 'string') {
+        const [event, elements, chart, chartType, tabId, additionalFilters] = args;
+
+        // Si el chart ya nos pasó filtros adicionales, respetarlos (ej. PointsTypeChart)
+        if (additionalFilters && additionalFilters.length > 0) {
+          const filter = additionalFilters[0];
+          let descriptor = filter.descriptor;
+          const value = filter.value;
+          // Normalizar alias: algunos charts emiten Quarter_Group, unificar a Time_Group
+          if (descriptor === 'Quarter_Group') descriptor = 'Time_Group';
+          const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+          if (existingIndex >= 0) {
+            setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
+            console.log('🔄 Filtro removido:', { descriptor, value });
+          } else {
+            setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
+            console.log('➕ Filtro agregado:', { descriptor, value });
+          }
           return;
         }
-        const filter = additionalFilters[0];
-        const descriptor = filter.descriptor;
-        const value = filter.value;
 
-        const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
-        if (existingIndex >= 0) {
-          setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
-          console.log('🔄 Filtro removido:', { descriptor, value });
+        // Si no hay filtros adicionales, intentar inferir el valor desde `elements` + `chart`
+        if (elements && elements.length > 0 && chart && chart.data && Array.isArray(chart.data.labels)) {
+          try {
+            const el = elements[0];
+            const dataIndex = el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex;
+            const label = chart.data.labels[dataIndex];
+
+            // Mapear chartType a descriptor conocido
+            let descriptor = 'JUGADOR';
+            if (chartType === 'time' || chartType === 'time-group') descriptor = 'Time_Group';
+            else if (chartType === 'player') descriptor = 'JUGADOR';
+            else descriptor = String(chartType).toUpperCase();
+
+            const value = label;
+            const existingIndex = filterDescriptors.findIndex(f => f.descriptor === descriptor && f.value === value);
+            if (existingIndex >= 0) {
+              setFilterDescriptors(filterDescriptors.filter((_, i) => i !== existingIndex));
+              console.log('🔄 Filtro removido:', { descriptor, value });
+            } else {
+              setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
+              console.log('➕ Filtro agregado:', { descriptor, value });
+            }
+          } catch (err) {
+            console.warn('handleChartClick: error extrayendo label desde chart/elements', err);
+          }
         } else {
-          setFilterDescriptors([...filterDescriptors, { descriptor, value }]);
-          console.log('➕ Filtro agregado:', { descriptor, value });
+          console.warn('No additional filters provided in chart click and unable to infer value from elements/chart');
         }
         return;
       }
@@ -266,17 +319,42 @@ const ChartsTabs = (_props: any) => {
         const { descriptor, value } = filter;
         
         // Filtrado especial para grupos de tiempo
-        if (descriptor === "Quarter_Group") {
-          const timeInSeconds = parseFloat(event.timestamp_sec || event.Game_Time || event.time || 0) || 0;
-          let eventQuarterGroup;
-          
+        if (descriptor === "Quarter_Group" || descriptor === 'Time_Group' || descriptor === 'Time-Group' || descriptor === 'time_group') {
+          // Normalizar valor esperado (p. ej. "0'- 20'" vs "0'-20'") y mapear alias (Primer cuarto, Q1, etc.)
+          const normalizeGroupLabel = (s: string) => String(s || '').replace(/\s+/g, ' ').replace(/\s?-\s?/, ' - ').trim();
+
+          const mapAliasToGroup = (raw: string) => {
+            if (raw === null || raw === undefined) return '';
+            const s = String(raw).toLowerCase().trim();
+            // Spanish quarters
+            if (s.includes('primer') || s.includes('1º') || s === 'q1' || s === '1q' || s.match(/^q\s*1/i)) return "0'- 20'";
+            if (s.includes('segundo') || s.includes('2º') || s === 'q2' || s === '2q' || s.match(/^q\s*2/i)) return "20' - 40'";
+            if (s.includes('tercer') || s.includes('terc') || s.includes('3º') || s === 'q3' || s === '3q' || s.match(/^q\s*3/i)) return "40' - 60'";
+            if (s.includes('cuarto') || s.includes('4º') || s === 'q4' || s === '4q' || s.match(/^q\s*4/i)) return "60' - 80'";
+            // English style
+            if (s.includes('first') || s.includes('1st') || s.includes('q1')) return "0'- 20'";
+            if (s.includes('second') || s.includes('2nd') || s.includes('q2')) return "20' - 40'";
+            if (s.includes('third') || s.includes('3rd') || s.includes('q3')) return "40' - 60'";
+            if (s.includes('fourth') || s.includes('4th') || s.includes('q4')) return "60' - 80'";
+            // If it already looks like a minute-range label, normalize and return
+            const normalized = normalizeGroupLabel(raw);
+            if (/(\d+)'\s?-\s?\d+/.test(normalized) || normalized.includes("'") ) return normalized;
+            return normalized;
+          };
+
+          const expectedValue = normalizeGroupLabel(mapAliasToGroup(value));
+
+          const timeInSeconds = Number(event.timestamp_sec ?? event.Game_Time ?? event.time ?? event.seconds ?? 0) || 0;
+          let eventQuarterGroup: string;
+
           if (timeInSeconds < 1200) eventQuarterGroup = "0'- 20'";      // 0-20 minutos
           else if (timeInSeconds < 2400) eventQuarterGroup = "20' - 40'";    // 20-40 minutos
           else if (timeInSeconds < 3600) eventQuarterGroup = "40' - 60'";    // 40-60 minutos
           else eventQuarterGroup = "60' - 80'";                        // 60+ minutos
-          
-          console.log("🔍 Checking event", event.id, "for Quarter_Group =", value, "-> time:", timeInSeconds, "(type:", typeof timeInSeconds, ") -> calculated:", eventQuarterGroup);
-          return eventQuarterGroup === value;
+
+          const calculated = normalizeGroupLabel(eventQuarterGroup);
+          console.log("🔍 Checking event", event.id, "for Time_Group =", value, "-> time:", timeInSeconds, "-> calculated:", eventQuarterGroup, "(norm->", calculated, ") expected->", expectedValue);
+          return calculated === expectedValue;
         }
         
         // Filtrado especial para equipos (soporta categorías agregadas)
@@ -331,10 +409,27 @@ const ChartsTabs = (_props: any) => {
         }
         
         // Filtrado general por otros campos
-        // Buscar en event[field] o event.extra_data[field]
-        const eventValue = event[descriptor] || event.extra_data?.[descriptor] || event.extra_data?.[descriptor.toLowerCase()];
-        const matches = eventValue === value;
-        console.log("🔍 General filter check:", descriptor, "=", eventValue, "===", value, "->", matches);
+        // Buscar en event[field] o event.extra_data[field] con varias normalizaciones
+        const lookupKeys = [
+          descriptor,
+          descriptor.toString().toUpperCase(),
+          descriptor.toString().toLowerCase(),
+          descriptor.toString().replace(/[- ]/g, '_'),
+          descriptor.toString().replace(/[- ]/g, ''),
+        ];
+
+        let eventValue: any = undefined;
+        for (const key of lookupKeys) {
+          if (event.hasOwnProperty(key) && event[key] !== undefined) { eventValue = event[key]; break; }
+          if (event.extra_data && Object.prototype.hasOwnProperty.call(event.extra_data, key) && event.extra_data[key] !== undefined) { eventValue = event.extra_data[key]; break; }
+        }
+
+        // Si eventValue es un array, comprobar si incluye el valor
+        let matches = false;
+        if (Array.isArray(eventValue)) matches = eventValue.includes(value);
+        else matches = String(eventValue) === String(value);
+
+        console.log("🔍 General filter check:", descriptor, "=", eventValue, "===" , value, "->", matches);
         return matches;
       });
     });
@@ -357,15 +452,28 @@ const ChartsTabs = (_props: any) => {
     );
   }
 
+  // Debug info moved out of JSX
+  try {
+    // eslint-disable-next-line no-console
+    console.log('ChartsTabs - Points tab - hasPoints=', hasPoints, 'points events=', filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS').length);
+  } catch (err) {}
+
   return (
     <Tabs defaultValue="overview" className="w-full mt-4">
-      <TabsList>
-        <TabsTrigger value="overview">Resumen</TabsTrigger>
-        <TabsTrigger value="tackles">Tackles</TabsTrigger>
-        <TabsTrigger value="advances">Avances</TabsTrigger>
-        <TabsTrigger value="scatter">Mapa</TabsTrigger>
-        {/* Agrega más pestañas según los charts */}
-      </TabsList>
+      <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <TabsList style={{ display: 'inline-flex', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="overview">Resumen</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="tackles">Tackles</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="points" disabled={!hasPoints}>Points</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="tries" disabled={!hasTries}>Tries</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="penalties" disabled={!hasPenalties}>Penalties</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="turnovers" disabled={!hasTurnovers}>Turnovers</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="setpieces" disabled={!hasSetPieces}>Set Pieces</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="advances">Avances</TabsTrigger>
+          <TabsTrigger style={{ display: 'inline-flex', flex: '0 0 auto', minWidth: 110 }} value="scatter">Mapa</TabsTrigger>
+          {/* Agrega más pestañas según los charts */}
+        </TabsList>
+      </div>
       
       {/* Indicador de filtros activos */}
       {filterDescriptors.length > 0 && (
@@ -522,6 +630,95 @@ const ChartsTabs = (_props: any) => {
             <div className="text-center py-8 text-gray-500">
               No hay datos de avances disponibles para mostrar
             </div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="points">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Points</h3>
+          {hasPoints ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/** Debug info: print counts to console to help identify missing data */}
+            {/* moved console.log out of JSX to avoid TSX expression type issues */}
+              <div className="border rounded-lg p-4 h-80">
+                <h4 className="font-medium mb-2">Puntos por Jugador</h4>
+                <PlayerPointsChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              </div>
+              <div className="border rounded-lg p-4 h-80">
+                <h4 className="font-medium mb-2">Puntos por Tiempo</h4>
+                <PointsTimeChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              </div>
+              <div className="border rounded-lg p-4 h-80">
+                <h4 className="font-medium mb-2">Tipo de Puntos</h4>
+                <PointsTypeChart events={filteredEvents.filter(e => e.CATEGORY === 'POINTS' || e.event_type === 'POINTS')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No hay datos de Points para mostrar</div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="tries">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Tries</h3>
+          {hasTries ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TriesPlayerChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <TriesTimeChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <TriesOriginChart events={filteredEvents.filter(e => (e.CATEGORY === 'POINTS' || e.event_type === 'POINTS') && e.POINTS === 'TRY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No hay datos de Tries para mostrar</div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="penalties">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Penalties</h3>
+          {hasPenalties ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PenaltiesPlayerBarChart events={filteredEvents.filter(e => e.CATEGORY === 'PENALTY' || e.event_type === 'PENALTY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <PenaltiesTimeChart events={filteredEvents.filter(e => e.CATEGORY === 'PENALTY' || e.event_type === 'PENALTY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <PenaltiesCausePieChart events={filteredEvents.filter(e => e.CATEGORY === 'PENALTY' || e.event_type === 'PENALTY')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No hay datos de Penalties para mostrar</div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="turnovers">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Turnovers</h3>
+          {hasTurnovers ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TurnoversPlayerBarChart events={filteredEvents.filter(e => e.CATEGORY === 'TURNOVER+' || e.CATEGORY === 'TURNOVER-' || e.event_type === 'TURNOVER+' || e.event_type === 'TURNOVER-')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <TurnoversTypePieChart events={filteredEvents.filter(e => e.CATEGORY === 'TURNOVER+' || e.CATEGORY === 'TURNOVER-' || e.event_type === 'TURNOVER+' || e.event_type === 'TURNOVER-')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              <TurnoversTimeChart events={filteredEvents.filter(e => e.CATEGORY === 'TURNOVER+' || e.CATEGORY === 'TURNOVER-' || e.event_type === 'TURNOVER+' || e.event_type === 'TURNOVER-')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No hay datos de Turnovers para mostrar</div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="setpieces">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Set Pieces</h3>
+          {hasSetPieces ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredEvents.some(e => e.CATEGORY === 'SCRUM' || e.event_type === 'SCRUM') && (
+                <ScrumEffectivityChart title="Scrum Effectivity" events={filteredEvents.filter(e => e.CATEGORY === 'SCRUM' || e.event_type === 'SCRUM')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              )}
+              {filteredEvents.some(e => e.CATEGORY === 'LINEOUT' || e.event_type === 'LINEOUT') && (
+                <LineoutEffectivityChart title="Lineout Effectivity" events={filteredEvents.filter(e => e.CATEGORY === 'LINEOUT' || e.event_type === 'LINEOUT')} onChartClick={(...args:any)=>{handleChartClick(...args);}} />
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">No hay datos de Set Pieces para mostrar</div>
           )}
         </div>
       </TabsContent>

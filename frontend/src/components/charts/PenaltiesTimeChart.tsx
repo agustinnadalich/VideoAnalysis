@@ -92,7 +92,7 @@ const PenaltiesTimeChart = ({ events, onChartClick }) => {
   };
 
   return penaltiesTimeChartData ? (
-    <Bar data={penaltiesTimeChartData} options={penaltiesTimeChartOptions} />
+  <Bar data={penaltiesTimeChartData} options={penaltiesTimeChartOptions as any} />
   ) : null;
 };
 

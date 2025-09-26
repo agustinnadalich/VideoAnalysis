@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 
-const TriesPlayerChart = ({ events, onChartClick }) => {
+const TriesPlayerChart = ({ events, onChartClick }: any) => {
   const [triesPlayerChartData, setTriesPlayerChartData] = useState(null);
 
   useEffect(() => {
@@ -11,7 +11,11 @@ const TriesPlayerChart = ({ events, onChartClick }) => {
 
     const playerLabels = [
       ...new Set(triesEvents.map((event) => event.PLAYER).filter(player => player && player !== 'none')),
-    ].sort((a, b) => a - b);
+    ].sort((a: any, b: any) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      if (typeof a === 'string' && typeof b === 'string') return a.localeCompare(b);
+      return String(a).localeCompare(String(b));
+    });
 
     const data = {
       labels: playerLabels,
@@ -81,7 +85,7 @@ const TriesPlayerChart = ({ events, onChartClick }) => {
   };
 
   return triesPlayerChartData ? (
-    <Bar data={triesPlayerChartData} options={triesPlayerChartOptions} style={{minHeight: '300px' }} />
+    <Bar data={triesPlayerChartData} options={triesPlayerChartOptions as any} style={{minHeight: '300px' }} />
   ) : null;
 };
 

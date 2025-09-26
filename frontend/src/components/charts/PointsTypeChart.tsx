@@ -3,10 +3,32 @@ import { Doughnut } from 'react-chartjs-2';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 const PointsTypeChart = ({ events, onChartClick }) => {
-  const pointTypes = [...new Set(events.map(event => event.POINTS))];
+  const getPointType = (ev:any) => {
+    return ev?.extra_data?.['TIPO-PUNTOS'] ?? ev?.extra_data?.TIPO_PUNTOS ?? ev?.TIPO_PUNTOS ?? ev?.['TIPO-PUNTOS'] ?? ev?.MISC ?? null;
+  };
 
-  const teamPointsByType = pointTypes.map(type => events.filter(event => event.POINTS === type && event.TEAM !== 'OPPONENT').length);
-  const rivalPointsByType = pointTypes.map(type => events.filter(event => event.POINTS === type && event.TEAM === 'OPPONENT').length);
+  const pointTypes = [...new Set(events.map(event => String(getPointType(event) ?? '').trim()).filter(p => p && p !== 'null' && p !== 'undefined'))];
+
+  const getPointsValue = (ev:any) => {
+    const type = String(getPointType(ev) ?? '').toUpperCase();
+    if (!type) return 0;
+    if (type.includes('TRY')) return 5;
+    if (type.includes('CONVERSION')) return 2;
+    if (type.includes('PENALTY')) return 3;
+    if (type.includes('DROP')) return 3;
+    const v = ev?.["POINTS(VALUE)"] ?? ev?.["POINTS_VALUE"] ?? ev?.["POINTS VALUE"] ?? ev?.["POINTS"] ?? 0;
+    const num = Number(v);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const isOpponent = (ev:any) => {
+    const team = (ev.TEAM ?? ev.EQUIPO ?? ev.extra_data?.EQUIPO ?? ev.extra_data?.TEAM ?? '').toString().toUpperCase();
+    if (!team) return false;
+    return /OPPONENT|RIVAL|RIVALES|AWAY|OPPONENTS|RIVAL_TEAM|OPP/i.test(team);
+  };
+
+  const teamPointsByType = pointTypes.map(type => events.filter(event => String(getPointType(event) ?? '').toUpperCase() === String(type).toUpperCase() && !isOpponent(event)).reduce((sum, ev) => sum + getPointsValue(ev), 0));
+  const rivalPointsByType = pointTypes.map(type => events.filter(event => String(getPointType(event) ?? '').toUpperCase() === String(type).toUpperCase() && isOpponent(event)).reduce((sum, ev) => sum + getPointsValue(ev), 0));
 
   const filteredPointTypes = pointTypes.filter((_, index) => teamPointsByType[index] > 0 || rivalPointsByType[index] > 0);
   const filteredTeamPointsByType = teamPointsByType.filter((count, index) => count > 0 || rivalPointsByType[index] > 0);
@@ -16,12 +38,12 @@ const PointsTypeChart = ({ events, onChartClick }) => {
   const totalRivalPoints = filteredRivalPointsByType.reduce((a, b) => a + b, 0);
 
   const combinedData = [
-    ...filteredTeamPointsByType.map((count, index) => count > 0 ? count : null).filter(count => count !== null),
-    ...filteredRivalPointsByType.map((count, index) => count > 0 ? count : null).filter(count => count !== null)
+    ...filteredTeamPointsByType,
+    ...filteredRivalPointsByType
   ];
   const combinedColors = [
-    ...filteredTeamPointsByType.map((count, index) => count > 0 ? `rgba(${30 + index * 30}, ${144 + index * 10}, 255, 0.8)` : null).filter(color => color !== null),
-    ...filteredRivalPointsByType.map((count, index) => count > 0 ? `rgba(255, ${100 + index * 30}, ${100 + index * 30}, 0.8)` : null).filter(color => color !== null)
+    ...filteredTeamPointsByType.map((_, index) => `rgba(${30 + index * 30}, ${144 + index * 10}, 255, 0.8)`),
+    ...filteredRivalPointsByType.map((_, index) => `rgba(255, ${100 + index * 30}, ${100 + index * 30}, 0.8)`)
   ];
 
   const data = {
@@ -32,8 +54,8 @@ const PointsTypeChart = ({ events, onChartClick }) => {
     datasets: [
       {
         data: [
-          ...filteredPointTypes.map((type, index) => filteredTeamPointsByType[index] > 0 ? events.filter(event => event.POINTS === type && event.TEAM !== 'OPPONENT').reduce((sum, event) => sum + event["POINTS(VALUE)"], 0) : null).filter(value => value !== null),
-          ...filteredPointTypes.map((type, index) => filteredRivalPointsByType[index] > 0 ? events.filter(event => event.POINTS === type && event.TEAM === 'OPPONENT').reduce((sum, event) => sum + event["POINTS(VALUE)"], 0) : null).filter(value => value !== null)
+          ...filteredPointTypes.map((type, index) => filteredTeamPointsByType[index] > 0 ? filteredTeamPointsByType[index] : null).filter(value => value !== null),
+          ...filteredPointTypes.map((type, index) => filteredRivalPointsByType[index] > 0 ? filteredRivalPointsByType[index] : null).filter(value => value !== null)
         ],
         backgroundColor: combinedColors,
         hoverBackgroundColor: combinedColors,
@@ -41,19 +63,32 @@ const PointsTypeChart = ({ events, onChartClick }) => {
     ],
   };
 
+  // Debug
+  // eslint-disable-next-line no-console
+  console.log('PointsTypeChart - pointTypes:', pointTypes, 'teamPointsByType:', teamPointsByType, 'rivalPointsByType:', rivalPointsByType);
+
   const handleChartClick = (event, elements) => {
-    if (elements.length > 0) {
-      const chart = elements[0].element.$context.chart;
-      const label = chart.data.labels[elements[0].index];
-      const type = label.includes(' (Our Team)') ? label.replace(' (Our Team)', '') : label.replace(' (Opponent)', '');      
-      onChartClick(event, elements, chart, "points_type", "points-tab", [{ descriptor: "POINTS", value: type }]);
+    if (!elements || elements.length === 0) {
+      console.warn('PointsTypeChart - click handler invoked with empty elements', { event, elements });
+      return;
     }
+    const el = elements[0];
+    const chart = el.element?.$context?.chart ?? (elements[0].element && elements[0].element.$context && elements[0].element.$context.chart);
+    if (!chart) {
+      console.warn('PointsTypeChart - unable to extract chart from elements', elements[0]);
+      return;
+    }
+    const label = chart.data.labels[el.index ?? el.element?.index ?? el.element?.$context?.dataIndex ?? el.element?.$context?.dataIndex];
+    const type = label.includes(' (Our Team)') ? label.replace(' (Our Team)', '') : label.replace(' (Opponent)', '');      
+    // Use the actual key used by the backend/extra_data to filter correctly
+    onChartClick(event, elements, chart, "points_type", "points-tab", [{ descriptor: "TIPO-PUNTOS", value: type }]);
   };
 
   const pieChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '50%',
+    // aumentar cutout para reducir el radio exterior y que entre mejor en cajas pequeñas
+    cutout: '65%',
     plugins: {
       legend: {
         display: true,
@@ -122,12 +157,14 @@ const PointsTypeChart = ({ events, onChartClick }) => {
   };
 
   return (
-    <div style={{ position: 'relative', minHeight: '500px' }}>
-      <Doughnut data={data} options={pieChartOptions} plugins={[ChartDataLabels]} />
-      <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-        <span style={{ color: 'rgba(255, 99, 132, 1)', fontSize: '1.5em' }}>{totalRivalPoints}</span>
-        <span style={{ fontSize: '1.5em' }}> / </span>
-        <span style={{ color: 'rgba(54, 162, 235, 1)', fontSize: '1.5em' }}>{totalTeamPoints}</span> 
+    <div className="relative w-full h-full max-w-full overflow-hidden flex items-center justify-center">
+      <div className="w-full h-full max-h-52 sm:max-h-80 flex items-center justify-center">
+        <Doughnut data={data} options={pieChartOptions as any} plugins={[ChartDataLabels]} style={{ maxHeight: '100%', maxWidth: '100%', height: '100%', width: '100%' }} />
+      </div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+        <span className="text-[1.25rem] text-[rgba(255,99,132,1)]">{totalRivalPoints}</span>
+        <span className="text-[1.25rem] mx-1"> / </span>
+        <span className="text-[1.25rem] text-[rgba(54,162,235,1)]">{totalTeamPoints}</span>
       </div>
     </div>
   );

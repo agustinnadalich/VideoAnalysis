@@ -3,7 +3,8 @@ import YouTube from "react-youtube";
 import { usePlayback } from "@/context/PlaybackContext";
 import { Button } from "@/components/ui/button";
 
-const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
+const VideoPlayer = (props: any) => {
+  const videoUrl = props.videoUrl ?? props.src ?? "";
   const { 
     currentTime, 
     setCurrentTime, setIsPlaying, playFiltered, isPlaying, playNext, playPrev, selectedEvent } = usePlayback();

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import FilterContext from "./FilterContext";
+import { FilterContext } from "./FilterContext";
 import type { FilterContextType } from "./FilterContext";
 
-const FilterProvider = ({ children }: { children: React.ReactNode }) => {
+export const FilterProvider = ({ children }: { children: React.ReactNode }) => {
   const [events, setEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [filterDescriptors, setFilterDescriptors] = useState<any[]>([]);

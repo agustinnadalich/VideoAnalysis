@@ -77,7 +77,7 @@ const HorizontalBarChart = ({ data }) => {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '30px' }}>
-      <Bar data={chartData} options={options} />
+  <Bar data={chartData} options={options as any} />
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px' }}>
         {labels[0] === 'BALL POSSESSION' ? (
           <>

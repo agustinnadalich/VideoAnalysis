@@ -104,7 +104,7 @@ const CoustomTimeChart = ({ events, onChartClick }) => {
         ))}
       </select>
       {coustomTimeChartData ? (
-        <Bar data={coustomTimeChartData} options={coustomTimeChartOptions} />
+  <Bar data={coustomTimeChartData} options={coustomTimeChartOptions as any} />
       ) : null}
     </div>
   );

@@ -4,7 +4,8 @@ import { useFilterContext } from "../context/FilterContext";
 
 import './VideoPlayer.css'; // Importa el archivo CSS
 
-const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents }, ref) => {
+const VideoPlayer = forwardRef((props: any, ref: any) => {
+  const { src, tempTime, duration, isPlayingFilteredEvents, onEnd, onStop, onNext, onPrevious, onTimeUpdate, onPlayFilteredEvents } = props;
   const videoRef = useRef(null);
   const { filteredEvents } = useFilterContext();
 

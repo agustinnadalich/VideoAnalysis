@@ -65,7 +65,7 @@ const Header = () => {
     <div className="header">
       <div className="teams">
         <div className="team">
-          {TEAM && <img src={getLogoPath(TEAM)} alt={`${TEAM} logo`} className="team-logo" onError={(e) => e.target.style.display = 'none'} />}
+          {TEAM && <img src={getLogoPath(TEAM)} alt={`${TEAM} logo`} className="team-logo" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
           <span>{TEAM}</span>
         </div>
         <div className="score">
@@ -74,7 +74,7 @@ const Header = () => {
           <span className="points">{puntosRival}</span>
         </div>
         <div className="team">
-          {OPPONENT && <img src={getLogoPath(OPPONENT)} alt={`${OPPONENT} logo`} className="team-logo" onError={(e) => e.target.style.display = 'none'} />}
+          {OPPONENT && <img src={getLogoPath(OPPONENT)} alt={`${OPPONENT} logo`} className="team-logo" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
           <span>{OPPONENT}</span>
         </div>
       </div>

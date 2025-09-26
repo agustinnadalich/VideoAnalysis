@@ -102,7 +102,7 @@ const TurnoversTimeChart = ({ events, onChartClick }) => {
   };
 
   return turnoversTimeChartData ? (
-    <Bar data={turnoversTimeChartData} options={turnoversTimeChartOptions} />
+  <Bar data={turnoversTimeChartData} options={turnoversTimeChartOptions as any} />
   ) : null;
 };
 

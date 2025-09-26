@@ -42,6 +42,7 @@ const VideoAnalysisPage = () => {
         // El backend ya devuelve el formato correcto: { events: [...], match_id, total_events }
         const formattedData = {
           events: matchData.events || [],
+          header: {},
           match_info: { match_id: matchData.match_id, total_events: matchData.total_events }
         };
         

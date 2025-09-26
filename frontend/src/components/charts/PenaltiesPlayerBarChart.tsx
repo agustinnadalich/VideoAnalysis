@@ -58,7 +58,7 @@ const PenaltiesPlayerBarChart = ({ events, onChartClick }) => {
     onClick: handleChartClick,
   };
 
-  return <Bar data={data} options={barChartOptions} />;
+  return <Bar data={data} options={barChartOptions as any} />;
 };
 
 export default PenaltiesPlayerBarChart;

@@ -203,7 +203,7 @@ const ScatterChart = ({ events, columnsToTooltip, colors, setSelectedEvents, sel
   });
   console.log("Eventos válidos para scatter:", validEvents.length, validEvents);
 
-  return <Scatter data={scatterChartData} options={scatterChartOptions} width={800} height={600} />;
+  return <Scatter data={scatterChartData} options={scatterChartOptions as any} width={800} height={600} />;
 };
 
 export default ScatterChart;

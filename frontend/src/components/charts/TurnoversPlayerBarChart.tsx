@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 
-const TurnoversPlayerBarChart = ({ events, onChartClick }) => {
+const TurnoversPlayerBarChart = ({ events, onChartClick }: any) => {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   const playersPlus = events.filter(event => event.CATEGORY === 'TURNOVER+' && event.PLAYER).map(event => event.PLAYER);
@@ -22,10 +22,16 @@ const TurnoversPlayerBarChart = ({ events, onChartClick }) => {
   //   }
   // };
 
-  const handleClick = (event, elements) => {
+  const handleClick = (event: any, elements: any) => {
+    if (!elements || elements.length === 0) return;
     const chart = elements[0].element.$context.chart;
-    onChartClick(event, elements, chart, "player", "turnovers-tab");
-
+    const dataIndex = elements[0].index ?? elements[0].element?.$context?.dataIndex;
+    const datasetIndex = elements[0].datasetIndex ?? elements[0].element?.$context?.datasetIndex ?? 0;
+    // Infer player depending on datasetIndex: 0 -> plus, 1 -> minus (we render separate charts though)
+    let player = null;
+    if (datasetIndex === 0) player = uniquePlayersPlus[dataIndex];
+    else player = uniquePlayersMinus[dataIndex];
+    if (player) onChartClick(event, elements, chart, "player", "turnovers-tab", [{ descriptor: "PLAYER", value: player }]);
   };
   
 
@@ -57,12 +63,12 @@ const TurnoversPlayerBarChart = ({ events, onChartClick }) => {
 
   return (
     <div>
-      {uniquePlayersPlus.length > 0 && (
-        <Bar data={dataPlus} options={{ onClick: (event, elements) => handleClick(event, elements, 'plus') }} />
-      )}
-      {uniquePlayersMinus.length > 0 && (
-        <Bar data={dataMinus} options={{ onClick: (event, elements) => handleClick(event, elements, 'minus') }} />
-      )}
+    {uniquePlayersPlus.length > 0 && (
+  <Bar data={dataPlus} options={{ onClick: (event: any, elements: any) => handleClick(event, elements) } as any} />
+    )}
+    {uniquePlayersMinus.length > 0 && (
+  <Bar data={dataMinus} options={{ onClick: (event: any, elements: any) => handleClick(event, elements) } as any} />
+    )}
       {selectedPlayer}
     </div>
   );

@@ -116,7 +116,7 @@ const TurnoversTypePieChart = ({ events, onChartClick }) => {
 
   return (
     <div style={{ position: 'relative', minHeight: '500px' }}>
-      <Doughnut data={data} options={pieChartOptions} plugins={[ChartDataLabels]} />
+  <Doughnut data={data} options={pieChartOptions as any} plugins={[ChartDataLabels]} />
       <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
         <span style={{ color: 'rgba(30, 144, 255, 1)', fontSize: '1.5em' }}>{totalRecoveries}</span>
         <span style={{ fontSize: '1.5em' }}> / </span>
