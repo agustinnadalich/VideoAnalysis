@@ -21,6 +21,12 @@ const secondsToGameClock = (sec: number): string => {
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
+// TODO: revisar más adelante
+// Las últimas mejoras visuales (hatch/triángulo/tooltip/auto-centering suppression)
+// se mantuvieron temporalmente porque funcionan en desarrollo. Antes de
+// estabilizar en main revisaremos rendimiento en datasets grandes y la
+// heurística de detección de OPPONENT en payloads reales.
+
 const CurrentTimeLine = React.memo(({ currentTime, xDomain }: { currentTime: number; xDomain: [number, number] }) => {
   if (typeof currentTime !== "number" || currentTime < xDomain[0] || currentTime > xDomain[1]) {
     return null;
