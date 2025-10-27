@@ -16,9 +16,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 # matriz_json_path = os.path.join(UPLOAD_FOLDER, 'SERIE_B_PRATO.json')
 # matches_json_path = os.path.join(UPLOAD_FOLDER, 'match-PRATO.json')
 
-# Ruta del archivo JSON
-matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizC2.json')
-matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesC2.json')
+# Ruta del archivo JSON - PESCARA vs AVEZZANO
+matriz_json_path = os.path.join(UPLOAD_FOLDER, 'matrizPescara.json')
+matches_json_path = os.path.join(UPLOAD_FOLDER, 'matchesPescara.json')
 
 # Lee los datos desde los archivos JSON
 try:
@@ -67,7 +67,8 @@ def get_events():
     try:
         with open(matriz_json_path, 'r') as f:
             df = pd.DataFrame(json.load(f))
-        df = calcular_origen_tries(df)
+        # Comentado temporalmente para demo rápido
+        # df = calcular_origen_tries(df)
 
         if df.empty:
             return jsonify({"error": "No data available"}), 404
@@ -151,6 +152,83 @@ def get_events():
         partido_info = df_partidos.to_dict(orient='records')[0]
 
         print(events)
+        return jsonify({"header": partido_info, "events": events})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/pescara', methods=['GET'])
+def pescara_events():
+    """Endpoint específico para el partido Pescara vs Avezzano"""
+    try:
+        # Rutas para archivos de Pescara
+        pescara_matriz_path = os.path.join(UPLOAD_FOLDER, 'matrizPescara.json')
+        pescara_matches_path = os.path.join(UPLOAD_FOLDER, 'matchesPescara.json')
+        
+        # Verificar que existan los archivos
+        if not os.path.exists(pescara_matriz_path) or not os.path.exists(pescara_matches_path):
+            return jsonify({"error": "Archivos de Pescara no encontrados"}), 404
+        
+        # Leer datos
+        with open(pescara_matriz_path, 'r') as f:
+            df_pescara = pd.DataFrame(json.load(f))
+        
+        with open(pescara_matches_path, 'r') as f:
+            df_partidos_pescara = pd.DataFrame(json.load(f))
+        
+        # Calcular Game_Time (igual que en /events)
+        events = df_pescara.to_dict(orient='records')
+        
+        # Obtener eventos KICK OFF y END por periodo
+        kick_off_1 = df_pescara[(df_pescara['CATEGORY'] == 'KICK OFF') & (df_pescara['PERIODS'] == 1)]
+        fin_1 = df_pescara[(df_pescara['CATEGORY'] == 'END') & (df_pescara['PERIODS'] == 1)]
+        kick_off_2 = df_pescara[(df_pescara['CATEGORY'] == 'KICK OFF') & (df_pescara['PERIODS'] == 2)]
+        fin_2 = df_pescara[(df_pescara['CATEGORY'] == 'END') & (df_pescara['PERIODS'] == 2)]
+
+        start_1 = kick_off_1['SECOND'].min() if not kick_off_1.empty else 0
+        end_1 = fin_1['SECOND'].max() if not fin_1.empty else df_pescara[df_pescara['PERIODS'] == 1]['SECOND'].max()
+        start_2 = kick_off_2['SECOND'].min() if not kick_off_2.empty else 0
+        end_2 = fin_2['SECOND'].max() if not fin_2.empty else df_pescara[df_pescara['PERIODS'] == 2]['SECOND'].max()
+
+        # Calcular Game_Time para cada evento
+        for event in events:
+            period = event.get('PERIODS')
+            second = event.get('SECOND', 0)
+            
+            if period == 1:
+                tiempo_de_juego = (second - start_1) if start_1 else None
+            elif period == 2:
+                tiempo_de_juego = (end_1 - start_1) + (second - start_2) if start_2 else None
+            else:
+                tiempo_de_juego = None
+
+            if tiempo_de_juego is not None and tiempo_de_juego >= 0:
+                minutos = int(tiempo_de_juego // 60)
+                segundos = int(tiempo_de_juego % 60)
+                event['Game_Time'] = f"{minutos:02d}:{segundos:02d}"
+                
+                # Asignar Time_Group
+                time_groups = [
+                    {"label": "0'- 20'", "start": 0, "end": 1200},
+                    {"label": "20' - 40'", "start": 1200, "end": 2400},
+                    {"label": "40' - 60'", "start": 2400, "end": 3600},
+                    {"label": "60' - 80'", "start": 3600, "end": 4800}
+                ]
+                for group in time_groups:
+                    if group["start"] <= tiempo_de_juego < group["end"]:
+                        event["Time_Group"] = group["label"]
+                        break
+            else:
+                event['Game_Time'] = None
+                event['Time_Group'] = None
+
+        # Limpiar valores NaN
+        for event in events:
+            for key, value in event.items():
+                if value != value:  # NaN check
+                    event[key] = None
+
+        partido_info = df_partidos_pescara.to_dict(orient='records')[0]
+        
         return jsonify({"header": partido_info, "events": events})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

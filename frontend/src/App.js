@@ -15,14 +15,8 @@ library.add(faBars, faTimes, faPlay, faPause, faStop, faForward, faBackward,faSt
 
 const App = () => {
   const [data, setData] = useState({ events: [], header: {} });
-  // const [videoSrc] = useState("8ZRkzy6mXDs");
-  // const [videoSrc] = useState("NFanFDZIUFE");
-//   const [videoSrc] = useState("pq6mLh50fc8");
-  // const [videoSrc] = useState("/SBvsLIONS.mp4");
-  const [videoSrc] = useState("/Siena_compressed.mp4");
-//   const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/Siena_compressed.mp4");
-  // const [videoSrc] = useState("https://cone-videoanalysis.s3.us-east-1.amazonaws.com/SBvsLIONS.mp4");
-
+  const [videoSrc, setVideoSrc] = useState(""); // Inicializar vacío, se cargará desde backend
+  
   const [duration, setDuration] = useState(0);
   const [tempTime, setTempTime] = useState(null);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -110,13 +104,29 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       const url = process.env.NODE_ENV === 'development' 
-        ? "http://localhost:5001/events" 
-        : "https://videoanalysis-back.onrender.com/events";
+        ? "http://localhost:5001/pescara"  // Local: usar /pescara
+        : "https://videoanalysis-back.onrender.com/pescara"; // Producción: usar /pescara
       try {
-        const response = await fetch(url);
+        // Agregar timestamp para evitar cache
+        const response = await fetch(url, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const data = await response.json();
         console.log("Data: ", data);
+        console.log("VIDEO_URL recibido:", data.header?.VIDEO_URL);
         setData(data);
+        
+        // Usar VIDEO_URL desde el backend
+        if (data.header && data.header.VIDEO_URL) {
+          setVideoSrc(data.header.VIDEO_URL);
+          console.log("✅ Video URL configurado:", data.header.VIDEO_URL.substring(0, 80) + "...");
+        } else {
+          console.error("❌ No se encontró VIDEO_URL en el header");
+        }
+        
         setIsLoading(false); // Datos cargados, detener la animación de carga
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -196,32 +206,39 @@ Clear Filters
                     <MatchReportLeft data={filteredEvents.length > 0 ? filteredEvents : data.events} />
                   </div>
                   <div className="video">
-                  <VideoPlayer
-                    ref={videoRef}
-                    src={videoSrc} // Puede ser un ID de YouTube o una URL de video
-                    tempTime={tempTime}
-                    duration={duration}
-                    isPlayingFilteredEvents={isPlayingFilteredEvents}
-                    onPlayFilteredEvents={handlePlayFilteredEvents}
-                    filteredEvents={filteredEvents}
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnd={() => {
-                      if (isPlayingFilteredEvents) {
-                        setCurrentEventIndex((prevIndex) => {
-                          const nextIndex = prevIndex + 1;
-                          if (nextIndex < filteredEvents.length) {
-                            playNextEvent(filteredEvents, nextIndex);
-                          } else {
-                            setIsPlayingFilteredEvents(false);
-                          }
-                          return nextIndex;
-                        });
-                      }
-                    }}
-                    onStop={handleStop}
-                    onNext={handleNext}
-                    onPrevious={handlePrevious}
-                  />
+                  {videoSrc ? (
+                    <VideoPlayer
+                      key={videoSrc} // Forzar re-render cuando cambie el video
+                      ref={videoRef}
+                      src={videoSrc} // Puede ser un ID de YouTube o una URL de video
+                      tempTime={tempTime}
+                      duration={duration}
+                      isPlayingFilteredEvents={isPlayingFilteredEvents}
+                      onPlayFilteredEvents={handlePlayFilteredEvents}
+                      filteredEvents={filteredEvents}
+                      onTimeUpdate={handleTimeUpdate}
+                      onEnd={() => {
+                        if (isPlayingFilteredEvents) {
+                          setCurrentEventIndex((prevIndex) => {
+                            const nextIndex = prevIndex + 1;
+                            if (nextIndex < filteredEvents.length) {
+                              playNextEvent(filteredEvents, nextIndex);
+                            } else {
+                              setIsPlayingFilteredEvents(false);
+                            }
+                            return nextIndex;
+                          });
+                        }
+                      }}
+                      onStop={handleStop}
+                      onNext={handleNext}
+                      onPrevious={handlePrevious}
+                    />
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center' }}>
+                      Cargando video...
+                    </div>
+                  )}
                   </div>
                   <div className="right">
                     <MatchReportRight data={data.events} />

@@ -10,6 +10,9 @@ const VideoPlayer = forwardRef(({ src, tempTime, duration, isPlayingFilteredEven
   const [isPiP, setIsPiP] = useState(false);
   const { filteredEvents } = useContext(FilterContext);
 
+  // LOG IMPORTANTE: Ver qué src está recibiendo
+  console.log("🎥 VideoPlayer recibió src:", src);
+
   // Determina si el video es de YouTube o un archivo local/URL
   const isYouTubeVideo = typeof src === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(src);
 
