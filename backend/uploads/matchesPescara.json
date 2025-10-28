@@ -4,6 +4,6 @@
     "TEAM": "Pescara",
     "OPPONENT": "Avezzano",
     "DATE": "2025-10-19",
-    "VIDEO_URL": "https://crm-saas.s3.eu-central-1.amazonaws.com/tenant04418234-b7b9-4729-b71e-a68e03359b8d/files/8f26d9f5-d6a7-4490-a18c-2808cbb5944d?response-content-disposition=attachment%3B%20filename%20%3D%2220251019%20Az-Pescara%20%281%29.mp4%22&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3G2MNTXDZWJQELGX%2F20251028%2Feu-central-1%2Fs3%2Faws4_request&X-Amz-Date=20251028T091415Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Signature=798b4be5e4f268b6c689639fa9228a0b20fd0369c86f4799977cc1e91f3c1aac"
+    "VIDEO_URL": "https://crm-saas.s3.eu-central-1.amazonaws.com/tenant04418234-b7b9-4729-b71e-a68e03359b8d/files/8f26d9f5-d6a7-4490-a18c-2808cbb5944d?response-content-disposition=inline%3B%20filename%20%3D%2220251019%2520Az-Pescara%2520%25281%2529.mp4%22&response-content-type=video%2Fmp4&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3G2MNTXDZWJQELGX%2F20251028%2Feu-central-1%2Fs3%2Faws4_request&X-Amz-Date=20251028T092447Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Signature=e89c4e9d4b244485b3309aefcf44f3a9e2419d8f8a23ab5208dc14e344f9d317"
   }
 ]
