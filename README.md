@@ -41,3 +41,42 @@ Link to download (https://drive.google.com/file/d/1vM4BgL9VO7yC5cKg2N4HdBJLyxob3
 
 - The video file `SBvsLIONS.mp4` is not included in the repository due to its size. Please download it separately and place it in the `frontend/public` directory.
 - If you encounter any issues, please check the logs for both the frontend and backend containers to debug.
+
+---
+
+## Guía de trabajo con ramas
+
+### Flujos recomendados
+
+#### 1. Trabajar en el MVP (nueva versión)
+- Cambia a la rama base_de_datos:
+  ```bash
+  git checkout base_de_datos
+  ```
+- Trabaja normalmente, haz commits y push.
+- Para levantar el entorno completo (con base de datos):
+  ```bash
+  docker-compose -f docker-compose.db.yml up
+  ```
+
+#### 2. Preparar una presentación urgente
+- Guarda tus cambios (commit y push) en base_de_datos.
+- Cambia a la rama main:
+  ```bash
+  git checkout main
+  ```
+- Haz los cambios rápidos para la presentación (importar datos, cambiar video, etc).
+- Haz commit y push en main.
+- Para levantar el entorno simple (sin base de datos):
+  ```bash
+  docker-compose up
+  ```
+- Cuando termines, vuelve a base_de_datos:
+  ```bash
+  git checkout base_de_datos
+  ```
+
+### Consejos
+- Siempre haz commit y push antes de cambiar de rama para no perder trabajo.
+- Si necesitas actualizar el link del video, edita el archivo `backend/uploads/matchesPescara.json` y haz commit/push para que se redeploye en producción.
+- Consulta este README cada vez que tengas dudas sobre el flujo de trabajo.

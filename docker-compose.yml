@@ -5,13 +5,13 @@ services:
       context: ./frontend
     ports:
       - "3000:3000" # Mapea el puerto 3000 del contenedor al host
-    volumes:
-      - ./frontend:/app # Monta el código fuente del frontend
+    # Volumen comentado para demo - usar código de la imagen
+    # volumes:
+    #   - ./frontend:/app # Monta el código fuente del frontend
     working_dir: /app
-    command: npm start # Inicia el servidor de desarrollo de React
+    command: npm start # Usa el comando del Dockerfile
     environment:
       - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true # Opcional: para evitar problemas con hot reload en Docker
 
   backend:
     build:
@@ -20,7 +20,29 @@ services:
       - "5001:5001" # Mapea el puerto 5001 del contenedor al host
     volumes:
       - ./backend:/app # Monta el código fuente del backend
+      - ./backend/videoanalysis_demo.db:/app/videoanalysis_demo.db # Persistir SQLite
     working_dir: /app
     command: flask run --host=0.0.0.0 --port=5001 # Inicia el servidor Flask
     environment:
       - FLASK_ENV=development
+      # DATABASE_URL no definido = usa SQLite automáticamente
+      # Para PostgreSQL: descomentar línea de abajo y levantar servicio 'db'
+      # - DATABASE_URL=postgresql://videoanalysis:rugby2025@db:5432/videoanalysis_db
+    # depends_on:  # Descomentar si usas PostgreSQL
+    #   - db
+
+  # Servicio PostgreSQL (OPCIONAL - solo para desarrollo completo)
+  # Para usar: descomentar este bloque y la línea DATABASE_URL en backend
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_USER: videoanalysis
+  #     POSTGRES_PASSWORD: rugby2025
+  #     POSTGRES_DB: videoanalysis_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+# volumes:  # Descomentar si usas PostgreSQL
+#   postgres_data:

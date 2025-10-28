@@ -29,4 +29,4 @@ ENV NODE_OPTIONS=--openssl-legacy-provider
 EXPOSE 3000
 
 # Comando para ejecutar la aplicación
-CMD ["npm", "start"]
+CMD ["npx", "react-scripts", "start"]
