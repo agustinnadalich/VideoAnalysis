@@ -5,6 +5,8 @@ import re
 import os
 from datetime import datetime
 import tempfile
+from typing import Optional, Dict, List
+from translator import Translator
 
 
 def make_json_serializable(obj):
@@ -649,9 +651,25 @@ def convert_timestamp_to_absolute(start_time, time_offsets):
     return start_time
 
 
-def normalize_xml_to_json(filepath, profile, discard_categories=None):
-    """Normaliza archivo XML a formato JSON"""
+def normalize_xml_to_json(filepath, profile, discard_categories=None, translator: Optional[Translator] = None):
+    """
+    Normaliza archivo XML a formato JSON.
+    
+    Args:
+        filepath: Ruta al archivo XML
+        profile: Perfil de importación
+        discard_categories: Categorías a descartar
+        translator: Instancia de Translator para mapear categorías (opcional)
+        
+    Returns:
+        Dict con match_info, events, event_types, etc.
+    """
     print(f"🔍 normalize_xml_to_json: Iniciando procesamiento de {filepath}")
+    
+    # Usar traductor si está disponible
+    use_translation = translator is not None
+    if use_translation:
+        print(f"✅ Traductor activado - Se aplicarán mapeos de categorías")
     
     if not os.path.exists(filepath):
         print(f"❌ El archivo {filepath} no existe.")
@@ -805,6 +823,13 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
                 print(f"🔍 Label: group={group}, text={text}")
 
                 if text:
+                    # Traducir descriptor si hay traductor disponible
+                    if use_translation and group:
+                        translated_text = translator.translate_descriptor(text)
+                        if translated_text != text:
+                            print(f"🔄 Descriptor traducido: {text} → {translated_text}")
+                            text = translated_text
+                    
                     key = group if group else "MISC"
                     if key in descriptors:
                         if isinstance(descriptors[key], list):
@@ -820,6 +845,13 @@ def normalize_xml_to_json(filepath, profile, discard_categories=None):
                 if abs_start >= offsets['start_offset'] and abs_start < (offsets.get('end_time', float('inf')) + offsets['start_offset']):
                     period = p
                     break
+            
+            # Traducir tipo de evento si hay traductor disponible
+            original_event_type = event_type
+            if use_translation:
+                event_type = translator.translate_event_type(event_type)
+                if event_type != original_event_type:
+                    print(f"🔄 Categoría traducida: {original_event_type} → {event_type}")
 
             event = {
                 "event_type": event_type,

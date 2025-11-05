@@ -163,3 +163,30 @@ class ImportProfile(Base):
     name = Column(String(100), unique=True, nullable=False)
     description = Column(String(255))
     settings = Column(JSON)  # Contiene: hoja de eventos, columnas clave, etc.
+
+
+class CategoryMapping(Base):
+    """
+    Mapeo múltiple de términos externos a categorías internas.
+    Ejemplo: ['Tackle', 'Placcaggio', 'Placaje'] → 'TACKLE'
+    """
+    __tablename__ = "category_mappings"
+
+    id = Column(Integer, primary_key=True)
+    source_term = Column(String(100), nullable=False, index=True)  # Término en archivo (ej: "Placcaggio")
+    target_category = Column(String(50), nullable=False, index=True)  # Categoría estándar (ej: "TACKLE")
+    mapping_type = Column(String(20), default='event_type')  # 'event_type', 'descriptor', 'zone', etc.
+    language = Column(String(10))  # 'es', 'it', 'en', 'fr', etc.
+    priority = Column(Integer, default=0)  # Para resolver conflictos (mayor prioridad gana)
+    notes = Column(Text)  # Notas explicativas
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "source_term": self.source_term,
+            "target_category": self.target_category,
+            "mapping_type": self.mapping_type,
+            "language": self.language,
+            "priority": self.priority,
+            "notes": self.notes
+        }

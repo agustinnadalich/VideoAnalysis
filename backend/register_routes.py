@@ -2,6 +2,7 @@ from flask import Flask
 from routes.match_events import match_events_bp
 from routes.matches import match_bp
 from routes.import_routes import import_bp
+from routes.mappings import mappings_bp
 
 
 def register_routes(app: Flask):
@@ -10,4 +11,5 @@ def register_routes(app: Flask):
     print("🚨🚨🚨 DEBUG: Blueprint match_events registrado")
     app.register_blueprint(match_bp, url_prefix="/api")
     app.register_blueprint(import_bp, url_prefix="/api")
-    print("🚨🚨🚨 DEBUG: Todos los blueprints registrados")
+    app.register_blueprint(mappings_bp)  # Sin url_prefix porque ya lo trae en sus rutas
+    print("🚨🚨🚨 DEBUG: Todos los blueprints registrados (incluido mappings)")

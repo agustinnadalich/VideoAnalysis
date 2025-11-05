@@ -43,6 +43,20 @@ const Home = () => {
 
         <Card>
           <CardHeader>
+            <CardTitle>Mapeos de Categorías</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Gestionar traducciones automáticas de categorías y descriptores (multiidioma).
+            </p>
+            <Button onClick={() => navigate("/admin/mappings")} className="w-full">
+              Administrar Mapeos
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Importar Partido</CardTitle>
           </CardHeader>
           <CardContent>

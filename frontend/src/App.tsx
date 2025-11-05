@@ -7,6 +7,7 @@ import ImportMatch from "@/pages/ImportMatch";
 import PreviewImport from "@/pages/PreviewImport";
 import MatchesAdmin from "@/pages/MatchesAdmin";
 import CreateProfile from "@/pages/CreateProfile";
+import MappingsAdmin from "@/pages/MappingsAdmin";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/analysis/:matchId" element={<AnalysisPage />} />
         <Route path="/match/:matchId" element={<AnalysisPage />} />
         <Route path="/admin/matches" element={<MatchesAdmin />} />
+        <Route path="/admin/mappings" element={<MappingsAdmin />} />
         <Route path="/import" element={<ImportMatch />} />
         <Route path="/preview" element={<PreviewImport />} />
         <Route path="/create-profile" element={<CreateProfile />} />

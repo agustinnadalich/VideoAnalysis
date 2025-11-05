@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from db import SessionLocal
 from models import Club, Team, Player, Match, Event
 from normalizer import normalize_excel_to_json
+from translator import get_translator
 
 def clean_extra_data(data):
     def convert(v):
@@ -31,6 +32,8 @@ def import_match_from_xml(xml_path: str, profile: dict):
     Importa un partido y sus eventos desde un archivo XML con la estructura de LongoMatch/Sportscode/Nacsport.
     Extrae: evento, categoría, tiempo, duración, descriptores, jugadores (array), coordenadas X/Y si existen.
     Si hay labels sin group, se listan en la preview para que el usuario los asigne manualmente.
+    
+    NUEVO: Incluye traducción automática de categorías y descriptores usando CategoryMapping.
     """
     if not os.path.exists(xml_path):
         print(f"❌ El archivo {xml_path} no existe.")
@@ -39,6 +42,10 @@ def import_match_from_xml(xml_path: str, profile: dict):
     print(f"🔍 Iniciando importación desde XML: {xml_path}")
     db = SessionLocal()
     try:
+        # Inicializar traductor
+        translator = get_translator(db)
+        print(f"✅ Traductor inicializado con {len(translator._cache)} mapeos")
+        
         tree = ET.parse(xml_path)
         root = tree.getroot()
         print(f"✅ XML parseado correctamente: {xml_path}")
@@ -55,7 +62,16 @@ def import_match_from_xml(xml_path: str, profile: dict):
         labels_without_group = set()
 
         for inst in root.findall(".//instance"):
-            event_type = inst.findtext("code", default="")
+            event_type_original = inst.findtext("code", default="")
+            event_type = event_type_original.strip()
+            
+            # Traducir tipo de evento
+            if translator:
+                event_type_translated = translator.translate_event_type(event_type)
+                if event_type_translated != event_type:
+                    print(f"🔄 Categoría traducida: {event_type} → {event_type_translated}")
+                    event_type = event_type_translated
+            
             start = inst.findtext("start", default="0")
             end = inst.findtext("end", default="0")
             try:
@@ -90,8 +106,14 @@ def import_match_from_xml(xml_path: str, profile: dict):
                         except Exception:
                             pass
                     else:
-                        # Otros descriptores
-                        extra_data[group.strip()] = text.strip() if text else ""
+                        # Otros descriptores - traducir si es posible
+                        descriptor_value = text.strip() if text else ""
+                        if translator and descriptor_value:
+                            translated_descriptor = translator.translate_descriptor(descriptor_value)
+                            if translated_descriptor != descriptor_value:
+                                print(f"🔄 Descriptor traducido: {descriptor_value} → {translated_descriptor}")
+                                descriptor_value = translated_descriptor
+                        extra_data[group.strip()] = descriptor_value
                 else:
                     # Label sin group: pedir al usuario en la preview
                     if text:
