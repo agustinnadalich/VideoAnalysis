@@ -67,8 +67,9 @@ def get_events():
     try:
         with open(matriz_json_path, 'r') as f:
             df = pd.DataFrame(json.load(f))
-        # Comentado temporalmente para demo rápido
-        # df = calcular_origen_tries(df)
+        
+        # Calcular origen de tries
+        df = calcular_origen_tries(df)
 
         if df.empty:
             return jsonify({"error": "No data available"}), 404

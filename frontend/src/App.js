@@ -121,8 +121,20 @@ const App = () => {
         
         // Usar VIDEO_URL desde el backend
         if (data.header && data.header.VIDEO_URL) {
-          setVideoSrc(data.header.VIDEO_URL);
-          console.log("✅ Video URL configurado:", data.header.VIDEO_URL.substring(0, 80) + "...");
+          let videoSource = data.header.VIDEO_URL;
+          
+          // Si es URL de YouTube, extraer solo el ID
+          if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+            const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = videoSource.match(youtubeRegex);
+            if (match && match[1]) {
+              videoSource = match[1]; // Solo el ID de 11 caracteres
+              console.log("✅ Video ID de YouTube extraído:", videoSource);
+            }
+          }
+          
+          setVideoSrc(videoSource);
+          console.log("✅ Video configurado:", videoSource);
         } else {
           console.error("❌ No se encontró VIDEO_URL en el header");
         }
