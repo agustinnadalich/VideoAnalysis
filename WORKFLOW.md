@@ -83,6 +83,8 @@ docker-compose -f docker-compose.db.yml up -d
 | Aspecto | main | base_de_datos |
 |---------|------|---------------|
 | **Frontend** | CRA (react-scripts) | Vite + TypeScript |
+| **package.json scripts** | `start`, `build` | `dev`, `build` |
+| **Dockerfile CMD** | `npm start` | `npm run dev` |
 | **Backend** | Flask simple | Flask + SQLAlchemy |
 | **Base de datos** | ❌ No usa | ✅ PostgreSQL |
 | **Importación** | Manual (JSON) | Avanzada (Excel, XML) |
@@ -90,6 +92,12 @@ docker-compose -f docker-compose.db.yml up -d
 | **Puerto frontend** | 3000 | 3000 |
 | **Puerto backend** | 5001 | 5001 |
 | **Puerto DB** | - | 5432 |
+
+⚠️ **CRÍTICO**: Los `package.json` y `Dockerfile` son DIFERENTES entre ramas:
+- `main`: usa `react-scripts start`
+- `base_de_datos`: usa `vite` (npm run dev)
+
+Si mezclas archivos entre ramas, el frontend NO levantará.
 
 ## Comandos útiles
 
@@ -121,6 +129,26 @@ docker-compose -f docker-compose.db.yml up -d
 ```
 
 ## Troubleshooting
+
+### ❌ ERROR: "npm error Missing script: start" o "Could not find index.html"
+
+**Causa**: Mezclaste archivos de `main` (react-scripts) con `base_de_datos` (Vite)
+
+**Solución**:
+```bash
+# Restaurar archivos correctos de la rama actual
+git restore frontend/Dockerfile frontend/package.json
+
+# Si estás en base_de_datos, verificar que Dockerfile tenga:
+# CMD ["npm", "run", "dev"]
+
+# Si estás en main, verificar que Dockerfile tenga:
+# CMD ["npx", "react-scripts", "start"]
+
+# Rebuild
+docker-compose -f docker-compose.db.yml build --no-cache frontend
+docker-compose -f docker-compose.db.yml up -d
+```
 
 ### Frontend no levanta
 ```bash
